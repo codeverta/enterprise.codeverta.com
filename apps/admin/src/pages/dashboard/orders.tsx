@@ -14,7 +14,7 @@ import { toast } from "sonner";
 
 const money = (value, currency = "IDR") => new Intl.NumberFormat("id-ID", { style: "currency", currency }).format(Number(value || 0));
 
-function OrdersPage() {
+export function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);

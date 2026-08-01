@@ -174,22 +174,7 @@ function CourseBundlePage() {
   const [attachingPlanIDs, setAttachingPlanIDs] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [bundleRes, pricingRes] = await Promise.all([
-        api.get("/subscriptions/admin/resources/course-bundles"),
-        api.get("/subscriptions/admin/resources/pricing-settings"),
-      ]);
-      const nextBundles = dataOf(bundleRes);
-      setBundles(nextBundles);
-      setPlans(dataOf(pricingRes));
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || t("bundles.toast.load_error"));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const load = async () => {};
 
   useEffect(() => {
     load();

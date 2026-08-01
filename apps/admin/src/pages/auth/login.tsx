@@ -17,7 +17,7 @@ import { AuthCarousel } from "@/components/AuthCarousel";
 import { Helmet } from "react-helmet";
 import { Eye, EyeOff, Fingerprint, Handshake, Loader2, Store } from "lucide-react";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { BASE_STORAGE_URL } from "@/lib/utils";
+import { BASE_STORAGE_URL, getStorageUrl } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { ROLES } from "@/lib/constants";
 import { clearImpersonationStorage } from "@/lib/impersonation";
@@ -42,7 +42,7 @@ export default function LoginPage() {
     const isRoleSpecificPortal = true;
     const logo = useMemo(() => {
         if (settings?.app_logo) {
-            return `${BASE_STORAGE_URL}/${settings.app_logo}`;
+            return getStorageUrl(settings.app_logo);
         }
         if (!settings?.app_name) return "";
         const appName = settings.app_name.toLowerCase();

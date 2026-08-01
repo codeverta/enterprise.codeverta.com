@@ -3,7 +3,9 @@ import { erpWorkspaces, flattenWorkspaceNavigation, getWorkspaceFromPath } from 
 
 describe("ERPNext workspaces", () => {
   it("provides a dashboard workspace for every desk module", () => {
-    expect(Object.keys(erpWorkspaces)).toHaveLength(12);
+    expect(Object.keys(erpWorkspaces)).toHaveLength(14);
+    expect(erpWorkspaces.communication).toBeDefined();
+    expect(erpWorkspaces.administration).toBeDefined();
   });
 
   it("contains the requested Selling, Buying, and Stock navigation", () => {
@@ -15,6 +17,12 @@ describe("ERPNext workspaces", () => {
   it("keeps the selected workspace when navigating to a shared ERP route", () => {
     expect(getWorkspaceFromPath("/desk/item", "selling")?.slug).toBe("selling");
     expect(getWorkspaceFromPath("/desk/item", "stock")?.slug).toBe("stock");
+  });
+
+  it("uses diverse icons across workspace items", () => {
+    const sellingItems = flattenWorkspaceNavigation(erpWorkspaces.selling);
+    const icons = new Set(sellingItems.map((item) => item.icon));
+    expect(icons.size).toBeGreaterThan(15);
   });
 });
 

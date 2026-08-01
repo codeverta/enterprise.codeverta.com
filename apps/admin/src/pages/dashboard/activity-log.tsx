@@ -63,7 +63,7 @@ const getPaginationRange = (currentPage: number, lastPage: number, delta = 2) =>
   return range;
 };
 
-function LogsPage() {
+export function LogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
   const [logType, setLogType] = useState("audit");
   const [loading, setLoading] = useState(true);

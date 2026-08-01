@@ -46,7 +46,7 @@ import { toast } from "sonner";
 import dayjs from "dayjs";
 import { useSettingsStore } from "../store/useSettingsStore";
 import RightSidebar from "./RightSidebar";
-import { BASE_STORAGE_URL } from "@/lib/utils";
+import { BASE_STORAGE_URL, getStorageUrl } from "@/lib/utils";
 import NotificationBell from "./dashboard/NotificationBell";
 import SystemSettings from "./dashboard/SystemSettings";
 import AppSwitcherMenu from "./AppSwitcherMenu";
@@ -289,7 +289,7 @@ const Sidebar = ({
             <div className={clsx("flex items-center gap-3", !isOpen && "justify-center")}>
               {settings?.app_logo ? (
                 <img
-                  src={`${BASE_STORAGE_URL}/${settings.app_logo}`}
+                  src={getStorageUrl(settings.app_logo)}
                   alt="App Logo"
                   className="w-9 h-9 rounded-lg object-cover shadow-sm flex-shrink-0"
                 />

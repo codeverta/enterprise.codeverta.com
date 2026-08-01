@@ -7,7 +7,10 @@ import (
 )
 
 func Migrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(&PurchaseOrder{}, &PurchaseOrderItem{}, &PurchaseOrderTax{}, &PurchaseOrderSequence{}); err != nil {
+	if err := db.AutoMigrate(
+		&PurchaseOrder{}, &PurchaseOrderItem{}, &PurchaseOrderTax{}, &PurchaseOrderSequence{},
+		&PurchaseInvoice{}, &PurchaseInvoiceItem{}, &PurchaseInvoiceTax{}, &PurchaseInvoiceSequence{},
+	); err != nil {
 		return fmt.Errorf("auto migrate Buying models: %w", err)
 	}
 	indexes := []struct {
@@ -16,6 +19,8 @@ func Migrate(db *gorm.DB) error {
 	}{
 		{&PurchaseOrder{}, "idx_buying_po_tenant_number", "tenant_id, number"},
 		{&PurchaseOrderSequence{}, "idx_buying_po_sequence", "tenant_id, year, prefix"},
+		{&PurchaseInvoice{}, "idx_buying_pinv_tenant_number", "tenant_id, number"},
+		{&PurchaseInvoiceSequence{}, "idx_buying_pinv_sequence", "tenant_id, year, prefix"},
 	}
 	for _, index := range indexes {
 		if db.Migrator().HasIndex(index.model, index.name) {

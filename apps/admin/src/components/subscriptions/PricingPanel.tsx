@@ -140,14 +140,7 @@ function PricingPanel() {
     }
   };
 
-  const fetchRequirementCourses = async () => {
-    try {
-      const res = await api.get("/subscriptions/admin/resources/courses?limit=1000");
-      setRequirementCourses(res.data?.data || []);
-    } catch {
-      toast.error("Gagal memuat daftar course prerequisite");
-    }
-  };
+  const fetchRequirementCourses = async () => {};
 
   useEffect(() => {
     fetch();

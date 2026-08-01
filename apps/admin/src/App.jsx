@@ -8,21 +8,24 @@ import Login from "./pages/auth/login";
 import ForgotPasswordPage from "./pages/auth/forgot-password";
 import ResetPasswordPage from "./pages/auth/reset-password";
 import Dashboard from "./pages/dashboard";
-import Users from "./pages/dashboard/users";
-import PromoDashboard from "./pages/dashboard/promo";
-import SubscriptionsPage from "./pages/dashboard/subscriptions";
-import FinancePage from "./pages/dashboard/finance";
-import TenantPage from "./pages/dashboard/tenants";
-import LogsPage from "./pages/dashboard/activity-log";
-import Emails from "./pages/dashboard/emails";
-import EmailManagement from "./pages/dashboard/sending-email";
-import Settings from "./pages/dashboard/settings";
-import OrdersPage from "./pages/dashboard/orders";
 import NotFound from "./pages/not-found";
 import DeskPage from "./pages/desk";
 import ErpWorkspacePage from "./pages/desk/workspace";
 import CRMPage from "./modules/crm";
 import BuyingModule from "./modules/buying";
+import OrganizationModule from "./modules/organization";
+import SellingModule from "./modules/selling";
+import AccountingModule from "./modules/accounting";
+import CommunicationModule from "./modules/communication";
+import AdministrationModule from "./modules/administration";
+import SettingsModule from "./modules/settings";
+import { isAdminRole } from "./lib/erp-desk";
+
+const LegacyDashboardHome = () => {
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch { user = null; }
+  return isAdminRole(user?.role) ? <Navigate to="/desk" replace /> : <Dashboard />;
+};
 
 const ProtectedRoute = () => {
   const authenticated = Boolean(localStorage.getItem("accessToken"));
@@ -62,18 +65,27 @@ const router = createBrowserRouter([
           { path: "desk", element: <DeskPage /> },
           { path: "desk/crm/*", element: <CRMPage /> },
           { path: "desk/purchase-order/*", element: <BuyingModule /> },
+          { path: "desk/organization/users/*", element: <OrganizationModule /> },
+          { path: "desk/organization/tenants/*", element: <OrganizationModule /> },
+          { path: "desk/selling/orders/*", element: <SellingModule /> },
+          { path: "desk/selling/subscriptions/*", element: <SellingModule /> },
+          { path: "desk/selling/promotions/*", element: <SellingModule /> },
+          { path: "desk/accounting/finance/*", element: <AccountingModule /> },
+          { path: "desk/communication/*", element: <CommunicationModule /> },
+          { path: "desk/administration/*", element: <AdministrationModule /> },
+          { path: "desk/erpnext-settings/system-settings/*", element: <SettingsModule /> },
           { path: "desk/*", element: <ErpWorkspacePage /> },
-          { path: "dashboard", element: <Dashboard /> },
-          { path: "dashboard/users", element: <Users /> },
-          { path: "dashboard/orders", element: <OrdersPage /> },
-          { path: "dashboard/promo", element: <PromoDashboard /> },
-          { path: "dashboard/subscriptions", element: <SubscriptionsPage /> },
-          { path: "dashboard/finance", element: <FinancePage /> },
-          { path: "dashboard/tenants", element: <TenantPage /> },
-          { path: "dashboard/audit-logs", element: <LogsPage /> },
-          { path: "dashboard/email-templates", element: <Emails /> },
-          { path: "dashboard/email-broadcast", element: <EmailManagement /> },
-          { path: "dashboard/settings", element: <Settings /> },
+          { path: "dashboard", element: <LegacyDashboardHome /> },
+          { path: "dashboard/users/*", element: <Navigate to="/desk/organization/users" replace /> },
+          { path: "dashboard/orders/*", element: <Navigate to="/desk/selling/orders" replace /> },
+          { path: "dashboard/promo/*", element: <Navigate to="/desk/selling/promotions" replace /> },
+          { path: "dashboard/subscriptions/*", element: <Navigate to="/desk/selling/subscriptions" replace /> },
+          { path: "dashboard/finance/*", element: <Navigate to="/desk/accounting/finance" replace /> },
+          { path: "dashboard/tenants/*", element: <Navigate to="/desk/organization/tenants" replace /> },
+          { path: "dashboard/audit-logs/*", element: <Navigate to="/desk/administration/audit-log" replace /> },
+          { path: "dashboard/email-templates/*", element: <Navigate to="/desk/communication/email-templates" replace /> },
+          { path: "dashboard/email-broadcast/*", element: <Navigate to="/desk/communication/broadcast" replace /> },
+          { path: "dashboard/settings/*", element: <Navigate to="/desk/erpnext-settings/system-settings" replace /> },
         ],
       },
       { path: "*", element: <NotFound /> },

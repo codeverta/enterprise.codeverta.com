@@ -49,7 +49,7 @@ dayjs.extend(timezone);
 // Set default timezone
 const ADMIN_TZ = "Asia/Jakarta";
 
-const PromoDashboard = () => {
+export const PromoDashboard = () => {
   // --- STATE ---
   const [promos, setPromos] = useState([]);
   const [loading, setLoading] = useState(false);

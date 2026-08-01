@@ -3,7 +3,17 @@ import { twMerge } from "tailwind-merge"
 
 export const BASE_API_URL = import.meta.env.VITE_BASE_API_URL || "http://localhost:8084";
 
-export const BASE_STORAGE_URL = import.meta.env.VITE_COS_CDN_BASE_URL || "http://localhost:8084";
+export const BASE_STORAGE_URL = import.meta.env.VITE_COS_CDN_BASE_URL || "https://cdn.codeverta.com";
+
+export function getStorageUrl(path?: string | null): string {
+  if (!path) return "";
+  if (path.startsWith("http://") || path.startsWith("https://")) {
+    return path;
+  }
+  const cleanPath = path.startsWith("/") ? path.slice(1) : path;
+  const baseUrl = BASE_STORAGE_URL.endsWith("/") ? BASE_STORAGE_URL.slice(0, -1) : BASE_STORAGE_URL;
+  return `${baseUrl}/${cleanPath}`;
+}
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

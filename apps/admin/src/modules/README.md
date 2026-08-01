@@ -1,6 +1,15 @@
 # Admin modules
 
-Halaman domain bisnis baru ditempatkan di `src/modules/<module>`. Sebuah module
-memiliki API client, layout/navigation, pages, dan entry point sendiri. Router
-utama hanya mengimpor entry point module sehingga detail fitur tidak menyebar ke
-folder aplikasi umum.
+Semua entry halaman admin baru berada di `src/modules/<domain>`. Folder
+`pages/dashboard` masih dipertahankan sementara sebagai sumber kompatibilitas
+untuk portal non-admin dan import lama, tetapi tidak lagi diregistrasikan sebagai
+route admin. Route `/dashboard/*` yang lama mengarahkan admin ke route `/desk/*`.
+
+Pemetaan halaman core lama:
+
+- Organization: Users, Tenants
+- Selling: Orders, Subscriptions, Promotions
+- Accounting: Core Finance
+- Communication: Email Templates, Email Broadcast
+- Administration: Audit Log
+- Settings: System Configuration

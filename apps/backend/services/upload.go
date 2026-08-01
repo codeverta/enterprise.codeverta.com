@@ -194,7 +194,7 @@ func ProcessAndUploadImageBytes(fileBytes []byte) (string, error) {
 		},
 	})
 
-	fileName := fmt.Sprintf("lms/%s.webp", uuid.New().String())
+	fileName := fmt.Sprintf("%s/%s.webp", GetCOSPrefix(), uuid.New().String())
 	opt := &cos.ObjectPutOptions{
 		ObjectPutHeaderOptions: &cos.ObjectPutHeaderOptions{
 			ContentType: "image/webp",
@@ -206,6 +206,14 @@ func ProcessAndUploadImageBytes(fileBytes []byte) (string, error) {
 		return "", fmt.Errorf("gagal upload ke COS: %w", err)
 	}
 	return fileName, nil
+}
+
+func GetCOSPrefix() string {
+	prefix := strings.TrimSpace(os.Getenv("COS_PREFIX"))
+	if prefix == "" {
+		return "erp"
+	}
+	return strings.Trim(prefix, "/")
 }
 
 func ValidateImageUploadConfig() error {
@@ -263,7 +271,7 @@ func ProcessAndUploadMedia(file multipart.File, fileHeader *multipart.FileHeader
 	if ext == "" {
 		ext = extensionFromContentType(contentType)
 	}
-	objectKey := fmt.Sprintf("lms/%s/%s%s", mediaType, uuid.New().String(), ext)
+	objectKey := fmt.Sprintf("%s/%s/%s%s", GetCOSPrefix(), mediaType, uuid.New().String(), ext)
 	opt := &cos.ObjectPutOptions{
 		ObjectPutHeaderOptions: &cos.ObjectPutHeaderOptions{
 			ContentType: contentType,

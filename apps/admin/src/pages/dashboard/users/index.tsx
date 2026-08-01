@@ -189,7 +189,7 @@ function InfoRow({ label, value }) {
   );
 }
 
-function UserManagementPage({ user, onlineUsers = [] }) {
+export function UserManagementPage({ user, onlineUsers = [] }) {
   const [users, setUsers] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
@@ -392,7 +392,7 @@ function UserManagementPage({ user, onlineUsers = [] }) {
       const data = response.data?.data || response.data;
       beginImpersonation(data);
       toast.success(`Masuk sebagai ${data.user?.display_name || data.user?.username}.`);
-      window.location.assign("/dashboard");
+      window.location.assign("/desk/organization/users");
     } catch (error) {
       toast.error(error.response?.data?.message || error.message || "Gagal memulai impersonasi.");
       setImpersonationLoading(false);

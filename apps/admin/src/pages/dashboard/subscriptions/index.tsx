@@ -82,7 +82,7 @@ import SubscriptionPanel from "@/components/subscriptions/SubscriptionPanel";
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-function SubscriptionsPage() {
+export function SubscriptionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = searchParams.get("tab") || "pricing-settings";
 

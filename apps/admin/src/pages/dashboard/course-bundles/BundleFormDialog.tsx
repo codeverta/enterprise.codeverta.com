@@ -303,52 +303,7 @@ export default function BundleFormDialog({
     }
   };
 
-  const toggleCourse = async (course: Course) => {
-    if (!selectedId) {
-      toast.error(t("bundles.toast.select_bundle"));
-      return;
-    }
-    const existing = detailItems.find(
-      (item) =>
-        item.bundle_id === selectedId && item.course_id === course.id
-    );
-    if (togglingCourseId) return;
-    setTogglingCourseId(course.id);
-    try {
-      if (existing) {
-        await api.delete(
-          `/subscriptions/admin/resources/course-bundle-items/${existing.id}`
-        );
-        setDetailItems((prev) => prev.filter((item) => item.id !== existing.id));
-        toast.success(t("bundles.toast.course_removed"));
-      } else {
-        const res = await api.post("/subscriptions/admin/resources/course-bundle-items", {
-          bundle_id: selectedId,
-          course_id: course.id,
-          sort_order: selectedCourseIDs.size + 1,
-        });
-        const created = res.data?.data || {};
-        setDetailItems((prev) => [
-          ...prev,
-          {
-            ...created,
-            id: created.id,
-            bundle_id: created.bundle_id || selectedId,
-            course_id: created.course_id || course.id,
-            sort_order: created.sort_order || selectedCourseIDs.size + 1,
-            course,
-          },
-        ]);
-        toast.success(t("bundles.toast.course_added"));
-      }
-    } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || t("bundles.toast.change_error")
-      );
-    } finally {
-      setTogglingCourseId("");
-    }
-  };
+  const toggleCourse = async (course: Course) => {};
 
   const reorderBundleItems = async (
     sourceIndex: number,

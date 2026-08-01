@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"gin-template/model"
+	"gin-template/services"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -399,7 +400,7 @@ func uploadAssignmentFile(file multipart.File, header *multipart.FileHeader) (st
 	if ext == "" {
 		ext = ".bin"
 	}
-	objectKey := fmt.Sprintf("lms/assignments/%s%s", uuid.New().String(), ext)
+	objectKey := fmt.Sprintf("%s/assignments/%s%s", services.GetCOSPrefix(), uuid.New().String(), ext)
 
 	bucketURL, _ := url.Parse(rawBucketURL)
 	client := cos.NewClient(&cos.BaseURL{BucketURL: bucketURL}, &http.Client{

@@ -26,7 +26,7 @@ import { version } from "../../package.json";
 import RightSidebar from "./RightSidebar";
 import NotificationBell from "./dashboard/NotificationBell";
 import { ROLES } from "../lib/constants";
-import { BASE_STORAGE_URL } from "../lib/utils";
+import { BASE_STORAGE_URL, getStorageUrl } from "../lib/utils";
 import SystemSettings from "./dashboard/SystemSettings";
 import { toast } from "sonner";
 import AppSwitcherMenu from "./AppSwitcherMenu";
@@ -118,7 +118,7 @@ const Navbar = ({
           <button type="button" data-onboarding-href="/" className="flex items-center space-x-2 rounded-xl px-2 py-1.5 text-left outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500">
             {settings?.app_logo && (
               <img
-                src={`${BASE_STORAGE_URL}/${settings.app_logo}`}
+                src={getStorageUrl(settings.app_logo)}
                 alt={settings?.app_name || "LMS"}
                 className="h-8 w-auto rounded object-contain max-w-[120px]"
               />

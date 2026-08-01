@@ -10,6 +10,7 @@ import {
   Factory,
   FileChartColumn,
   Landmark,
+  Mail,
   Package,
   PiggyBank,
   ReceiptText,
@@ -42,6 +43,8 @@ export const deskModules = [
   { name: "Selling", slug: "selling", icon: ShoppingBag, muted: false },
   { name: "Stock", slug: "stock", icon: Package, muted: false },
   { name: "Subcontracting", slug: "subcontracting", icon: RefreshCw, muted: false },
+  { name: "Communication", slug: "communication", icon: Mail, muted: false },
+  { name: "Administration", slug: "administration", icon: ShieldCheck, muted: false },
   { name: "Settings", slug: "erpnext-settings", icon: Settings, muted: false },
 ] as const;
 

@@ -22,7 +22,7 @@ interface Tenant {
   is_active: boolean
 }
 
-function TenantPage() {
+export function TenantPage() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [formData, setFormData] = useState({ name: "", domain: "", is_active: true })

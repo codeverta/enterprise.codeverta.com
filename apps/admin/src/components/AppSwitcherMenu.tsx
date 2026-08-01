@@ -81,7 +81,7 @@ export default function AppSwitcherMenu({ children, onLogout, side = "bottom", a
         <DropdownMenuItem onSelect={toggleTheme} className="gap-3 rounded-xl px-3 py-2.5 text-base">
           <Moon className="size-5" /> Toggle Theme
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => navigate("/dashboard/settings")} className="gap-3 rounded-xl px-3 py-2.5 text-base">
+        <DropdownMenuItem onSelect={() => navigate("/desk/erpnext-settings/system-settings")} className="gap-3 rounded-xl px-3 py-2.5 text-base">
           <CircleHelp className="size-5" /> Help
         </DropdownMenuItem>
         <DropdownMenuSeparator className="my-2" />

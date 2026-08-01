@@ -69,7 +69,7 @@ const DEFAULT_BODY = `<!DOCTYPE html>
 </body>
 </html>`;
 
-function EmailTemplateManager() {
+export function EmailTemplateManager() {
   // State Data
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(false);

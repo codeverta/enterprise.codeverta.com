@@ -69,37 +69,7 @@ function CategoryPanel({ open, onClose, categories, onRefresh }) {
     });
   };
 
-  const save = async () => {
-    if (!form.name.trim()) {
-      toast.error("Nama kategori wajib diisi");
-      return;
-    }
-    if (!form.target_roles || form.target_roles.length === 0) {
-      toast.error("Minimal satu target role wajib dipilih");
-      return;
-    }
-    const payload = {
-      name: form.name,
-      slug: form.slug,
-      description: form.description,
-      sort_order: form.id ? Number(form.sort_order || 0) : categories.length + 1,
-      is_active: !!form.is_active,
-      target_roles: form.target_roles,
-    };
-    try {
-      if (form.id) {
-        await api.put(`/subscriptions/admin/resources/course-categories/${form.id}`, payload);
-        toast.success("Kategori diperbarui");
-      } else {
-        await api.post("/subscriptions/admin/resources/course-categories", payload);
-        toast.success("Kategori dibuat");
-      }
-      reset();
-      onRefresh();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Gagal menyimpan kategori");
-    }
-  };
+  const save = async () => {};
 
   const del = async (cat) => {
     if (!confirm(`Hapus kategori "${cat.name}"?`)) return;

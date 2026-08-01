@@ -152,7 +152,7 @@ api.interceptors.response.use(
                 processQueue(refreshError, null);
                 if (readImpersonation() && restoreOriginalAdminSession()) {
                     toast.warning("Sesi impersonasi berakhir. Kembali ke akun administrator.");
-                    window.location.assign('/dashboard/users');
+                    window.location.assign('/desk/organization/users');
                     return Promise.reject(refreshError);
                 }
                 logOut();

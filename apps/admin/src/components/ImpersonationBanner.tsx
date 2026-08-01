@@ -29,7 +29,7 @@ export function ImpersonationBanner() {
 
     if (restoreOriginalAdminSession()) {
       toast.success("Kembali ke akun administrator.");
-      window.location.assign("/dashboard/users/list");
+      window.location.assign("/desk/organization/users");
       return;
     }
 

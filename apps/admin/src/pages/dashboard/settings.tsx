@@ -31,7 +31,7 @@ import QuotaProgressBar from "@/components/QuotaProgressBar";
 import ParticipantQuotaProgressBar from "@/components/ParticipantQuotaProgressBar";
 import { Separator } from "@/components/ui/separator";
 
-import { cn, BASE_STORAGE_URL } from "@/lib/utils";
+import { cn, BASE_STORAGE_URL, getStorageUrl } from "@/lib/utils";
 import {
   Check,
   Languages,
@@ -50,7 +50,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { PetSettingsCard } from "@/features/pet/PetSettingsCard";
 import { FontSettingsCard } from "@/components/settings/FontSettingsCard";
 
-function SettingsPage() {
+export function SettingsPage() {
   const { t, setLanguage: applyLanguage } = useLanguage();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userRole = Number(user?.role || 0);
@@ -383,7 +383,7 @@ function SettingsPage() {
                     <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 border-dashed border-muted-foreground/25 bg-muted">
                       {settings.app_logo ? (
                         <img
-                          src={`${BASE_STORAGE_URL}/${settings.app_logo}`}
+                          src={getStorageUrl(settings.app_logo)}
                           alt="App Logo"
                           className="h-full w-full object-cover"
                         />

@@ -9,7 +9,7 @@ interface SystemSettingsProps {
 export default function SystemSettings({ isSidebarOpen }: SystemSettingsProps) {
   return (
     <NavLink
-      to="/dashboard/settings"
+      to="/desk/erpnext-settings/system-settings"
       data-onboarding="system-settings"
       data-onboarding-href="/settings"
       className={({ isActive }) =>

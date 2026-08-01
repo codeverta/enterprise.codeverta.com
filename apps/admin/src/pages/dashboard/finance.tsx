@@ -155,7 +155,7 @@ const exportToPDF = (title: string, headers: string[], data: any[], formatters: 
   printWindow.document.close();
 };
 
-function FinanceDashboard() {
+export function FinanceDashboard() {
   const [payoutSetting, setPayoutSetting] = useState<any>(null);
   const [summary, setSummary] = useState<Summary>({
     active_balance: 0,
@@ -444,7 +444,7 @@ function FinanceDashboard() {
             {!payoutSetting && (
               <p className="text-[11px] text-red-500 text-center mt-2 leading-relaxed">
                 * Rekening bank belum dikonfigurasi. Atur di{" "}
-                <Link to="/dashboard/settings" className="underline font-medium hover:text-red-700">
+                <Link to="/desk/erpnext-settings/system-settings" className="underline font-medium hover:text-red-700">
                   Pengaturan Sistem
                 </Link>
                 .
