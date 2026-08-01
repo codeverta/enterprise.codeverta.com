@@ -5,6 +5,7 @@ import {
   Building2,
   CircleDollarSign,
   ClipboardCheck,
+  ContactRound,
   CreditCard,
   Factory,
   FileChartColumn,
@@ -29,6 +30,7 @@ export const getAuthenticatedLandingPath = (user: { role?: unknown } | null | un
   isAdminRole(user?.role) ? "/desk" : "/dashboard";
 
 export const deskModules = [
+  { name: "CRM", slug: "crm", icon: ContactRound, muted: false },
   { name: "Framework", slug: "framework", icon: Package, muted: true },
   { name: "Organization", slug: "organization", icon: Building2, muted: false },
   { name: "Accounting", slug: "accounting", icon: WalletCards, muted: false },

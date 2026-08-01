@@ -337,3 +337,10 @@
     transform: translateY(0);
   }
 }
+
+/* Toggled from the application switcher menu. */
+.erp-full-width .container,
+.erp-full-width [class*="max-w-screen-xl"],
+.erp-full-width [class*="max-w-5xl"] {
+  max-width: none !important;
+}

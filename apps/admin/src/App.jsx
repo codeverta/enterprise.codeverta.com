@@ -21,6 +21,7 @@ import OrdersPage from "./pages/dashboard/orders";
 import NotFound from "./pages/not-found";
 import DeskPage from "./pages/desk";
 import ErpWorkspacePage from "./pages/desk/workspace";
+import CRMPage from "./pages/desk/crm";
 
 const ProtectedRoute = () => {
   const authenticated = Boolean(localStorage.getItem("accessToken"));
@@ -38,7 +39,11 @@ const ProtectedRoute = () => {
 
 const AppLayout = () => {
   const navigate = useNavigate();
-  useEffect(() => setNavigate(navigate), [navigate]);
+  useEffect(() => {
+    setNavigate(navigate);
+    document.documentElement.classList.toggle("dark", localStorage.getItem("theme") === "dark");
+    document.documentElement.classList.toggle("erp-full-width", localStorage.getItem("erpFullWidth") === "true");
+  }, [navigate]);
   return <LanguageProvider><Outlet /></LanguageProvider>;
 };
 
@@ -54,6 +59,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: "desk", element: <DeskPage /> },
+          { path: "desk/crm/*", element: <CRMPage /> },
           { path: "desk/*", element: <ErpWorkspacePage /> },
           { path: "dashboard", element: <Dashboard /> },
           { path: "dashboard/users", element: <Users /> },

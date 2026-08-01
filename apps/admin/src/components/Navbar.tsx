@@ -29,6 +29,7 @@ import { ROLES } from "../lib/constants";
 import { BASE_STORAGE_URL } from "../lib/utils";
 import SystemSettings from "./dashboard/SystemSettings";
 import { toast } from "sonner";
+import AppSwitcherMenu from "./AppSwitcherMenu";
 
 const Navbar = ({
   user,
@@ -113,7 +114,8 @@ const Navbar = ({
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6 relative">
         {/* Left Side: Brand Logo */}
         <div className="flex items-center gap-4 z-10">
-          <NavLink to={homePath} data-onboarding-href="/" className="flex items-center space-x-2">
+          <AppSwitcherMenu onLogout={onLogout} side="bottom" align="start">
+          <button type="button" data-onboarding-href="/" className="flex items-center space-x-2 rounded-xl px-2 py-1.5 text-left outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500">
             {settings?.app_logo && (
               <img
                 src={`${BASE_STORAGE_URL}/${settings.app_logo}`}
@@ -127,7 +129,8 @@ const Navbar = ({
             <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">
               v{version}
             </span>
-          </NavLink>
+          </button>
+          </AppSwitcherMenu>
           {user?.active_subscription && (
             <div className="hidden md:flex items-center">
               <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold border border-blue-100" title={user.active_subscription}>

@@ -75,6 +75,8 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		"/api/admin/upload-image",
 		"/api/admin/upload-media",
 		"/api/my-profile/avatar",
+		"/api/crm/leads/import",
+		"/api/crm/webhooks/",
 	))
 
 	// Register Sub-Modules Router

@@ -31,7 +31,7 @@ type Controller struct {
 
 func NewController() *Controller {
 	return &Controller{resources: map[string]resource{
-		"leads":            resourceOf[crmmodel.Lead]("name", "email", "phone", "company_name"),
+		"leads":            resourceOf[crmmodel.Lead]("name", "email", "phone", "company_name", "source_detail", "region", "product_interest", "utm_campaign"),
 		"accounts":         resourceOf[crmmodel.Account]("name", "industry", "phone"),
 		"contacts":         resourceOf[crmmodel.Contact]("first_name", "last_name", "email", "phone"),
 		"pipeline-stages":  resourceOf[crmmodel.PipelineStage]("name"),
@@ -115,9 +115,19 @@ func (h *Controller) Create(c *gin.Context) {
 		resetter.ResetForCreate()
 	}
 	assignActor(record, actorID(c))
-	if err := model.GetDB(c).WithContext(c.Request.Context()).Create(record).Error; err != nil {
+	db := model.GetDB(c).WithContext(c.Request.Context())
+	if lead, ok := record.(*crmmodel.Lead); ok {
+		if err := prepareLead(db, lead); err != nil {
+			writeDBError(c, err)
+			return
+		}
+	}
+	if err := db.Create(record).Error; err != nil {
 		writeDBError(c, err)
 		return
+	}
+	if lead, ok := record.(*crmmodel.Lead); ok {
+		dispatchLeadCreated(db, lead)
 	}
 	c.JSON(http.StatusCreated, record)
 }
@@ -217,6 +227,9 @@ func (h *Controller) Update(c *gin.Context) {
 	if err := binding.Validator.ValidateStruct(record); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+	if lead, ok := record.(*crmmodel.Lead); ok {
+		updates["score"] = calculateLeadScore(lead, nil)
 	}
 	if err := db.Model(record).Updates(updates).Error; err != nil {
 		writeDBError(c, err)

@@ -49,6 +49,7 @@ import RightSidebar from "./RightSidebar";
 import { BASE_STORAGE_URL } from "@/lib/utils";
 import NotificationBell from "./dashboard/NotificationBell";
 import SystemSettings from "./dashboard/SystemSettings";
+import AppSwitcherMenu from "./AppSwitcherMenu";
 
 // --- MODAL EDIT PROFIL ---
 const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
@@ -283,7 +284,8 @@ const Sidebar = ({
         </Button>
 
         {settings?.app_name && (
-          <div className="mb-6 flex flex-col gap-2">
+          <AppSwitcherMenu onLogout={onLogout} side="right" align="start">
+          <button type="button" className="mb-6 flex w-full flex-col gap-2 rounded-xl p-1 text-left outline-none transition hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500">
             <div className={clsx("flex items-center gap-3", !isOpen && "justify-center")}>
               {settings?.app_logo ? (
                 <img
@@ -325,7 +327,8 @@ const Sidebar = ({
                 </span>
               </div>
             )}
-          </div>
+          </button>
+          </AppSwitcherMenu>
         )}
 
         <nav className="flex-grow overflow-y-auto pr-2">

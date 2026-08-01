@@ -9,10 +9,21 @@ import (
 type Lead struct {
 	Base
 	Name                   string     `json:"name" gorm:"type:varchar(150);not null;index" binding:"required,max=150"`
+	ExternalID             string     `json:"external_id" gorm:"type:varchar(128);index" binding:"max=128"`
 	Email                  string     `json:"email" gorm:"type:varchar(150);index" binding:"omitempty,email,max=150"`
 	Phone                  string     `json:"phone" gorm:"type:varchar(30);index" binding:"max=30"`
 	CompanyName            string     `json:"company_name" gorm:"type:varchar(150);index" binding:"max=150"`
 	Source                 string     `json:"source" gorm:"type:varchar(50);index" binding:"max=50"`
+	SourceDetail           string     `json:"source_detail" gorm:"type:varchar(150);index" binding:"max=150"`
+	Region                 string     `json:"region" gorm:"type:varchar(100);index" binding:"max=100"`
+	ProductInterest        string     `json:"product_interest" gorm:"type:varchar(150);index" binding:"max=150"`
+	UTMSource              string     `json:"utm_source" gorm:"type:varchar(100);index" binding:"max=100"`
+	UTMMedium              string     `json:"utm_medium" gorm:"type:varchar(100);index" binding:"max=100"`
+	UTMCampaign            string     `json:"utm_campaign" gorm:"type:varchar(150);index" binding:"max=150"`
+	GCLID                  string     `json:"gclid" gorm:"type:varchar(255);index" binding:"max=255"`
+	FBCLID                 string     `json:"fbclid" gorm:"type:varchar(255);index" binding:"max=255"`
+	TTCLID                 string     `json:"ttclid" gorm:"type:varchar(255);index" binding:"max=255"`
+	AnalyticsClientID      string     `json:"analytics_client_id" gorm:"type:varchar(128);index" binding:"max=128"`
 	Status                 string     `json:"status" gorm:"type:varchar(30);not null;default:'new';index" binding:"omitempty,oneof=new contacted qualified unqualified converted"`
 	Score                  int        `json:"score" gorm:"not null;default:0" binding:"min=0"`
 	AssignedTo             *uuid.UUID `json:"assigned_to" gorm:"type:char(36);index"`

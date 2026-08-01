@@ -13,6 +13,7 @@ func Migrate(db *gorm.DB) error {
 		&Activity{}, &Product{}, &Quotation{}, &QuotationItem{}, &SalesOrder{},
 		&Invoice{}, &Ticket{}, &TicketComment{}, &Campaign{}, &CampaignMember{},
 		&Note{}, &Attachment{}, &Tag{}, &Taggable{},
+		&LeadAutomationConfig{}, &Integration{},
 	}
 	if err := db.AutoMigrate(models...); err != nil {
 		return fmt.Errorf("auto migrate CRM models: %w", err)
@@ -29,6 +30,8 @@ func Migrate(db *gorm.DB) error {
 		{&Invoice{}, "idx_crm_invoice_tenant_number", "tenant_id, invoice_number"},
 		{&Tag{}, "idx_crm_tag_tenant_name", "tenant_id, name"},
 		{&Taggable{}, "idx_crm_taggable_unique", "tenant_id, tag_id, related_to_type, related_to_id"},
+		{&LeadAutomationConfig{}, "idx_crm_automation_tenant", "tenant_id"},
+		{&Integration{}, "idx_crm_integration_tenant_provider", "tenant_id, provider"},
 	}
 	for _, index := range indexes {
 		if db.Migrator().HasIndex(index.model, index.name) {
