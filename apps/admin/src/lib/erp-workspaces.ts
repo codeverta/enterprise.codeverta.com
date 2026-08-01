@@ -487,6 +487,7 @@ const selling = workspace(
     ["Orders", "/desk/selling/orders"],
     ["Subscriptions", "/desk/selling/subscriptions"],
     ["Promotions", "/desk/selling/promotions"],
+    ["Loyalty Program", "/desk/loyalty-program"],
   ],
   [
     group("POS", sellingHome, documentLinks([

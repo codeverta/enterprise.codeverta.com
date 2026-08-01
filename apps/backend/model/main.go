@@ -6,6 +6,7 @@ import (
 	"gin-template/common"
 	crmmodel "gin-template/model/crm"
 	buyingmodel "gin-template/modules/buying/model"
+	sellingmodel "gin-template/modules/selling/model"
 	"os"
 	"regexp"
 	"strconv"
@@ -70,6 +71,9 @@ func InitDB() error {
 		return err
 	}
 	if err := buyingmodel.Migrate(db); err != nil {
+		return err
+	}
+	if err := sellingmodel.Migrate(db); err != nil {
 		return err
 	}
 

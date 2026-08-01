@@ -1,4 +1,4 @@
-import axios from '@codeverta/axios';
+import axios from 'axios';
 import { BASE_API_URL } from './utils'; // Asumsi BASE_API_URL sudah terdefinisi
 import { toast } from 'sonner'; // Asumsi Anda menggunakan Sonner untuk notifikasi
 

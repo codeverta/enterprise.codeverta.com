@@ -39,8 +39,8 @@
   --color-cyan: var(--brand-cyan);
   --color-pink: var(--brand-pink);
   --color-orange: var(--brand-orange);
-  --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
-  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
+  --font-display: "DM Sans", system-ui, sans-serif;
 }
 
 :root {

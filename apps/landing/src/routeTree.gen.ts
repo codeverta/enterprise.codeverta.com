@@ -9,21 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as PembayaranRouteImport } from './routes/pembayaran'
-import { Route as HargaRouteImport } from './routes/harga'
-import { Route as AktivasiRouteImport } from './routes/aktivasi'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AktivasiRouteImport } from './routes/aktivasi'
+import { Route as PembayaranRouteImport } from './routes/pembayaran'
 import { Route as PaymentsIndexRouteImport } from './routes/payments/index'
-import { Route as KelasCourseIdRouteImport } from './routes/kelas/$courseId'
+import { Route as ProductsCourseIdRouteImport } from './routes/products/$courseId'
 
-const PembayaranRoute = PembayaranRouteImport.update({
-  id: '/pembayaran',
-  path: '/pembayaran',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HargaRoute = HargaRouteImport.update({
-  id: '/harga',
-  path: '/harga',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AktivasiRoute = AktivasiRouteImport.update({
@@ -31,9 +25,9 @@ const AktivasiRoute = AktivasiRouteImport.update({
   path: '/aktivasi',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const PembayaranRoute = PembayaranRouteImport.update({
+  id: '/pembayaran',
+  path: '/pembayaran',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentsIndexRoute = PaymentsIndexRouteImport.update({
@@ -41,87 +35,64 @@ const PaymentsIndexRoute = PaymentsIndexRouteImport.update({
   path: '/payments/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const KelasCourseIdRoute = KelasCourseIdRouteImport.update({
-  id: '/kelas/$courseId',
-  path: '/kelas/$courseId',
+const ProductsCourseIdRoute = ProductsCourseIdRouteImport.update({
+  id: '/products/$courseId',
+  path: '/products/$courseId',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/aktivasi': typeof AktivasiRoute
-  '/harga': typeof HargaRoute
   '/pembayaran': typeof PembayaranRoute
-  '/kelas/$courseId': typeof KelasCourseIdRoute
+  '/products/$courseId': typeof ProductsCourseIdRoute
   '/payments/': typeof PaymentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/aktivasi': typeof AktivasiRoute
-  '/harga': typeof HargaRoute
   '/pembayaran': typeof PembayaranRoute
-  '/kelas/$courseId': typeof KelasCourseIdRoute
+  '/products/$courseId': typeof ProductsCourseIdRoute
   '/payments': typeof PaymentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/aktivasi': typeof AktivasiRoute
-  '/harga': typeof HargaRoute
   '/pembayaran': typeof PembayaranRoute
-  '/kelas/$courseId': typeof KelasCourseIdRoute
+  '/products/$courseId': typeof ProductsCourseIdRoute
   '/payments/': typeof PaymentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/aktivasi'
-    | '/harga'
-    | '/pembayaran'
-    | '/kelas/$courseId'
-    | '/payments/'
+    '/' | '/aktivasi' | '/pembayaran' | '/products/$courseId' | '/payments/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/aktivasi'
-    | '/harga'
-    | '/pembayaran'
-    | '/kelas/$courseId'
-    | '/payments'
+  to: '/' | '/aktivasi' | '/pembayaran' | '/products/$courseId' | '/payments'
   id:
     | '__root__'
     | '/'
     | '/aktivasi'
-    | '/harga'
     | '/pembayaran'
-    | '/kelas/$courseId'
+    | '/products/$courseId'
     | '/payments/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AktivasiRoute: typeof AktivasiRoute
-  HargaRoute: typeof HargaRoute
   PembayaranRoute: typeof PembayaranRoute
-  KelasCourseIdRoute: typeof KelasCourseIdRoute
+  ProductsCourseIdRoute: typeof ProductsCourseIdRoute
   PaymentsIndexRoute: typeof PaymentsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/pembayaran': {
-      id: '/pembayaran'
-      path: '/pembayaran'
-      fullPath: '/pembayaran'
-      preLoaderRoute: typeof PembayaranRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/harga': {
-      id: '/harga'
-      path: '/harga'
-      fullPath: '/harga'
-      preLoaderRoute: typeof HargaRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/aktivasi': {
@@ -131,11 +102,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AktivasiRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/pembayaran': {
+      id: '/pembayaran'
+      path: '/pembayaran'
+      fullPath: '/pembayaran'
+      preLoaderRoute: typeof PembayaranRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/payments/': {
@@ -145,11 +116,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/kelas/$courseId': {
-      id: '/kelas/$courseId'
-      path: '/kelas/$courseId'
-      fullPath: '/kelas/$courseId'
-      preLoaderRoute: typeof KelasCourseIdRouteImport
+    '/products/$courseId': {
+      id: '/products/$courseId'
+      path: '/products/$courseId'
+      fullPath: '/products/$courseId'
+      preLoaderRoute: typeof ProductsCourseIdRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -158,9 +129,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AktivasiRoute: AktivasiRoute,
-  HargaRoute: HargaRoute,
   PembayaranRoute: PembayaranRoute,
-  KelasCourseIdRoute: KelasCourseIdRoute,
+  ProductsCourseIdRoute: ProductsCourseIdRoute,
   PaymentsIndexRoute: PaymentsIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -71,6 +71,8 @@ const router = createBrowserRouter([
           { path: "desk/selling/orders/*", element: <SellingModule /> },
           { path: "desk/selling/subscriptions/*", element: <SellingModule /> },
           { path: "desk/selling/promotions/*", element: <SellingModule /> },
+          { path: "desk/loyalty-program/*", element: <SellingModule /> },
+          { path: "desk/loyalty-point-entry/*", element: <SellingModule /> },
           { path: "desk/accounting/finance/*", element: <AccountingModule /> },
           { path: "desk/communication/*", element: <CommunicationModule /> },
           { path: "desk/administration/*", element: <AdministrationModule /> },
