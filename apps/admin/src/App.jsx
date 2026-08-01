@@ -65,6 +65,7 @@ const router = createBrowserRouter([
           { path: "desk", element: <DeskPage /> },
           { path: "desk/crm/*", element: <CRMPage /> },
           { path: "desk/purchase-order/*", element: <BuyingModule /> },
+          { path: "desk/purchase-invoice/*", element: <BuyingModule /> },
           { path: "desk/organization/users/*", element: <OrganizationModule /> },
           { path: "desk/organization/tenants/*", element: <OrganizationModule /> },
           { path: "desk/selling/orders/*", element: <SellingModule /> },

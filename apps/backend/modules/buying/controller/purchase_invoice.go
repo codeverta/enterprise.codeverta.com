@@ -198,6 +198,10 @@ func (h *PurchaseInvoiceController) Options(c *gin.Context) {
 		"projects":     merge(distinct(&buyingmodel.PurchaseInvoice{}, "project"), distinct(&buyingmodel.PurchaseOrder{}, "project")),
 		"currencies":   []string{"IDR", "USD", "SGD", "EUR"}, "price_lists": []string{"Standard Buying"},
 		"uoms": []string{"Unit", "Pcs", "Box", "Kg", "Meter", "Set"}, "modes_of_payment": []string{"Cash", "Bank Transfer", "Credit Card", "Cheque"},
+		"accounts": merge(
+			distinct(&buyingmodel.PurchaseInvoice{}, "cash_bank_account"),
+			distinct(&buyingmodel.PurchaseInvoiceTax{}, "account_head"),
+		),
 	})
 }
 
