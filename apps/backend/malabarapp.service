@@ -1,0 +1,16 @@
+[Unit]
+Description=Malabar Trail Run App
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+ExecStart=/var/www/html/malabar-trail-run/backend/malabarapp
+WorkingDirectory=/var/www/html/malabar-trail-run/backend
+# Load env vars jika ada
+EnvironmentFile=/var/www/html/malabar-trail-run/backend/.env
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

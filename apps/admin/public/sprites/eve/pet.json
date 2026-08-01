@@ -1,0 +1,6 @@
+{
+  "id": "eve",
+  "displayName": "EVE",
+  "description": "A tiny movie-faithful EVE robot companion with expressive blue LED eyes, simplified into Codex digital pet style.",
+  "spritesheetPath": "spritesheet.webp"
+}

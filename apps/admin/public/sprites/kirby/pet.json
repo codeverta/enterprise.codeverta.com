@@ -1,0 +1,6 @@
+{
+  "id": "Kirby",
+  "displayName": "Kirby",
+  "description": "A Kirby-themed pink pet with clean padded Codex frames.",
+  "spritesheetPath": "spritesheet.png"
+}

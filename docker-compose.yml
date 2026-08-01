@@ -1,0 +1,45 @@
+services:
+  proxy:
+    image: haproxy:3.0-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on: [admin-frontend, backend-go]
+    networks: [erp_net]
+
+  admin-frontend:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args: [BUILD_MODE=production]
+    networks: [erp_net]
+
+  backend-go:
+    build:
+      context: ./apps/backend
+      dockerfile: Dockerfile
+    env_file: [./apps/backend/.env]
+    depends_on: [mysql, redis]
+    networks: [erp_net]
+
+  mysql:
+    image: mariadb:11.8
+    environment:
+      MYSQL_DATABASE: codeverta_erp
+      MYSQL_USER: codeverta
+      MYSQL_PASSWORD: change-me
+      MYSQL_ROOT_PASSWORD: change-root-password
+    volumes: [erp_db_data:/var/lib/mysql]
+    ports: ["127.0.0.1:3307:3306"]
+    networks: [erp_net]
+
+  redis:
+    image: redis:alpine
+    networks: [erp_net]
+
+networks:
+  erp_net:
+
+volumes:
+  erp_db_data:

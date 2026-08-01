@@ -1,0 +1,182 @@
+openapi: 3.0.0
+info:
+  title: Event Registration API Shield
+  version: 1.0.0
+servers:
+  - url: https://api-staging.malabartrailrun.id # Ganti dengan domain asli Anda
+paths:
+  /api/participants/reserve:
+    post:
+      summary: Reserve Tickets
+      operationId: createReservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tickets
+              properties:
+                tickets:
+                  type: object
+                  description: Map of Category ID to Quantity
+                  additionalProperties:
+                    type: integer
+                    minimum: 1
+                    maximum: 20 # Mencegah integer overflow attack
+                promo_code:
+                  type: string
+                  maxLength: 20
+      responses:
+        '201':
+          description: Reservation created
+        '400':
+          description: Invalid input
+
+  /api/participants/register:
+    post:
+      summary: Finalize Registration Order
+      operationId: registerEvent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reservation_id
+                - pic_name
+                - pic_email
+                - pic_phone
+                - participants
+              properties:
+                reservation_id:
+                  type: string
+                  format: uuid
+                pic_name:
+                  type: string
+                  minLength: 3
+                  maxLength: 255
+                pic_email:
+                  type: string
+                  format: email
+                pic_phone:
+                  type: string
+                  minLength: 8
+                  maxLength: 20
+                promo_code:
+                  type: string
+                  maxLength: 20
+                participants:
+                  type: array
+                  minItems: 1
+                  maxItems: 20 # Sesuai konstanta MAX_PARTICIPANTS_PER_ORDER
+                  items:
+                    $ref: '#/components/schemas/ParticipantRequest'
+      responses:
+        '200':
+          description: Order created
+        '400':
+          description: Invalid input
+
+components:
+  schemas:
+    ParticipantRequest:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - bib_name
+        - email
+        - phone_number
+        - ticket_category_id
+        - date_of_birth
+        - id_type
+        - id_number
+        - blood_type
+        - jersey_size
+        - jersey_type
+        - gender
+        - country
+        - province
+        - city
+        - address
+        - emergency_contact_name
+        - emergency_contact_numbers
+        - relationship_with_emergency_contacts
+      properties:
+        first_name:
+          type: string
+          minLength: 3
+          maxLength: 255
+        last_name:
+          type: string
+          minLength: 3
+          maxLength: 255
+        bib_name:
+          type: string
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+          minLength: 10
+          maxLength: 15
+        ticket_category_id:
+          type: string
+          format: uuid
+        date_of_birth:
+          type: string
+          format: date # Format YYYY-MM-DD
+          example: "1990-01-01"
+        id_type:
+          type: string
+          enum: [KTP, Passport, KITAS] # Sesuai validasi oneof
+        id_number:
+          type: string
+          minLength: 5
+          maxLength: 50
+        blood_type:
+          type: string
+          enum: [A, B, AB, O] # Sesuai validasi oneof
+        jersey_size:
+          type: string
+          maxLength: 10
+        jersey_type:
+          type: string
+          maxLength: 20 # Asumsi Enum dari model.JerseyType
+        gender:
+          type: string
+          enum: [Male, Female]
+        country:
+          type: string
+          maxLength: 100
+        province:
+          type: string
+          maxLength: 100
+        city:
+          type: string
+          maxLength: 100
+        address:
+          type: string
+          maxLength: 500
+        tracking_profile_link:
+          type: string
+          format: uri # Harus URL valid
+        emergency_contact_name:
+          type: string
+          maxLength: 255
+        emergency_contact_numbers:
+          type: string
+          maxLength: 20
+        relationship_with_emergency_contacts:
+          type: string
+          maxLength: 50
+        community_name:
+          type: string
+          maxLength: 150
+        special_conditional_medic:
+          type: string
+          maxLength: 500

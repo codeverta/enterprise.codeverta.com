@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice #{{.OrderID}}</title>
+    <style>
+        /* Reset & Base Config */
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            font-size: 14px;
+        }
+        
+        /* Container A4 width constraint */
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        /* Header Section */
+        .header {
+            display: table;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        .header-left, .header-right {
+            display: table-cell;
+            vertical-align: top;
+        }
+        .header-right {
+            text-align: right;
+        }
+        
+        /* Logo & Company Name */
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .company-details {
+            font-size: 12px;
+            color: #777;
+        }
+
+        /* Invoice Meta Data */
+        .invoice-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .invoice-details {
+            margin-bottom: 5px;
+        }
+
+        /* Bill To Section */
+        .bill-to {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .label {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10px;
+            color: #999;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: bold;
+            text-align: left;
+            padding: 12px 15px;
+            border-bottom: 2px solid #ddd;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        /* Zebra Striping */
+        tr:nth-child(even) {
+            background-color: #fcfcfc;
+        }
+
+        /* Typography for Items */
+        .item-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .item-meta {
+            font-size: 12px;
+            color: #777;
+            margin-top: 2px;
+        }
+
+        /* Totals Section */
+        .totals-container {
+            display: table;
+            width: 100%;
+        }
+        .totals-spacer {
+            display: table-cell;
+            width: 60%;
+        }
+        .totals-box {
+            display: table-cell;
+            width: 40%;
+        }
+        
+        .total-row {
+            display: table;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .total-label, .total-value {
+            display: table-cell;
+        }
+        .total-label {
+            text-align: left;
+            padding-right: 20px;
+            color: #777;
+        }
+        .total-value {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .grand-total {
+            border-top: 2px solid #2c3e50;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+
+        /* Status Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            background: #e6fffa;
+            color: #00b894;
+            border: 1px solid #00b894;
+            border-radius: 4px;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #aaa;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        
+        /* Helper to align right */
+        .text-right { text-align: right; }
+    </style>
+</head>
+<body>
+
+<div class="invoice-box">
+    <div class="header">
+        <div class="header-left">
+            <div class="company-name">
+                {{if .LogoImageBase64}}
+                    <img src="{{.LogoImageBase64 | trustURL}}" alt="Logo Malabar" style="height: 60px; width: auto;" />
+                {{else}}
+                    🏃
+                {{end}}
+            </div> 
+            
+            <div class="company-details">
+                    
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="invoice-title"></div>
+            <div class="invoice-details">Order ID: <strong>#{{.OrderID}}</strong></div>
+            <div class="invoice-details">Date: {{.PaidAt}}</div>
+            <div class="status-badge">PAID</div>
+        </div>
+    </div>
+
+    <div class="bill-to">
+        <span class="label"></span>
+        <strong></strong>
+    </div>
+
+<table>
+        <thead>
+            <tr>
+                <th width="15%">Code</th>           
+                <th width="35%">Participant</th>    
+                <th width="20%">Category</th>
+                <th width="15%">Type</th>
+                <th width="15%" class="text-right">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Participants}}
+            <tr>
+                <td>{{.Code}}</td> <td>
+                    <div class="item-name">{{.Name}}</div>
+                    <div class="item-meta">Bib: {{.BibName}}</div>
+                </td>
+                <td>{{.Category}}</td>
+                <td>{{.PriceType}}</td>
+                <td class="text-right">{{.Price}}</td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+
+    <div class="totals-container">
+        <div class="totals-spacer"></div> 
+        
+            <div class="totals-box">
+            
+            <div class="total-row">
+                <span class="total-label">Subtotal</span>
+                <span class="total-value">Rp {{.TotalOriginalPrice}}</span>
+            </div>
+
+            {{if ne .TotalDiscount "0"}}
+            {{if ne .TotalDiscount ""}}
+            <div class="total-row" style="color: #d63031;">
+                <span class="total-label">Discount</span>
+                <span class="total-value">Rp - {{.TotalDiscount}}</span>
+            </div>
+            {{end}}
+            {{end}}
+
+            {{if ne .HandlingFee "0"}}
+            <div class="total-row">
+                <span class="total-label">Handling Fee</span>
+                <span class="total-value">Rp {{.HandlingFee}}</span>
+            </div>
+            {{end}}
+
+            {{if ne .AdminFee "0"}}
+            <div class="total-row">
+                <span class="total-label">Admin Fee</span>
+                <span class="total-value">Rp {{.AdminFee}}</span>
+            </div>
+            {{end}}
+            <div class="total-row grand-total">
+                <span class="total-label">Total</span>
+                <span class="total-value">Rp {{.FinalAmount}}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Thank you for your registration! See you at the race line.<br>
+        If you have any questions, please contact support.
+    </div>
+</div>
+
+</body>
+</html>

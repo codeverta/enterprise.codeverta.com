@@ -1,0 +1,25 @@
+# Dependency directories
+node_modules
+/apps/*/node_modules
+
+# Build outputs
+dist
+build
+.next
+out
+
+# Version control
+.git
+.gitignore
+
+# Environment files
+.env*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+
+coscli_output
+coscli_log
