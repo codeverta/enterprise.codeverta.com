@@ -47,7 +47,7 @@ const processQueue = (error, token = null) => {
 const logOut = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user'); // Jika Anda menyimpan data user
+    localStorage.removeItem('lumea_buyer_user');
     toast.error("Sesi berakhir. Silakan login kembali.");
 };
 
@@ -76,9 +76,12 @@ api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
+
+		const isAuthRequest = ['/auth/login', '/auth/register', '/auth/refresh-token']
+			.some((path) => String(originalRequest?.url || '').includes(path));
         
         // Cek jika status 401 (Unauthorized) DAN permintaan belum dicoba ulang
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
             
             const refreshToken = localStorage.getItem('refreshToken');
 

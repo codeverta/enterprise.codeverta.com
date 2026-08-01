@@ -1,5 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useDeferredValue, useState } from "react";
+import { toast } from "sonner";
 import {
   ArrowRight,
   ChevronDown,
@@ -16,8 +18,20 @@ import {
   UserRound,
   X,
 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { useCommerce } from "@/lib/commerce";
+import {
+  formatPrice,
+  formatReviewCount,
+  getStoreCategories,
+  getStoreProducts,
+  type StoreProduct,
+} from "@/lib/store-data";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    category: typeof search.category === "string" ? search.category : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "LUMÉA — Your Beauty, Your Way" },
@@ -35,74 +49,6 @@ export const Route = createFileRoute("/")({
   }),
   component: BeautyHomePage,
 });
-
-const navItems = [
-  "New",
-  "Makeup",
-  "Skincare",
-  "Hair",
-  "Fragrance",
-  "Bath & Body",
-  "Tools & Brushes",
-  "Brands",
-  "Gifts",
-  "Sale",
-];
-
-const products = [
-  {
-    brand: "Curology",
-    name: "Everyday Skin Essential",
-    price: "Rp 489.000",
-    badge: "NEW",
-    image: "/beauty/skincare.jpg",
-    rating: "4.9",
-    reviews: "326",
-  },
-  {
-    brand: "The Beauty Edit",
-    name: "Complete Makeup Essentials Set",
-    price: "Rp 895.000",
-    badge: "ONLY AT LUMÉA",
-    image: "/beauty/lipstick.jpg",
-    rating: "4.8",
-    reviews: "5.6k",
-  },
-  {
-    brand: "LUMÉA Collection",
-    name: "Soft Focus Makeup Essentials",
-    price: "Rp 570.000",
-    badge: "NEW",
-    image: "/beauty/makeup.jpg",
-    rating: "4.7",
-    reviews: "824",
-  },
-  {
-    brand: "Nécessaire",
-    name: "The Body Lotion Fragrance-Free",
-    price: "Rp 625.000",
-    badge: "BESTSELLER",
-    image: "/beauty/serum.jpg",
-    rating: "4.9",
-    reviews: "6.3k",
-  },
-  {
-    brand: "Chanel",
-    name: "N°5 Eau De Parfum",
-    price: "Rp 2.850.000",
-    badge: "ONLY AT LUMÉA",
-    image: "/beauty/perfume.jpg",
-    rating: "4.8",
-    reviews: "3.8k",
-  },
-];
-
-const categories = [
-  { label: "Makeup", image: "/beauty/makeup.jpg", position: "center" },
-  { label: "Skincare", image: "/beauty/skincare.jpg", position: "center 42%" },
-  { label: "Fragrance", image: "/beauty/perfume.jpg", position: "center 55%" },
-  { label: "Bath & Body", image: "/beauty/serum.jpg", position: "center 48%" },
-];
 
 function IconButton({
   label,
@@ -127,36 +73,64 @@ function IconButton({
 
 function ProductCard({
   product,
-  onAdd,
 }: {
-  product: (typeof products)[number];
-  onAdd: () => void;
+  product: StoreProduct;
 }) {
-  const [liked, setLiked] = useState(false);
+  const { addToCart, toggleWishlist, isWishlisted } = useCommerce();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const liked = isWishlisted(product.id);
+
+  const requireBuyer = () => {
+    if (isAuthenticated) return true;
+    navigate({ to: "/login", search: { redirect: `/product/${product.slug}` } });
+    return false;
+  };
+
+  const addBag = async () => {
+    if (!requireBuyer()) return;
+    try {
+      await addToCart(product);
+      toast.success("Produk ditambahkan ke bag");
+    } catch {
+      toast.error("Produk gagal ditambahkan ke bag");
+    }
+  };
+
+  const toggleLike = async () => {
+    if (!requireBuyer()) return;
+    try {
+      await toggleWishlist(product);
+    } catch {
+      toast.error("Wishlist gagal diperbarui");
+    }
+  };
 
   return (
     <article className="group min-w-[74vw] snap-start sm:min-w-[46%] lg:min-w-0">
       <div className="relative aspect-[4/5] overflow-hidden bg-[#f6f3f0]">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
-          loading="lazy"
-        />
-        <span className="absolute left-3 top-3 bg-white px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] text-black">
+        <Link to="/product/$slug" params={{ slug: product.slug }} className="block h-full">
+          <img
+            src={product.image}
+            alt={product.name}
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+            loading="lazy"
+          />
+        </Link>
+        {product.badge && <span className="absolute left-3 top-3 bg-white px-2.5 py-1 text-[10px] font-bold tracking-[0.15em] text-black">
           {product.badge}
-        </span>
+        </span>}
         <button
           type="button"
           aria-label={liked ? "Hapus dari wishlist" : "Tambah ke wishlist"}
-          onClick={() => setLiked((value) => !value)}
+          onClick={toggleLike}
           className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 shadow-sm transition hover:scale-105"
         >
           <Heart className={`h-[18px] w-[18px] ${liked ? "fill-[#db3150] text-[#db3150]" : "text-black"}`} />
         </button>
         <button
           type="button"
-          onClick={onAdd}
+          onClick={addBag}
           className="absolute inset-x-3 bottom-3 translate-y-0 bg-black py-3 text-xs font-bold tracking-[0.14em] text-white opacity-100 transition duration-300 hover:bg-[#d9294f] focus:translate-y-0 focus:opacity-100 lg:translate-y-3 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100"
         >
           ADD TO BAG
@@ -164,33 +138,47 @@ function ProductCard({
       </div>
       <div className="pt-4">
         <p className="text-[11px] font-bold uppercase tracking-[0.13em] text-neutral-600">{product.brand}</p>
-        <h3 className="mt-1.5 min-h-11 text-sm font-medium leading-snug text-neutral-950">{product.name}</h3>
+        <Link to="/product/$slug" params={{ slug: product.slug }}><h3 className="mt-1.5 min-h-11 text-sm font-medium leading-snug text-neutral-950 hover:underline">{product.name}</h3></Link>
         <div className="mt-2 flex items-center gap-1.5 text-xs text-neutral-500">
           <Star className="h-3.5 w-3.5 fill-black text-black" />
           <span className="font-semibold text-black">{product.rating}</span>
-          <span>({product.reviews})</span>
+          <span>({formatReviewCount(product.reviewCount)})</span>
         </div>
-        <p className="mt-2 text-sm font-bold text-neutral-950">{product.price}</p>
+        <p className="mt-2 text-sm font-bold text-neutral-950">{formatPrice(product.price)}</p>
       </div>
     </article>
   );
 }
 
 function BeautyHomePage() {
+  const { user, isAuthenticated } = useAuth();
+  const { cartCount } = useCommerce();
+  const { category } = Route.useSearch();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
   const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query.trim());
 
-  const searchResults = useMemo(() => {
-    if (!query.trim()) return [];
-    const normalized = query.toLowerCase();
-    return products.filter(
-      (product) =>
-        product.name.toLowerCase().includes(normalized) ||
-        product.brand.toLowerCase().includes(normalized),
-    );
-  }, [query]);
+  const categoriesQuery = useQuery({ queryKey: ["store-categories"], queryFn: getStoreCategories });
+  const productsQuery = useQuery({
+    queryKey: ["store-products", category || "all"],
+    queryFn: () => getStoreProducts({ category }),
+  });
+  const categories = categoriesQuery.data || [];
+  const storeProducts = productsQuery.data || [];
+  const navItems = ["New", ...categories.map((item) => item.name), "Brands", "Gifts", "Sale"];
+  const searchQuery = useQuery({
+    queryKey: ["store-products-search", deferredQuery],
+    queryFn: () => getStoreProducts({ query: deferredQuery }),
+    enabled: deferredQuery.length > 0,
+  });
+  const searchResults = deferredQuery ? searchQuery.data || [] : [];
+
+  const selectCategory = (slug?: string) => {
+    navigate({ to: "/", search: { category: slug } });
+    window.setTimeout(() => document.getElementById("new")?.scrollIntoView({ behavior: "smooth" }), 0);
+  };
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -203,13 +191,13 @@ function BeautyHomePage() {
       <div className="hidden bg-black text-white lg:block">
         <div className="mx-auto flex h-11 max-w-[1440px] items-center justify-between px-8 text-xs">
           <div className="flex items-center gap-6">
-            <a href="#login" className="flex items-center gap-2 hover:text-white/70"><UserRound className="h-4 w-4" /> Masuk / Daftar</a>
+            <a href={isAuthenticated ? "/account" : "/login"} className="flex items-center gap-2 hover:text-white/70"><UserRound className="h-4 w-4" /> {isAuthenticated ? user?.fullName : "Masuk / Daftar"}</a>
             <a href="#pass" className="flex items-center gap-2 hover:text-white/70"><Sparkles className="h-4 w-4" /> Beauty Circle</a>
           </div>
           <div className="flex items-center gap-6">
             <button type="button" className="flex items-center gap-1.5 hover:text-white/70"><Globe2 className="h-4 w-4" /> ID <ChevronDown className="h-3 w-3" /></button>
             <a href="#stores" className="flex items-center gap-2 hover:text-white/70"><MapPin className="h-4 w-4" /> Store & Events</a>
-            <a href="#wishlist" className="flex items-center gap-2 hover:text-white/70"><Heart className="h-4 w-4" /> Wishlist</a>
+            <a href={isAuthenticated ? "/account?tab=wishlist" : "/login?redirect=/account?tab=wishlist"} className="flex items-center gap-2 hover:text-white/70"><Heart className="h-4 w-4" /> Wishlist</a>
           </div>
         </div>
       </div>
@@ -230,17 +218,15 @@ function BeautyHomePage() {
           </div>
           <div className="ml-auto flex items-center gap-0.5">
             <IconButton label="Cari" onClick={() => setSearchOpen(true)}><Search className="h-5 w-5 lg:hidden" /></IconButton>
-            <IconButton label="Akun"><UserRound className="h-5 w-5" /></IconButton>
-            <IconButton label="Tas belanja">
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#e4003f] px-1 text-[10px] font-bold text-white">{cartCount}</span>}
-            </IconButton>
+            <a href={isAuthenticated ? "/account" : "/login"} aria-label="Akun" className="flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-neutral-100"><UserRound className="h-5 w-5" /></a>
+            <a href="/checkout" aria-label="Tas belanja" className="relative flex h-10 w-10 items-center justify-center rounded-full transition hover:bg-neutral-100"><ShoppingBag className="h-5 w-5" />{cartCount > 0 && <span className="absolute right-0.5 top-0.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#e4003f] px-1 text-[10px] font-bold text-white">{cartCount}</span>}</a>
           </div>
         </div>
         <nav className="mx-auto hidden h-12 max-w-[1440px] items-center justify-between px-8 lg:flex">
-          {navItems.map((item) => (
-            <a key={item} href={`#${item.toLowerCase().replaceAll(" ", "-")}`} className={`text-[13px] font-bold transition hover:text-[#e4003f] ${item === "Sale" ? "text-[#e4003f]" : ""}`}>{item}</a>
-          ))}
+          {navItems.map((item) => {
+            const itemCategory = categories.find((candidate) => candidate.name === item);
+            return <button key={item} type="button" onClick={() => itemCategory ? selectCategory(itemCategory.slug) : document.getElementById(item === "New" ? "new" : item.toLowerCase())?.scrollIntoView({ behavior: "smooth" })} className={`text-[13px] font-bold transition hover:text-[#e4003f] ${item === "Sale" ? "text-[#e4003f]" : ""}`}>{item}</button>;
+          })}
         </nav>
       </header>
 
@@ -279,14 +265,16 @@ function BeautyHomePage() {
           <div className="mb-9 flex items-end justify-between gap-5">
             <div>
               <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#d9294f]">Just landed</p>
-              <h2 className="font-serif text-4xl tracking-tight sm:text-5xl">New arrivals <span aria-hidden>✦</span></h2>
+              <h2 className="font-serif text-4xl tracking-tight sm:text-5xl">{category ? categories.find((item) => item.slug === category)?.name || "Products" : "New arrivals"} <span aria-hidden>✦</span></h2>
               <p className="mt-3 max-w-xl text-sm text-neutral-600 sm:text-base">Fresh drops, cult favourites, dan obsesi baru Anda—dipilih oleh beauty experts kami.</p>
             </div>
             <a href="#all-products" className="hidden items-center gap-2 border-b border-black pb-1 text-xs font-bold tracking-[0.12em] sm:flex">VIEW ALL <ArrowRight className="h-3.5 w-3.5" /></a>
           </div>
           <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 lg:grid lg:grid-cols-5 lg:overflow-visible lg:pb-0">
-            {products.map((product) => <ProductCard key={product.name} product={product} onAdd={() => setCartCount((count) => count + 1)} />)}
+            {productsQuery.isLoading && Array.from({ length: 5 }).map((_, index) => <div key={index} className="min-w-[74vw] animate-pulse sm:min-w-[46%] lg:min-w-0"><div className="aspect-[4/5] bg-neutral-100" /><div className="mt-4 h-4 w-2/3 bg-neutral-100" /><div className="mt-3 h-4 bg-neutral-100" /></div>)}
+            {storeProducts.map((product) => <ProductCard key={product.id} product={product} />)}
           </div>
+          {!productsQuery.isLoading && storeProducts.length === 0 && <p className="py-14 text-center text-sm text-neutral-500">Produk belum tersedia untuk kategori ini.</p>}
         </section>
 
         <section className="mx-auto grid max-w-[1440px] gap-4 px-5 pb-16 sm:px-8 lg:grid-cols-2 lg:pb-24">
@@ -320,14 +308,14 @@ function BeautyHomePage() {
             </div>
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
               {categories.map((category) => (
-                <a key={category.label} href={`#${category.label.toLowerCase().replaceAll(" ", "-")}`} className="group relative aspect-[3/4] overflow-hidden bg-neutral-200">
-                  <img src={category.image} alt={category.label} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" style={{ objectPosition: category.position }} />
+                <button type="button" key={category.id} onClick={() => selectCategory(category.slug)} className="group relative aspect-[3/4] overflow-hidden bg-neutral-200 text-left">
+                  <img src={category.image} alt={category.name} loading="lazy" className="h-full w-full object-cover transition duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 flex items-center justify-between p-4 text-white sm:p-6">
-                    <h3 className="font-serif text-2xl sm:text-3xl">{category.label}</h3>
+                    <h3 className="font-serif text-2xl sm:text-3xl">{category.name}</h3>
                     <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/60 transition group-hover:bg-white group-hover:text-black"><ArrowRight className="h-4 w-4" /></span>
                   </div>
-                </a>
+                </button>
               ))}
             </div>
           </div>
@@ -385,11 +373,11 @@ function BeautyHomePage() {
               <span className="text-2xl font-black tracking-[0.24em]">LUMÉA</span>
               <IconButton label="Tutup menu" onClick={closeMenu}><X className="h-6 w-6" /></IconButton>
             </div>
-            <nav className="py-4">{navItems.map((item) => <a key={item} href={`#${item.toLowerCase().replaceAll(" ", "-")}`} onClick={closeMenu} className="flex items-center justify-between border-b border-neutral-100 py-4 text-base font-semibold">{item}<ChevronRight className="h-4 w-4" /></a>)}</nav>
+            <nav className="py-4">{navItems.map((item) => { const itemCategory = categories.find((candidate) => candidate.name === item); return <button type="button" key={item} onClick={() => { closeMenu(); if (itemCategory) selectCategory(itemCategory.slug); }} className="flex w-full items-center justify-between border-b border-neutral-100 py-4 text-base font-semibold">{item}<ChevronRight className="h-4 w-4" /></button>; })}</nav>
             <div className="mt-4 space-y-4 text-sm text-neutral-600">
-              <a href="#login" className="flex items-center gap-3"><UserRound className="h-5 w-5" /> Masuk / Daftar</a>
+              <a href={isAuthenticated ? "/account" : "/login"} className="flex items-center gap-3"><UserRound className="h-5 w-5" /> {isAuthenticated ? "Akun Saya" : "Masuk / Daftar"}</a>
               <a href="#stores" className="flex items-center gap-3"><MapPin className="h-5 w-5" /> Store & Events</a>
-              <a href="#wishlist" className="flex items-center gap-3"><Heart className="h-5 w-5" /> Wishlist</a>
+              <a href={isAuthenticated ? "/account?tab=wishlist" : "/login"} className="flex items-center gap-3"><Heart className="h-5 w-5" /> Wishlist</a>
             </div>
           </aside>
         </div>
@@ -405,8 +393,8 @@ function BeautyHomePage() {
             </div>
             <div className="pt-8">
               {!query && <><p className="text-xs font-bold uppercase tracking-[0.15em]">Popular searches</p><div className="mt-4 flex flex-wrap gap-2">{["Lip gloss", "Serum", "Perfume", "Blush", "Sunscreen"].map((term) => <button key={term} type="button" onClick={() => setQuery(term)} className="rounded-full border border-neutral-300 px-4 py-2 text-sm hover:border-black">{term}</button>)}</div></>}
-              {query && <p className="mb-5 text-sm text-neutral-500">{searchResults.length} hasil untuk “{query}”</p>}
-              <div className="space-y-3">{searchResults.map((product) => <button key={product.name} type="button" className="flex w-full items-center gap-4 border-b border-neutral-200 py-3 text-left"><img src={product.image} alt="" className="h-20 w-16 object-cover" /><span className="flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">{product.brand}</span><span className="mt-1 block text-sm font-medium">{product.name}</span><span className="mt-1 block text-sm font-bold">{product.price}</span></span><ChevronRight className="h-4 w-4" /></button>)}</div>
+              {query && <p className="mb-5 text-sm text-neutral-500">{searchQuery.isFetching ? "Mencari produk..." : `${searchResults.length} hasil untuk “${query}”`}</p>}
+              <div className="space-y-3">{searchResults.map((product) => <Link key={product.name} to="/product/$slug" params={{ slug: product.slug }} onClick={() => setSearchOpen(false)} className="flex w-full items-center gap-4 border-b border-neutral-200 py-3 text-left"><img src={product.image} alt="" className="h-20 w-16 object-cover" /><span className="flex-1"><span className="block text-[10px] font-bold uppercase tracking-[0.12em] text-neutral-500">{product.brand}</span><span className="mt-1 block text-sm font-medium">{product.name}</span><span className="mt-1 block text-sm font-bold">{formatPrice(product.price)}</span></span><ChevronRight className="h-4 w-4" /></Link>)}</div>
             </div>
           </div>
         </div>
@@ -415,7 +403,7 @@ function BeautyHomePage() {
       {cartCount > 0 && (
         <div className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-4 whitespace-nowrap bg-black px-5 py-3 text-xs font-semibold text-white shadow-xl">
           <ShoppingBag className="h-4 w-4" /> {cartCount} item di bag
-          <button type="button" className="border-l border-white/30 pl-4 font-bold text-[#ff9aae]">VIEW BAG</button>
+          <a href="/checkout" className="border-l border-white/30 pl-4 font-bold text-[#ff9aae]">VIEW BAG</a>
         </div>
       )}
     </div>

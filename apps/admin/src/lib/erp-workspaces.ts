@@ -491,7 +491,7 @@ const selling = workspace(
   ],
   [
     group("POS", sellingHome, documentLinks([
-      "POS Profile", "POS Invoice", "POS Opening Entry", "POS Closing Entry",
+      ["Open POS", "/desk/point-of-sale"], "POS Profile", "POS Invoice", "POS Opening Entry", "POS Closing Entry",
       "POS Invoice Merge Log", "POS Settings", "Loyalty Program", "Loyalty Point Entry",
     ]), Store),
     group("Items & Pricing", sellingHome, documentLinks([

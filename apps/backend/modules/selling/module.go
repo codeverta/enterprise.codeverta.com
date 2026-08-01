@@ -9,6 +9,31 @@ import (
 
 func RegisterRoutes(parent *gin.RouterGroup) {
 	loyaltyHandler := controller.NewLoyaltyProgramController()
+	posHandler := controller.NewPOSController()
+	storeHandler := controller.NewStoreController()
+
+	store := parent.Group("/store")
+	{
+		store.POST("/auth/register", middleware.CriticalRateLimit(), storeHandler.Register)
+		store.GET("/categories", storeHandler.Categories)
+		store.GET("/products", storeHandler.Products)
+		store.GET("/products/:slug", storeHandler.Product)
+	}
+	storeAccount := store.Group("")
+	storeAccount.Use(middleware.UserAuth())
+	{
+		storeAccount.GET("/me", storeHandler.Me)
+		storeAccount.PUT("/me", storeHandler.UpdateMe)
+		storeAccount.GET("/cart", storeHandler.Cart)
+		storeAccount.POST("/cart/:productID", storeHandler.AddCart)
+		storeAccount.PUT("/cart/:productID", storeHandler.UpdateCart)
+		storeAccount.DELETE("/cart/:productID", storeHandler.RemoveCart)
+		storeAccount.GET("/wishlist", storeHandler.Wishlist)
+		storeAccount.POST("/wishlist/:productID", storeHandler.AddWishlist)
+		storeAccount.DELETE("/wishlist/:productID", storeHandler.RemoveWishlist)
+		storeAccount.GET("/orders", storeHandler.Orders)
+		storeAccount.POST("/orders", storeHandler.CreateOrder)
+	}
 
 	group := parent.Group("/selling")
 	group.Use(middleware.AdminAuth())
@@ -20,5 +45,12 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.PUT("/loyalty-programs/:id", loyaltyHandler.Update)
 		group.DELETE("/loyalty-programs/:id", loyaltyHandler.Delete)
 		group.GET("/loyalty-point-entries", loyaltyHandler.EntriesList)
+		group.GET("/pos/opening-entries", posHandler.OpeningEntries)
+		group.GET("/pos/opening-entries/current", posHandler.CurrentOpening)
+		group.POST("/pos/opening-entries", posHandler.CreateOpening)
+		group.POST("/pos/opening-entries/:id/close", posHandler.CloseOpening)
+		group.GET("/pos/closing-entries", posHandler.ClosingEntries)
+		group.GET("/pos/invoices", posHandler.Invoices)
+		group.POST("/pos/invoices", posHandler.CreateInvoice)
 	}
 }

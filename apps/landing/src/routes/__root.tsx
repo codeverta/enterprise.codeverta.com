@@ -72,6 +72,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 import { LanguageProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
 import { Toaster } from "@/components/ui/sonner";
+import { CommerceProvider } from "@/lib/commerce";
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
@@ -79,12 +80,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LanguageProvider>
-          <Outlet />
-          <Toaster richColors position="top-center" />
-        </LanguageProvider>
+        <CommerceProvider>
+          <LanguageProvider>
+            <Outlet />
+            <Toaster richColors position="top-center" />
+          </LanguageProvider>
+        </CommerceProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
 }
-

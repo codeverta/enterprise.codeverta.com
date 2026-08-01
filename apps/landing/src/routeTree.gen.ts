@@ -10,9 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AktivasiRouteImport } from './routes/aktivasi'
+import { Route as CheckoutRouteImport } from './routes/checkout'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as PembayaranRouteImport } from './routes/pembayaran'
 import { Route as PaymentsIndexRouteImport } from './routes/payments/index'
+import { Route as ProductSlugRouteImport } from './routes/product/$slug'
 import { Route as ProductsCourseIdRouteImport } from './routes/products/$courseId'
 
 const IndexRoute = IndexRouteImport.update({
@@ -20,9 +24,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AktivasiRoute = AktivasiRouteImport.update({
   id: '/aktivasi',
   path: '/aktivasi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PembayaranRoute = PembayaranRouteImport.update({
@@ -35,6 +54,11 @@ const PaymentsIndexRoute = PaymentsIndexRouteImport.update({
   path: '/payments/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductSlugRoute = ProductSlugRouteImport.update({
+  id: '/product/$slug',
+  path: '/product/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsCourseIdRoute = ProductsCourseIdRouteImport.update({
   id: '/products/$courseId',
   path: '/products/$courseId',
@@ -43,45 +67,82 @@ const ProductsCourseIdRoute = ProductsCourseIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/aktivasi': typeof AktivasiRoute
+  '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
   '/pembayaran': typeof PembayaranRoute
+  '/product/$slug': typeof ProductSlugRoute
   '/products/$courseId': typeof ProductsCourseIdRoute
   '/payments/': typeof PaymentsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/aktivasi': typeof AktivasiRoute
+  '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
   '/pembayaran': typeof PembayaranRoute
+  '/product/$slug': typeof ProductSlugRoute
   '/products/$courseId': typeof ProductsCourseIdRoute
   '/payments': typeof PaymentsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/aktivasi': typeof AktivasiRoute
+  '/checkout': typeof CheckoutRoute
+  '/login': typeof LoginRoute
   '/pembayaran': typeof PembayaranRoute
+  '/product/$slug': typeof ProductSlugRoute
   '/products/$courseId': typeof ProductsCourseIdRoute
   '/payments/': typeof PaymentsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/aktivasi' | '/pembayaran' | '/products/$courseId' | '/payments/'
+    | '/'
+    | '/account'
+    | '/aktivasi'
+    | '/checkout'
+    | '/login'
+    | '/pembayaran'
+    | '/product/$slug'
+    | '/products/$courseId'
+    | '/payments/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/aktivasi' | '/pembayaran' | '/products/$courseId' | '/payments'
+  to:
+    | '/'
+    | '/account'
+    | '/aktivasi'
+    | '/checkout'
+    | '/login'
+    | '/pembayaran'
+    | '/product/$slug'
+    | '/products/$courseId'
+    | '/payments'
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/aktivasi'
+    | '/checkout'
+    | '/login'
     | '/pembayaran'
+    | '/product/$slug'
     | '/products/$courseId'
     | '/payments/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   AktivasiRoute: typeof AktivasiRoute
+  CheckoutRoute: typeof CheckoutRoute
+  LoginRoute: typeof LoginRoute
   PembayaranRoute: typeof PembayaranRoute
+  ProductSlugRoute: typeof ProductSlugRoute
   ProductsCourseIdRoute: typeof ProductsCourseIdRoute
   PaymentsIndexRoute: typeof PaymentsIndexRoute
 }
@@ -95,11 +156,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/aktivasi': {
       id: '/aktivasi'
       path: '/aktivasi'
       fullPath: '/aktivasi'
       preLoaderRoute: typeof AktivasiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pembayaran': {
@@ -116,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PaymentsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/product/$slug': {
+      id: '/product/$slug'
+      path: '/product/$slug'
+      fullPath: '/product/$slug'
+      preLoaderRoute: typeof ProductSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products/$courseId': {
       id: '/products/$courseId'
       path: '/products/$courseId'
@@ -128,8 +217,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   AktivasiRoute: AktivasiRoute,
+  CheckoutRoute: CheckoutRoute,
+  LoginRoute: LoginRoute,
   PembayaranRoute: PembayaranRoute,
+  ProductSlugRoute: ProductSlugRoute,
   ProductsCourseIdRoute: ProductsCourseIdRoute,
   PaymentsIndexRoute: PaymentsIndexRoute,
 }
