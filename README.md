@@ -59,3 +59,4 @@ Some inherited integration tests open local sockets and therefore require a runn
 - `/api/audit-logs`, `/api/system`, `/api/email`, `/api/templates`
 
 See [`docs/CORE_EXTRACTION.md`](docs/CORE_EXTRACTION.md) for the boundary and extension rules.
+# enterprise.codeverta.com
