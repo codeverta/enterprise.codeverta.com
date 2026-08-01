@@ -13,7 +13,7 @@ function MentorAssignmentSection({
       <div className="mb-4 flex items-center gap-2">
         <Award className="h-5 w-5 text-amber-500" />
         <h3 className="font-bold text-slate-900">
-          Tugas Siswa / Student Assignments
+          Tugas Partner / Student Assignments
         </h3>
       </div>
 
@@ -23,7 +23,7 @@ function MentorAssignmentSection({
         </div>
       ) : lessonAssignments.length === 0 ? (
         <p className="text-sm text-slate-500">
-          Belum ada siswa yang mengirim tugas untuk lesson ini.
+          Belum ada partner yang mengirim tugas untuk lesson ini.
         </p>
       ) : (
         <div className="space-y-3">

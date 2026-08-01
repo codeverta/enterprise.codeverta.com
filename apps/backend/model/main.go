@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gin-template/common"
+	crmmodel "gin-template/model/crm"
 	"os"
 	"regexp"
 	"strconv"
@@ -64,6 +65,9 @@ func InitDB() error {
 	if err != nil {
 		return fmt.Errorf("auto migration failed: %w", err)
 	}
+	if err := crmmodel.Migrate(db); err != nil {
+		return err
+	}
 
 	if err := ensureSystemSettingColumns(db); err != nil {
 		return fmt.Errorf("system setting migration failed: %w", err)
@@ -73,6 +77,9 @@ func InitDB() error {
 	}
 	if err := syncSubscriptionPlanReferences(db); err != nil {
 		return fmt.Errorf("subscription plan reference migration failed: %w", err)
+	}
+	if err := EnsureDefaultTenant(db); err != nil {
+		return fmt.Errorf("default tenant initialization failed: %w", err)
 	}
 
 	SeedUsers(db)

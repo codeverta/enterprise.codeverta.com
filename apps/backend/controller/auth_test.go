@@ -136,7 +136,7 @@ func TestAuthLogin(t *testing.T) {
 		}
 	})
 
-	t.Run("role-specific login accepts matching student account", func(t *testing.T) {
+	t.Run("role-specific login accepts matching partner account", func(t *testing.T) {
 		ctx := context.WithValue(context.Background(), common.CtxTenantKey, tenant)
 		hashedPassword, err := common.Password2Hash("password123")
 		if err != nil {
@@ -155,14 +155,14 @@ func TestAuthLogin(t *testing.T) {
 			t.Fatalf("create student: %v", err)
 		}
 
-		rec := performJSON(router, http.MethodPost, "/auth/login", `{"identifier":"studentlogin","password":"password123","login_type":"student"}`)
+		rec := performJSON(router, http.MethodPost, "/auth/login", `{"identifier":"studentlogin","password":"password123","login_type":"partner"}`)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("expected 200, got %d body=%s", rec.Code, rec.Body.String())
 		}
 	})
 
 	t.Run("role-specific login rejects mismatched account", func(t *testing.T) {
-		rec := performJSON(router, http.MethodPost, "/auth/login", `{"identifier":"studentlogin","password":"password123","login_type":"parent"}`)
+		rec := performJSON(router, http.MethodPost, "/auth/login", `{"identifier":"studentlogin","password":"password123","login_type":"merchant"}`)
 		if rec.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400, got %d body=%s", rec.Code, rec.Body.String())
 		}
@@ -187,7 +187,7 @@ func TestAuthLogin(t *testing.T) {
 			t.Fatalf("create admin: %v", err)
 		}
 
-		for _, loginType := range []string{"parent", "student"} {
+		for _, loginType := range []string{"merchant", "parent", "partner", "student"} {
 			rec := performJSON(router, http.MethodPost, "/auth/login", fmt.Sprintf(
 				`{"identifier":"adminlogin","password":"password123","login_type":%q}`,
 				loginType,

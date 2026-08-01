@@ -30,8 +30,16 @@ import { BASE_STORAGE_URL } from "../lib/utils";
 import SystemSettings from "./dashboard/SystemSettings";
 import { toast } from "sonner";
 
-const Navbar = ({ user, onLogout, items }) => {
+const Navbar = ({
+  user,
+  onLogout,
+  items,
+  basePath = "/dashboard",
+  homePath = "/dashboard",
+  navigationState,
+}) => {
   const location = useLocation();
+  const resolveHref = (href) => `${basePath}${href}`;
   const { settings, fetchSettings } = useSettingsStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -71,12 +79,12 @@ const Navbar = ({ user, onLogout, items }) => {
         };
       case 20:
         return {
-          label: "Siswa",
+          label: "Partner",
           color: "bg-sky-100 text-sky-700 border-sky-200",
         };
       case 10:
         return {
-          label: "Orang Tua",
+          label: "Merchant",
           color: "bg-amber-100 text-amber-700 border-amber-200",
         };
       default:
@@ -105,7 +113,7 @@ const Navbar = ({ user, onLogout, items }) => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6 relative">
         {/* Left Side: Brand Logo */}
         <div className="flex items-center gap-4 z-10">
-          <NavLink to="/dashboard" data-onboarding-href="/" className="flex items-center space-x-2">
+          <NavLink to={homePath} data-onboarding-href="/" className="flex items-center space-x-2">
             {settings?.app_logo && (
               <img
                 src={`${BASE_STORAGE_URL}/${settings.app_logo}`}
@@ -135,7 +143,7 @@ const Navbar = ({ user, onLogout, items }) => {
             if (item.items) {
               // Dropdown for sub-menus
               const isSubActive = item.items.some(
-                (sub) => location.pathname === `/dashboard${sub.href}`
+                (sub) => location.pathname === resolveHref(sub.href)
               );
               return (
                 <DropdownMenu key={item.name}>
@@ -161,7 +169,8 @@ const Navbar = ({ user, onLogout, items }) => {
                     {item.items.map((subItem) => (
                       <DropdownMenuItem key={subItem.name} asChild>
                         <NavLink
-                          to={`/dashboard${subItem.href}`}
+                          to={resolveHref(subItem.href)}
+                          state={navigationState}
                           data-onboarding-href={subItem.href}
                           title={subItem.locked ? subItem.lockReason : undefined}
                           aria-disabled={subItem.locked && !subItem.allowWhenLocked}
@@ -193,7 +202,8 @@ const Navbar = ({ user, onLogout, items }) => {
             return (
               <NavLink
                 key={item.name}
-                to={`/dashboard${item.href}`}
+                to={resolveHref(item.href)}
+                state={navigationState}
                 data-onboarding-href={item.href}
                 end={item.href === "/"}
                 title={item.locked ? item.lockReason : undefined}
@@ -244,7 +254,7 @@ const Navbar = ({ user, onLogout, items }) => {
                 {overflowItems.map((item) => {
                   if (item.items) {
                     const isSubActive = item.items.some(
-                      (sub) => location.pathname === `/dashboard${sub.href}`
+                      (sub) => location.pathname === resolveHref(sub.href)
                     );
                     return (
                       <DropdownMenuSub key={item.name}>
@@ -265,7 +275,8 @@ const Navbar = ({ user, onLogout, items }) => {
                           {item.items.map((subItem) => (
                             <DropdownMenuItem key={subItem.name} asChild>
                               <NavLink
-                                to={`/dashboard${subItem.href}`}
+                                to={resolveHref(subItem.href)}
+                                state={navigationState}
                                 data-onboarding-href={subItem.href}
                                 title={subItem.locked ? subItem.lockReason : undefined}
                                 aria-disabled={subItem.locked && !subItem.allowWhenLocked}
@@ -293,11 +304,12 @@ const Navbar = ({ user, onLogout, items }) => {
                     );
                   }
 
-                  const isActive = location.pathname === `/dashboard${item.href}`;
+                  const isActive = location.pathname === resolveHref(item.href);
                   return (
                     <DropdownMenuItem key={item.name} asChild>
                       <NavLink
-                        to={`/dashboard${item.href}`}
+                        to={resolveHref(item.href)}
+                        state={navigationState}
                         data-onboarding-href={item.href}
                         title={item.locked ? item.lockReason : undefined}
                         aria-disabled={item.locked && !item.allowWhenLocked}
@@ -376,7 +388,8 @@ const Navbar = ({ user, onLogout, items }) => {
                     {item.items.map((subItem) => (
                       <NavLink
                         key={subItem.name}
-                        to={`/dashboard${subItem.href}`}
+                        to={resolveHref(subItem.href)}
+                        state={navigationState}
                         data-onboarding-href={subItem.href}
                         title={subItem.locked ? subItem.lockReason : undefined}
                         aria-disabled={subItem.locked && !subItem.allowWhenLocked}
@@ -410,7 +423,8 @@ const Navbar = ({ user, onLogout, items }) => {
               return (
                 <NavLink
                   key={item.name}
-                  to={`/dashboard${item.href}`}
+                  to={resolveHref(item.href)}
+                  state={navigationState}
                   data-onboarding-href={item.href}
                   end={item.href === "/"}
                   title={item.locked ? item.lockReason : undefined}

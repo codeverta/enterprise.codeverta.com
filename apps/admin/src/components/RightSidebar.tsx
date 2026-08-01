@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import { Badge } from "@/components/ui/badge";
 import RegisterPasskeyButton from "./RegisterPasskeyButton";
-import api from "@/lib/api"; // Import api untuk fetch code siswa
+import api from "@/lib/api"; // Import api untuk fetch code partner
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ function RightSidebar({
   }[];
   roleInfo: { label: string; color: string };
 }) {
-  // State untuk manajemen Linking Code Siswa
+  // State untuk manajemen Linking Code Partner
   const [showCode, setShowCode] = useState(false);
   const [linkingCode, setLinkingCode] = useState("");
   const [loadingCode, setLoadingCode] = useState(false);
@@ -86,7 +86,7 @@ function RightSidebar({
 
   const fetchProfile = async () => {
     try {
-      const res = await api.get("/lms/my-profile");
+      const res = await api.get("/my-profile");
       const d = res.data?.data || {};
       setProfileForm({
         display_name: d.display_name || "",
@@ -129,7 +129,7 @@ function RightSidebar({
     }
     try {
       setSavingProfile(true);
-      await api.put("/lms/my-profile", {
+      await api.put("/my-profile", {
         display_name: profileForm.display_name,
         username: profileForm.username,
         bio: profileForm.bio,
@@ -177,7 +177,7 @@ function RightSidebar({
     formData.append("file", file);
     try {
       setUploadingAvatar(true);
-      const res = await api.post("/lms/my-profile/avatar", formData);
+      const res = await api.post("/my-profile/avatar", formData);
       const avatar = res.data?.data?.avatar_url || "";
       setAvatarURL(avatar);
 
@@ -220,7 +220,7 @@ function RightSidebar({
   // Normalisasi pengecekan role (case-insensitive)
   const isStudent =
     roleInfo.label.toLowerCase() === "student" ||
-    roleInfo.label.toLowerCase() === "siswa";
+    roleInfo.label.toLowerCase() === "partner";
 
   return (
     <div className="mt-auto">
@@ -457,7 +457,7 @@ function RightSidebar({
                       isStudent &&
                       (item.name.toLowerCase().includes("anak") ||
                         item.name.toLowerCase().includes("child") ||
-                        item.name.toLowerCase().includes("siswa"))
+                        item.name.toLowerCase().includes("partner"))
                     ) {
                       return false;
                     }
@@ -494,14 +494,14 @@ function RightSidebar({
                 {isStudent && (
                   <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
                     <p className="text-xs font-semibold text-gray-500 px-2 uppercase tracking-wider">
-                      Akses Orang Tua
+                      Akses Merchant
                     </p>
                     <div className="p-2 rounded-md bg-gray-50 border border-gray-200">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center text-gray-700">
                           <Key className="h-4 w-4 mr-2 text-gray-400" />
                           <span className="text-xs font-medium">
-                            Kode Hubung Orang Tua
+                            Kode Hubung Merchant
                           </span>
                         </div>
                         <Button

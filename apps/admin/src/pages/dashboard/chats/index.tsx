@@ -836,7 +836,7 @@ function ChatPage({ setIsSidebarOpen }) {
       return;
     }
     if (chatMode === "mentor" && isMentorStaff && !activeConv) {
-      toast.info("Pilih percakapan siswa yang ingin dibalas.");
+      toast.info("Pilih percakapan partner yang ingin dibalas.");
       return;
     }
     const isParentUser = savedUser?.role === 10;
@@ -844,7 +844,7 @@ function ChatPage({ setIsSidebarOpen }) {
       chatMode === "parent"
         ? isParentUser
           ? "Anak"
-          : "Orang Tua"
+          : "Merchant"
         : selectedMentor?.display_name || selectedMentor?.username || "Mentor";
     try {
       const payload: any = {
@@ -881,7 +881,7 @@ function ChatPage({ setIsSidebarOpen }) {
       return;
     }
     if (chatMode === "mentor" && isMentorStaff && !activeConv) {
-      toast.info("Pilih percakapan siswa yang ingin dibalas.");
+      toast.info("Pilih percakapan partner yang ingin dibalas.");
       return;
     }
 
@@ -1062,7 +1062,7 @@ function ChatPage({ setIsSidebarOpen }) {
   ];
 
   // if (savedUser?.role === 20)
-  //   chatCategories.push({ key: "parent", label: "Hubungi Orang Tua" });
+  //   chatCategories.push({ key: "parent", label: "Hubungi Merchant" });
   // if (savedUser?.role === 10)
   //   chatCategories.push({ key: "parent", label: "Chat Anak" });
 
@@ -1404,7 +1404,7 @@ function ChatPage({ setIsSidebarOpen }) {
                     chatMode === "parent"
                       ? savedUser?.role === 10
                         ? "Anak"
-                        : "Orang Tua"
+                        : "Merchant"
                       : selectedMentor?.display_name || "Mentor"
                   }`}
             </p>
@@ -1634,13 +1634,13 @@ function ChatPage({ setIsSidebarOpen }) {
 					  : "Pilih topik pertanyaan di atas..."
                     : humanChatDisabled
                     ? isMentorStaff
-                      ? "Pilih percakapan siswa terlebih dahulu..."
+                      ? "Pilih percakapan partner terlebih dahulu..."
                       : "Pilih mentor tujuan terlebih dahulu..."
                     : `Tulis pesan ke ${
                         chatMode === "parent"
                           ? savedUser?.role === 10
                             ? "Anak"
-                            : "Orang Tua"
+                            : "Merchant"
                           : selectedMentor?.display_name || "Mentor"
                       }...`
                 }

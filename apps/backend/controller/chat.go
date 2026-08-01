@@ -682,7 +682,7 @@ func CreateConversation(c *gin.Context) {
 			Where("parent_id = ? AND student_id = ? AND status = ?", userID, childID, "active").
 			Count(&membershipCount)
 		if membershipCount == 0 {
-			c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "Anda tidak memiliki akses ke siswa ini"})
+			c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "Anda tidak memiliki akses ke partner ini"})
 			return
 		}
 	}

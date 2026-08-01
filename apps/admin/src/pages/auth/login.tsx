@@ -15,12 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCarousel } from "@/components/AuthCarousel";
 import { Helmet } from "react-helmet";
-import { Eye, EyeOff, Fingerprint, GraduationCap, Loader2, Users } from "lucide-react";
+import { Eye, EyeOff, Fingerprint, Handshake, Loader2, Store } from "lucide-react";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { BASE_STORAGE_URL } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { ROLES } from "@/lib/constants";
 import { clearImpersonationStorage } from "@/lib/impersonation";
+import { getAuthenticatedLandingPath } from "@/lib/erp-desk";
 
 // --- LIBRARY PENTING UNTUK WEBAUTHN ---
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -33,33 +34,12 @@ export default function LoginPage() {
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [loginType, setLoginType] = useState<"parent" | "student">("parent");
+    const [loginType, setLoginType] = useState<"merchant" | "partner">("merchant");
     const navigate = useNavigate();
     const { settings, fetchSettings } = useSettingsStore();
     const [isChecking, setIsChecking] = useState(true);
-    const loginBrand = useMemo(() => {
-        const hostname = window.location.hostname.toLowerCase();
-        const appName = settings?.app_name?.toLowerCase() || "";
-        const isLocalDevelopment =
-            hostname === "localhost" ||
-            hostname === "127.0.0.1" ||
-            hostname === "::1";
-
-        if (hostname.includes("guru2digit.id")) {
-            return "guru2digit" as const;
-        }
-        if (hostname.includes("kitafuture.com") || isLocalDevelopment) {
-            return "kita" as const;
-        }
-        if (appName.includes("guru2digit")) {
-            return "guru2digit" as const;
-        }
-        if (appName.includes("kita")) {
-            return "kita" as const;
-        }
-        return "default" as const;
-    }, [settings?.app_name]);
-    const isKitaFuture = loginBrand === "kita";
+    const loginBrand = "erp";
+    const isRoleSpecificPortal = true;
     const logo = useMemo(() => {
         if (settings?.app_logo) {
             return `${BASE_STORAGE_URL}/${settings.app_logo}`;
@@ -88,7 +68,7 @@ export default function LoginPage() {
                     localStorage.setItem("refreshToken", data.refresh_token);
                     localStorage.setItem("user", JSON.stringify(data.user));
                     window.history.replaceState({}, document.title, window.location.pathname);
-                    navigate("/dashboard", { replace: true });
+                    navigate(getAuthenticatedLandingPath(data.user), { replace: true });
                     return;
                 } catch (err: any) {
                     if (cancelled) return;
@@ -105,7 +85,11 @@ export default function LoginPage() {
             const token = localStorage.getItem("accessToken");
             const storedUser = localStorage.getItem("user");
             if (token && storedUser) {
-                navigate("/dashboard", { replace: true });
+                try {
+                    navigate(getAuthenticatedLandingPath(JSON.parse(storedUser)), { replace: true });
+                } catch {
+                    navigate("/dashboard", { replace: true });
+                }
                 return;
             }
             setIsChecking(false);
@@ -132,14 +116,14 @@ export default function LoginPage() {
     // --- LOGIC SUKSES LOGIN (Shared) ---
     const onLoginSuccess = (data) => {
         const { access_token, refresh_token, user } = data || {};
-        if (isKitaFuture) {
-            const expectedRole = loginType === "parent" ? ROLES.PARENT : ROLES.STUDENT;
+        if (isRoleSpecificPortal) {
+            const expectedRole = loginType === "merchant" ? ROLES.MERCHANT : ROLES.PARTNER;
             const isPrivilegedAccount = user?.role >= ROLES.ADMIN;
             if (user?.role !== expectedRole && !isPrivilegedAccount) {
                 setError(
-                    loginType === "parent"
-                        ? "Akun ini bukan akun orang tua."
-                        : "Akun ini bukan akun siswa."
+                    loginType === "merchant"
+                        ? "Akun ini bukan akun merchant."
+                        : "Akun ini bukan akun partner."
                 );
                 return;
             }
@@ -149,7 +133,7 @@ export default function LoginPage() {
         localStorage.setItem("refreshToken", refresh_token);
         localStorage.setItem("user", JSON.stringify(user));
 
-        navigate("/dashboard");
+        navigate(getAuthenticatedLandingPath(user));
     };
 
     // --- HANDLE LOGIN PASSKEY (DISCOVERABLE / TANPA EMAIL) ---
@@ -231,10 +215,13 @@ export default function LoginPage() {
         setError(null);
 
         try {
+            // Keep the Merchant/Partner UI compatible with backend processes
+            // that still use the original numeric-role login aliases.
+            const compatibleLoginType = loginType === "merchant" ? "parent" : "student";
             const response = await api.post("/auth/login", {
                 identifier,
                 password,
-                ...(isKitaFuture ? { login_type: loginType } : {}),
+                ...(isRoleSpecificPortal ? { login_type: compatibleLoginType } : {}),
             });
             onLoginSuccess(response.data.data);
         } catch (err) {
@@ -280,14 +267,12 @@ export default function LoginPage() {
                                 />
                             )}
                             <h1 className="text-3xl font-bold tracking-tight text-white lg:text-foreground">
-                                {settings ? settings?.app_name : t("login.title")}
+                                {settings?.app_name || "Codeverta ERP"}
                             </h1>
                             <p className="mt-2 text-white/75 lg:text-muted-foreground">
-                                {isKitaFuture
-                                    ? loginType === "parent"
-                                        ? "Masuk ke ruang pendampingan keluarga."
-                                        : "Masuk ke ruang belajar siswa."
-                                    : t("login.subtitle")}
+                                {loginType === "merchant"
+                                    ? "Kelola impor, order, dan operasional bisnis Anda."
+                                    : "Koordinasikan layanan logistik dan pengiriman merchant."}
                             </p>
                         </div>
                         <Card className="overflow-hidden border-white/25 bg-background/95 shadow-2xl shadow-black/30 backdrop-blur-xl lg:border-border/70 lg:bg-card lg:shadow-xl lg:shadow-slate-950/5">
@@ -299,7 +284,7 @@ export default function LoginPage() {
                             </CardHeader> */}
 
                             <CardContent className="grid gap-4 pt-4">
-                                {isKitaFuture && (
+                                {isRoleSpecificPortal && (
                                     <div className="mb-1">
                                         <p className="mb-2.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                                             Pilih akses masuk
@@ -312,36 +297,36 @@ export default function LoginPage() {
                                             <button
                                                 type="button"
                                                 role="tab"
-                                                aria-selected={loginType === "parent"}
+                                                aria-selected={loginType === "merchant"}
                                                 onClick={() => {
-                                                    setLoginType("parent");
+                                                    setLoginType("merchant");
                                                     setError(null);
                                                 }}
                                                 className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold transition-all ${
-                                                    loginType === "parent"
+                                                    loginType === "merchant"
                                                         ? "bg-background text-foreground shadow-sm"
                                                         : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                             >
-                                                <Users className="h-4 w-4" />
-                                                Orang Tua
+                                                <Store className="h-4 w-4" />
+                                                Merchant
                                             </button>
                                             <button
                                                 type="button"
                                                 role="tab"
-                                                aria-selected={loginType === "student"}
+                                                aria-selected={loginType === "partner"}
                                                 onClick={() => {
-                                                    setLoginType("student");
+                                                    setLoginType("partner");
                                                     setError(null);
                                                 }}
                                                 className={`flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 text-sm font-semibold transition-all ${
-                                                    loginType === "student"
+                                                    loginType === "partner"
                                                         ? "bg-background text-foreground shadow-sm"
                                                         : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                             >
-                                                <GraduationCap className="h-4 w-4" />
-                                                Siswa
+                                                <Handshake className="h-4 w-4" />
+                                                Partner
                                             </button>
                                         </div>
                                     </div>

@@ -6,8 +6,8 @@ export const mapFilter = {
 }
 
 export const ROLES = {
-  PARENT: 10,
-  STUDENT: 20,
+  MERCHANT: 10,
+  PARTNER: 20,
   INSTRUCTOR: 30,
   MENTOR_EXTERNAL: 40,
   ADMIN: 99,

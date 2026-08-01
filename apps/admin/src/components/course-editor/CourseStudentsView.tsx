@@ -40,7 +40,7 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
       setStudents(res.data?.data || res.data || []);
     } catch (err) {
       console.error("Failed to fetch students:", err);
-      toast.error("Gagal memuat daftar siswa.");
+      toast.error("Gagal memuat daftar partner.");
     } finally {
       setLoadingStudents(false);
     }
@@ -103,8 +103,8 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
           </h2>
           <p className="text-xs text-zinc-500 mt-px">
             {view === "students"
-              ? "Daftar siswa yang terdaftar dalam course ini."
-              : "Kelola dan beri nilai terhadap tugas lampiran yang dikumpulkan siswa."
+              ? "Daftar partner yang terdaftar dalam course ini."
+              : "Kelola dan beri nilai terhadap tugas lampiran yang dikumpulkan partner."
             }
           </p>
         </div>
@@ -117,7 +117,7 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
             <Search className="absolute left-3 top-2.5 h-4 w-4 text-zinc-400" />
             <Input
               type="text"
-              placeholder="Cari nama siswa atau email..."
+              placeholder="Cari nama partner atau email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-9 text-xs"
@@ -129,21 +129,21 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
             {loadingStudents ? (
               <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
                 <Loader2 className="h-8 w-8 animate-spin mb-2 text-indigo-600" />
-                <p className="text-xs font-medium">Memuat data siswa...</p>
+                <p className="text-xs font-medium">Memuat data partner...</p>
               </div>
             ) : students.length === 0 ? (
               <div className="text-center py-16 text-zinc-400">
                 <UserCheck className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p className="text-xs font-medium">Tidak ada siswa ditemukan</p>
+                <p className="text-xs font-medium">Tidak ada partner ditemukan</p>
                 <p className="text-[11px] opacity-70 mt-1">
-                  Siswa yang terdaftar dalam course ini akan muncul di sini.
+                  Partner yang terdaftar dalam course ini akan muncul di sini.
                 </p>
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-zinc-50 border-b border-zinc-100 font-semibold text-zinc-600">
-                    <th className="p-3.5 pl-4">Nama Siswa</th>
+                    <th className="p-3.5 pl-4">Nama Partner</th>
                     <th className="p-3.5">Email</th>
                     <th className="p-3.5">Status</th>
                     <th className="p-3.5 pr-4 text-right">Tanggal Gabung</th>
@@ -153,7 +153,7 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
                   {students.map((student) => {
                     const studentName = student.first_name || student.last_name
                       ? `${student.first_name || ""} ${student.last_name || ""}`.trim()
-                      : student.display_name || student.email || "Siswa";
+                      : student.display_name || student.email || "Partner";
 
                     return (
                       <tr key={student.id} className="hover:bg-zinc-50/50 transition-colors">
@@ -194,14 +194,14 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
                 <FileText className="h-10 w-10 mx-auto mb-2 opacity-30" />
                 <p className="text-xs font-medium">Belum ada tugas dikumpulkan</p>
                 <p className="text-[11px] opacity-70 mt-1">
-                  Semua tugas siswa terkumpul akan muncul di halaman ini.
+                  Semua tugas partner terkumpul akan muncul di halaman ini.
                 </p>
               </div>
             ) : (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-zinc-50 border-b border-zinc-100 font-semibold text-zinc-600">
-                    <th className="p-3.5 pl-4">Siswa</th>
+                    <th className="p-3.5 pl-4">Partner</th>
                     <th className="p-3.5">Materi / Lesson</th>
                     <th className="p-3.5">Berkas Tugas</th>
                     <th className="p-3.5">Status & Nilai</th>
@@ -283,12 +283,12 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
       <Dialog open={gradeModal !== null} onOpenChange={(open) => !open && setGradeModal(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-sm font-bold">Beri Nilai Tugas Siswa</DialogTitle>
+            <DialogTitle className="text-sm font-bold">Beri Nilai Tugas Partner</DialogTitle>
           </DialogHeader>
           {gradeModal && (
             <div className="space-y-4 py-2">
               <div className="bg-zinc-50 border p-3 rounded-lg text-xs space-y-1">
-                <p><span className="font-semibold text-zinc-500">Siswa:</span> {gradeModal.student?.name}</p>
+                <p><span className="font-semibold text-zinc-500">Partner:</span> {gradeModal.student?.name}</p>
                 <p><span className="font-semibold text-zinc-500">Materi:</span> {gradeModal.lesson?.title}</p>
               </div>
 
@@ -311,7 +311,7 @@ export default function CourseStudentsView({ courseId, api, toast, view = "stude
                 <Label htmlFor="grade-feedback" className="text-xs font-semibold">Feedback Guru (Opsional)</Label>
                 <Textarea
                   id="grade-feedback"
-                  placeholder="Tulis saran atau evaluasi mengenai pengerjaan tugas siswa..."
+                  placeholder="Tulis saran atau evaluasi mengenai pengerjaan tugas partner..."
                   value={gradeFeedback}
                   onChange={(e) => setGradeFeedback(e.target.value)}
                   rows={4}

@@ -130,16 +130,31 @@ const AppVersion = () => {
 };
 
 // --- KOMPONEN SIDEBAR ---
-const Sidebar = ({ user, onLogout, isOpen, onToggle, items }) => {
+const Sidebar = ({
+  user,
+  onLogout,
+  isOpen,
+  onToggle,
+  items,
+  basePath = "/dashboard",
+  navigationState,
+  defaultOpenAll = false,
+  openMenusStorageKey = "sidebarOpenMenus",
+}) => {
   const [openMenus, setOpenMenus] = useState(() => {
     try {
-      const saved = localStorage.getItem("sidebarOpenMenus");
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem(openMenusStorageKey);
+      return saved
+        ? JSON.parse(saved)
+        : defaultOpenAll
+          ? items.filter((item) => item.items).map((item) => item.name)
+          : [];
     } catch {
       return [];
     }
   });
   const location = useLocation();
+  const resolveHref = (href) => `${basePath}${href}`;
   const { newReportsCount } = useReportStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { settings, fetchSettings } = useSettingsStore();
@@ -150,15 +165,15 @@ const Sidebar = ({ user, onLogout, isOpen, onToggle, items }) => {
 
   useEffect(() => {
     try {
-      localStorage.setItem("sidebarOpenMenus", JSON.stringify(openMenus));
+      localStorage.setItem(openMenusStorageKey, JSON.stringify(openMenus));
     } catch {}
-  }, [openMenus]);
+  }, [openMenus, openMenusStorageKey]);
 
   useEffect(() => {
     const currentPath = location.pathname;
     const activeParentMenu = items.find((item) =>
       item.items?.some((subItem) =>
-        currentPath.startsWith(`/dashboard${subItem.href}`)
+        currentPath.startsWith(resolveHref(subItem.href))
       )
     );
     if (activeParentMenu) {
@@ -195,12 +210,12 @@ const Sidebar = ({ user, onLogout, isOpen, onToggle, items }) => {
         };
       case 20:
         return {
-          label: "Siswa",
+          label: "Partner",
           color: "bg-sky-100 text-sky-700 border-sky-200",
         };
       case 10:
         return {
-          label: "Orang Tua",
+          label: "Merchant",
           color: "bg-amber-100 text-amber-700 border-amber-200",
         };
       default:
@@ -373,7 +388,8 @@ const Sidebar = ({ user, onLogout, isOpen, onToggle, items }) => {
                     >
                       <TooltipTrigger asChild>
                         <NavLink
-                          to={`/dashboard${subItem.href}`}
+                          to={resolveHref(subItem.href)}
+                          state={navigationState}
                           data-onboarding-href={subItem.href}
                           aria-disabled={
                             subItem.locked && !subItem.allowWhenLocked
@@ -437,7 +453,8 @@ const Sidebar = ({ user, onLogout, isOpen, onToggle, items }) => {
               <Tooltip key={item.href} disableHoverableContent={isOpen}>
                 <TooltipTrigger asChild>
                   <NavLink
-                    to={`/dashboard${item.href}`}
+                    to={resolveHref(item.href)}
+                    state={navigationState}
                     data-onboarding-href={item.href}
                     end={item.href === "/"}
                     aria-disabled={item.locked && !item.allowWhenLocked}

@@ -243,16 +243,16 @@ func (ac *AuthController) Login(c *gin.Context) {
 	switch strings.ToLower(strings.TrimSpace(loginRequest.LoginType)) {
 	case "":
 		// Backward compatibility for clients that do not expose role-specific login.
-	case "parent":
-		if user.Role != model.RoleParent && user.Role < model.RoleAdmin {
-			log.Warn("Login rejected: user is not a parent", zap.String("user_id", user.ID.String()), zap.Int("role", user.Role))
-			sendBadRequest(c, "Akun ini bukan akun orang tua", nil)
+	case "merchant", "parent":
+		if user.Role != model.RoleMerchant && user.Role < model.RoleAdmin {
+			log.Warn("Login rejected: user is not a merchant", zap.String("user_id", user.ID.String()), zap.Int("role", user.Role))
+			sendBadRequest(c, "Akun ini bukan akun merchant", nil)
 			return
 		}
-	case "student":
-		if user.Role != model.RoleStudent && user.Role < model.RoleAdmin {
-			log.Warn("Login rejected: user is not a student", zap.String("user_id", user.ID.String()), zap.Int("role", user.Role))
-			sendBadRequest(c, "Akun ini bukan akun siswa", nil)
+	case "partner", "student":
+		if user.Role != model.RolePartner && user.Role < model.RoleAdmin {
+			log.Warn("Login rejected: user is not a partner", zap.String("user_id", user.ID.String()), zap.Int("role", user.Role))
+			sendBadRequest(c, "Akun ini bukan akun partner", nil)
 			return
 		}
 	default:
@@ -275,6 +275,7 @@ func (ac *AuthController) Login(c *gin.Context) {
 		DisplayName: user.DisplayName,
 		Role:        user.Role,
 		Status:      user.Status,
+		TenantID:    user.TenantID,
 	}
 
 	c.Set("id", user.ID)

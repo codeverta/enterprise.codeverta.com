@@ -467,7 +467,7 @@ func (ctrl *LMSController) GuestCheckout(c *gin.Context) {
 
 	if checkoutType == "teacher" {
 		if isTrial {
-			sendBadRequest(c, "Coba gratis tanpa email hanya tersedia untuk akun orang tua dan siswa", nil)
+			sendBadRequest(c, "Coba gratis tanpa email hanya tersedia untuk akun merchant dan partner", nil)
 			return
 		}
 		req.TeacherName = strings.TrimSpace(req.TeacherName)
@@ -500,7 +500,7 @@ func (ctrl *LMSController) GuestCheckout(c *gin.Context) {
 		req.StudentName = strings.TrimSpace(req.StudentName)
 		req.StudentNisn = strings.TrimSpace(req.StudentNisn)
 		if req.ParentName == "" || req.ParentUsername == "" || (!isTrial && req.ParentEmail == "") || req.ParentPhone == "" || req.StudentName == "" || req.StudentNisn == "" {
-			sendBadRequest(c, "Informasi Orang Tua dan Siswa wajib diisi lengkap", nil)
+			sendBadRequest(c, "Informasi Merchant dan Partner wajib diisi lengkap", nil)
 			return
 		}
 	}

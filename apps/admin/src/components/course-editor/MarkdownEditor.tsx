@@ -39,7 +39,7 @@ function ToolbarButton({ children, onClick, title, disabled }) {
 async function uploadImageFile(file) {
   const formData = new FormData();
   formData.append("file", file);
-  const res = await api.post(`/lms/admin/upload-image`, formData, {
+  const res = await api.post(`/admin/upload-image`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   const payload = getData(res);

@@ -19,7 +19,7 @@ export default function QuizAttemptsList({ quizId }) {
       setAttemptsInfo(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to fetch quiz attempts:", err);
-      toast.error("Gagal memuat riwayat pengerjaan kuis siswa.");
+      toast.error("Gagal memuat riwayat pengerjaan kuis partner.");
     } finally {
       setLoading(false);
     }
@@ -42,9 +42,9 @@ export default function QuizAttemptsList({ quizId }) {
     return (
       <div className="text-center py-10 border border-dashed rounded-xl bg-zinc-50/50 text-zinc-400">
         <Users className="h-8 w-8 mx-auto mb-2 opacity-30 text-zinc-500" />
-        <p className="text-xs font-semibold text-zinc-500">Belum ada siswa yang mengerjakan kuis ini</p>
+        <p className="text-xs font-semibold text-zinc-500">Belum ada partner yang mengerjakan kuis ini</p>
         <p className="text-[10px] opacity-70 mt-0.5">
-          Riwayat beserta nilai attempt siswa akan tercatat otomatis di sini.
+          Riwayat beserta nilai attempt partner akan tercatat otomatis di sini.
         </p>
       </div>
     );
@@ -55,7 +55,7 @@ export default function QuizAttemptsList({ quizId }) {
       <div className="flex items-center gap-2">
         <Trophy className="h-4 w-4 text-amber-500" />
         <h3 className="text-xs font-bold text-zinc-900 uppercase tracking-wider">
-          Riwayat Ujian & Hasil Siswa
+          Riwayat Ujian & Hasil Partner
         </h3>
       </div>
 
@@ -63,7 +63,7 @@ export default function QuizAttemptsList({ quizId }) {
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-zinc-50 border-b border-zinc-100 font-semibold text-zinc-600">
-              <th className="p-3 pl-4">Siswa</th>
+              <th className="p-3 pl-4">Partner</th>
               <th className="p-3 text-center">Jumlah Attempt</th>
               <th className="p-3 text-center">Nilai Terbaik</th>
               <th className="p-3 text-center">Status</th>

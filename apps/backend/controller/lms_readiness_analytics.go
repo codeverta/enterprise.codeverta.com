@@ -58,7 +58,7 @@ var readinessDimensionLabels = map[string]string{
 	"finansial":      "Kesiapan finansial",
 	"lingkungan":     "Lingkungan belajar",
 	"dukungan":       "Dukungan keluarga",
-	"komitmen":       "Komitmen orang tua",
+	"komitmen":       "Komitmen merchant",
 	"pemahaman":      "Pemahaman homeschooling",
 	"teknologi":      "Kesiapan teknologi",
 	"sosialisasi":    "Rencana sosialisasi",

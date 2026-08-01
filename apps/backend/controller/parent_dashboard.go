@@ -590,7 +590,7 @@ func (ctrl *LMSController) ParentStudentDetail(c *gin.Context) {
 		return
 	}
 	if role != 10 && role < 30 {
-		sendError(c, http.StatusForbidden, "Hanya orang tua, mentor, atau admin yang dapat mengakses detail siswa", nil)
+		sendError(c, http.StatusForbidden, "Hanya merchant, mentor, atau admin yang dapat mengakses detail partner", nil)
 		return
 	}
 	studentID, err := uuid.Parse(c.Param("student_id"))
@@ -719,7 +719,7 @@ func (ctrl *LMSController) ParentStudentProgress(c *gin.Context) {
 		return
 	}
 	if role != 10 && role < 30 {
-		sendError(c, http.StatusForbidden, "Hanya orang tua, mentor, atau admin yang dapat mengakses progress siswa", nil)
+		sendError(c, http.StatusForbidden, "Hanya merchant, mentor, atau admin yang dapat mengakses progress partner", nil)
 		return
 	}
 	studentID, err := uuid.Parse(c.Param("student_id"))
@@ -900,7 +900,7 @@ func (ctrl *LMSController) ParentStudentAssignments(c *gin.Context) {
 		return
 	}
 	if role != 10 && role < 30 {
-		sendError(c, http.StatusForbidden, "Hanya orang tua, mentor, atau admin yang dapat mengakses tugas siswa", nil)
+		sendError(c, http.StatusForbidden, "Hanya merchant, mentor, atau admin yang dapat mengakses tugas partner", nil)
 		return
 	}
 	studentID, err := uuid.Parse(c.Param("student_id"))
@@ -1055,7 +1055,7 @@ func (ctrl *LMSController) MentorStudentsProgress(c *gin.Context) {
 	}
 	role := c.GetInt("role")
 	if role < 99 && role != 30 && role != 40 {
-		sendError(c, http.StatusForbidden, "Hanya mentor dan admin yang dapat melihat progress siswa", nil)
+		sendError(c, http.StatusForbidden, "Hanya mentor dan admin yang dapat melihat progress partner", nil)
 		return
 	}
 

@@ -7,8 +7,11 @@ import (
 	"gin-template/common"
 	"gin-template/model"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 	// sesuaikan dengan driver redis kamu, misal go-redis
 )
@@ -23,15 +26,56 @@ func getTenantCacheKey(id string) string {
 	return common.RDB.GetKey(fmt.Sprintf("tenant:%s", id))
 }
 
+// tenantIDFromAccessToken lets authenticated ERP clients resolve their tenant
+// without relying on a hardcoded frontend environment variable. The token is
+// fully signature-validated before its user ID is used for the lookup.
+func (m *TenantMiddleware) tenantIDFromAccessToken(c *gin.Context) string {
+	tokenString := ""
+	parts := strings.SplitN(c.GetHeader("Authorization"), " ", 2)
+	if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+		tokenString = parts[1]
+	} else {
+		// WebSocket clients pass the same signed access token in the query
+		// because browser WebSocket APIs cannot set Authorization headers.
+		tokenString = strings.TrimSpace(c.Query("token"))
+	}
+	if tokenString == "" {
+		return ""
+	}
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %s", token.Method.Alg())
+		}
+		return []byte(common.JWTSecret), nil
+	})
+	if err != nil || !token.Valid {
+		return ""
+	}
+	userID, err := uuid.Parse(claims.UserId)
+	if err != nil {
+		return ""
+	}
+	var user struct {
+		TenantID *uuid.UUID `gorm:"column:tenant_id"`
+	}
+	if err := m.DB.Set("skip_tenant_scope", true).Table("users").Select("tenant_id").Where("id = ?", userID).Take(&user).Error; err != nil || user.TenantID == nil {
+		return ""
+	}
+	return user.TenantID.String()
+}
+
 func (m *TenantMiddleware) TenantResolver() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tenantID := c.GetHeader("X-Tenant-ID")
 		if tenantID == "" {
 			tenantID = c.Query("tenant_id")
 		}
+		if tenantID == "" || tenantID == "belum-di-set" {
+			tenantID = m.tenantIDFromAccessToken(c)
+		}
 		if tenantID == "" {
-			c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "X-Tenant-ID is required"})
-			return
+			tenantID = model.DefaultTenantIDString
 		}
 
 		var tenant model.Tenant

@@ -14,7 +14,7 @@ function LibraryPage() {
           Pustaka & Panduan
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Kelola materi umum dan panduan orangtua.
+          Kelola materi umum dan panduan merchant.
         </p>
       </div>
 

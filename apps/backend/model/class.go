@@ -39,7 +39,7 @@ func (m *Class) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// Tabel pivot untuk memasukkan siswa ke kelas
+// Tabel pivot untuk memasukkan partner ke kelas
 type ClassStudent struct {
 	ID        uuid.UUID      `json:"id" gorm:"type:char(36);primaryKey"`
 	ClassID   uuid.UUID      `json:"class_id" gorm:"type:char(36);not null;index:idx_class_student,unique"`

@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEFAULT_TENANT_ID } from "@/lib/api";
 import api from "@/lib/api";
 import { BASE_API_URL } from "@/lib/utils";
 
@@ -61,7 +62,7 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     if (!cleanHost.includes("/api")) {
       path = "/api/ws/activity";
     }
-    const tenantId = import.meta.env.VITE_X_TENANT_ID || "belum-di-set";
+    const tenantId = import.meta.env.VITE_X_TENANT_ID || DEFAULT_TENANT_ID;
     const wsUrl = `${wsProto}//${cleanHost}${path}?token=${token}&tenant_id=${tenantId}`;
     
     try {

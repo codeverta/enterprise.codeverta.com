@@ -401,7 +401,7 @@ func TestTargetRole_ExploreFiltersCategoriesAndCoursesByUserRole(t *testing.T) {
 	}
 	fixtures := []audienceFixture{
 		{role: "student", level: "Pemula"},
-		{role: "parent", level: "Orang Tua"},
+		{role: "parent", level: "Merchant"},
 		{role: "mentor", level: "Profesional"},
 	}
 	categoryIDs := make(map[string]uuid.UUID)
@@ -490,7 +490,7 @@ func TestTargetRole_ExploreFiltersCategoriesAndCoursesByUserRole(t *testing.T) {
 		expectedRole  string
 		expectedLevel string
 	}{
-		{name: "parent", role: model.RoleParent, expectedRole: "parent", expectedLevel: "Orang Tua"},
+		{name: "parent", role: model.RoleParent, expectedRole: "parent", expectedLevel: "Merchant"},
 		{name: "mentor", role: model.RoleGuruExternal, expectedRole: "mentor", expectedLevel: "Profesional"},
 	} {
 		t.Run(audience.name, func(t *testing.T) {

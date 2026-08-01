@@ -45,7 +45,7 @@ export default function ScheduleTemplateForm({
               {template ? "Edit Template Jadwal" : "Template Jadwal Baru"}
             </h2>
             <p className="text-xs text-slate-500">
-              Template ini bisa diassign ke banyak siswa.
+              Template ini bisa diassign ke banyak partner.
             </p>
           </div>
           <button

@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/dialog";
 
 const ROLE_OPTIONS = [
-  { value: "student", label: "Siswa" },
+  { value: "student", label: "Partner" },
   { value: "mentor", label: "Mentor" },
-  { value: "parent", label: "Orang Tua" },
+  { value: "parent", label: "Merchant" },
   { value: "admin", label: "Admin" },
 ];
 

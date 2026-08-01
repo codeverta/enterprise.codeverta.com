@@ -38,7 +38,7 @@ function GradeModal({
           </button>
         </div>
         <div className="mb-2 text-sm text-slate-600">
-          Siswa:{" "}
+          Partner:{" "}
           <span className="font-semibold">
             {gradeModal.student?.email || gradeModal.student_id}
           </span>
@@ -86,7 +86,7 @@ function GradeModal({
               onChange={(e) => setFeedback(e.target.value)}
               className="w-full rounded-lg border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               rows={3}
-              placeholder="Berikan feedback untuk siswa..."
+              placeholder="Berikan feedback untuk partner..."
             />
           </div>
           <div className="flex justify-end gap-2 pt-2">

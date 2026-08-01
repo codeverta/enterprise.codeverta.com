@@ -303,8 +303,8 @@ function UserFormDialog({ isOpen, setIsOpen, editingUser, onSave }) {
                     <SelectValue placeholder="Pilih Role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="10">Orang Tua</SelectItem>
-                    <SelectItem value="20">Siswa</SelectItem>
+                    <SelectItem value="10">Merchant</SelectItem>
+                    <SelectItem value="20">Partner</SelectItem>
                     <SelectItem value="30">Mentor Internal</SelectItem>
                     <SelectItem value="40">Mentor Eksternal</SelectItem>
                     <SelectItem value="99">Admin</SelectItem>

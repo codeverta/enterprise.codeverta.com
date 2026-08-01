@@ -486,7 +486,7 @@ func pushSubscriptionPaymentAdminNotifications(tx *gorm.DB, payment *model.LMSPa
 	if payment.StudentID != uuid.Nil && payment.StudentID != payment.ParentID {
 		var student model.User
 		if err := tx.Set("skip_tenant_scope", true).First(&student, "id = ?", payment.StudentID).Error; err == nil {
-			studentInfo = fmt.Sprintf(" untuk siswa %s", userNotificationName(student))
+			studentInfo = fmt.Sprintf(" untuk partner %s", userNotificationName(student))
 		}
 	}
 

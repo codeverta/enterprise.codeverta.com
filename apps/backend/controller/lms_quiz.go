@@ -179,7 +179,7 @@ func (ctrl *LMSController) ListQuizzes(c *gin.Context) {
 		}
 	}
 
-	// Ambil data progres pengerjaan kuis siswa
+	// Ambil data progres pengerjaan kuis partner
 	progressByQuiz := map[string]model.QuizProgress{}
 	attemptsCountMap := map[string]int64{}
 	questionCountMap := map[uuid.UUID]int64{}
@@ -738,7 +738,7 @@ func (ctrl *LMSController) GetQuizResult(c *gin.Context) {
 		}).
 		Where("id = ?", id)
 
-	// Jika siswa biasa, pastikan hanya bisa melihat hasil miliknya sendiri
+	// Jika partner biasa, pastikan hanya bisa melihat hasil miliknya sendiri
 	if role < 99 {
 		query = query.Where("student_id = ?", userID)
 	}
@@ -752,7 +752,7 @@ func (ctrl *LMSController) GetQuizResult(c *gin.Context) {
 		return
 	}
 
-	// Keamanan tambahan: Cek apakah kuis melarang menampilkan hasil untuk siswa
+	// Keamanan tambahan: Cek apakah kuis melarang menampilkan hasil untuk partner
 	if role < 99 && !attempt.Quiz.ShowResultAfterSubmit {
 		sendError(c, http.StatusForbidden, "Kuis ini dikonfigurasi untuk tidak menampilkan hasil evaluasi", nil)
 		return

@@ -11,7 +11,7 @@ function UserRolesPage() {
           Hak Akses Pengguna
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Kelola penetapan role untuk admin, mentor, siswa, dan orangtua.
+          Kelola penetapan role untuk admin, mentor, partner, dan merchant.
         </p>
       </div>
 

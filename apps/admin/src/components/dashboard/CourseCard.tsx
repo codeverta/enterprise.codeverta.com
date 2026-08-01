@@ -159,7 +159,7 @@ const CourseCard = ({ course }) => {
           ) : null}
           <span className="inline-flex items-center gap-1">
             <Users className="h-3 w-3" />
-            {totalStudents} siswa
+            {totalStudents} partner
           </span>
         </div>
 

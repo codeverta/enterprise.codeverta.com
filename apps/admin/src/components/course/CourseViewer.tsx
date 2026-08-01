@@ -358,7 +358,7 @@ function CourseViewer({
     course?.description ||
     "Pelajari materi course ini melalui modul dan lesson yang sudah disusun.";
   const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-  // role 10 orang tua, role 20 siswa
+  // role 10 merchant, role 20 partner
   const isStudent =
     currentUser?.role === 10 || currentUser?.role === 20 || !currentUser?.role;
   const isAdmin = Number(currentUser?.role || 0) >= 99;
@@ -874,7 +874,7 @@ function CourseViewer({
               ) : (
                 /* Alternatif UI untuk Admin/Mentor/Parent agar informatif */
                 <div className="rounded-xl bg-slate-50 border border-slate-200 p-3 text-center text-xs text-slate-500">
-                  Mode Pratinjau: Hanya akun siswa yang dapat memulai
+                  Mode Pratinjau: Hanya akun partner yang dapat memulai
                   pembelajaran materi kursus ini.
                 </div>
               )}

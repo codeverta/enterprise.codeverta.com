@@ -6,14 +6,14 @@ import { ROLES } from "@/lib/constants";
 function AddCoursePage({ user, sellerStatus, sellerStatusLoading }) {
   const role = Number(user?.role || 0);
   const requiresCourseCreationPlan =
-    role === ROLES.PARENT || role === ROLES.MENTOR_EXTERNAL;
+    role === ROLES.MERCHANT || role === ROLES.MENTOR_EXTERNAL;
   const canCreateCourseFromPlan =
     !requiresCourseCreationPlan || sellerStatus?.can_create_course === true;
   const canOpenAddCourse =
     role >= ROLES.ADMIN ||
     role === ROLES.INSTRUCTOR ||
     role === ROLES.MENTOR_EXTERNAL ||
-    role === ROLES.PARENT;
+    role === ROLES.MERCHANT;
 
   if (requiresCourseCreationPlan && sellerStatusLoading) {
     return (

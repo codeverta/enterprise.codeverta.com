@@ -184,7 +184,7 @@ export const LessonEditor = ({
               htmlFor="les-attachment"
               className="text-xs cursor-pointer text-zinc-600"
             >
-              Perlu Attachment Siswa
+              Perlu Attachment Partner
             </Label>
           </div>
           <div className="flex items-center gap-2">

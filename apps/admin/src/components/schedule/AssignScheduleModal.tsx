@@ -56,7 +56,7 @@ export default function AssignScheduleModal({
           </div>
           <div className="min-w-0 flex-1">
             <h2 className="truncate text-base font-semibold text-slate-950">Assign: {template.title}</h2>
-            <p className="text-xs text-slate-500">Item template akan dicopy menjadi jadwal personal siswa.</p>
+            <p className="text-xs text-slate-500">Item template akan dicopy menjadi jadwal personal partner.</p>
           </div>
           <button type="button" onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100">
             <X className="h-4 w-4" />
@@ -70,16 +70,16 @@ export default function AssignScheduleModal({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
-              placeholder="Cari siswa..."
+              placeholder="Cari partner..."
             />
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-3">
           {loading ? (
-            <div className="py-10 text-center text-sm text-slate-500">Memuat siswa...</div>
+            <div className="py-10 text-center text-sm text-slate-500">Memuat partner...</div>
           ) : filtered.length === 0 ? (
-            <div className="py-10 text-center text-sm text-slate-500">Tidak ada siswa.</div>
+            <div className="py-10 text-center text-sm text-slate-500">Tidak ada partner.</div>
           ) : (
             <div className="divide-y divide-slate-100 rounded-lg border border-slate-200">
               {filtered.map((student) => (
@@ -96,7 +96,7 @@ export default function AssignScheduleModal({
         </div>
 
         <div className="flex items-center justify-between border-t bg-slate-50 px-5 py-3">
-          <p className="text-xs text-slate-500">{selected.length} siswa dipilih</p>
+          <p className="text-xs text-slate-500">{selected.length} partner dipilih</p>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
             <Button type="button" disabled={saving || selected.length === 0} onClick={() => onAssign(selected)}>

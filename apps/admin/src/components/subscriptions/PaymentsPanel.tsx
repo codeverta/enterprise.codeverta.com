@@ -157,7 +157,7 @@ function PaymentsPanel() {
           <Search className="absolute left-2.5 top-2.5 size-4 text-slate-400" />
           <Input
             className="pl-9"
-            placeholder="Nama siswa / ortu..."
+            placeholder="Nama partner / ortu..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -191,8 +191,8 @@ function PaymentsPanel() {
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
-                <TableHead>Siswa</TableHead>
-                <TableHead>Orang Tua</TableHead>
+                <TableHead>Partner</TableHead>
+                <TableHead>Merchant</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Nominal</TableHead>
                 <TableHead>Provider</TableHead>

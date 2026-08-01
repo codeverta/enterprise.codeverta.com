@@ -196,7 +196,7 @@ export const CourseSidebar: React.FC<CourseSidebarProps> = ({
             }`}
           >
             <Users className="h-4 w-4 text-zinc-400" />
-            Siswa
+            Partner
           </button>
 
           <button

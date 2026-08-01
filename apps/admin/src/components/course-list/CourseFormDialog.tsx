@@ -126,7 +126,7 @@ export default function CourseFormDialog({
     if (isOpen) {
       if (sessionUser?.role === 30) {
         api
-          .get("/lms/my-profile")
+          .get("/my-profile")
           .then((res) => {
             const profileData = res.data?.data || {};
             setCurrentUser({
@@ -456,7 +456,7 @@ export default function CourseFormDialog({
     try {
       const payload = new FormData();
       payload.append("file", file);
-      const response = await api.post("/lms/admin/upload-image", payload, {
+      const response = await api.post("/admin/upload-image", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const url = response.data?.data?.url;
@@ -680,9 +680,9 @@ export default function CourseFormDialog({
                 ) : (
                   <div className="flex flex-wrap gap-4 pt-1.5">
                     {[
-                      { label: "Siswa", value: "student" },
+                      { label: "Partner", value: "student" },
                       { label: "Guru/Mentor", value: "mentor" },
-                      { label: "Orang Tua", value: "parent" },
+                      { label: "Merchant", value: "parent" },
                     ].map((role) => {
                       const roleKey = role.value;
                       const isAvailableInCat =
@@ -876,7 +876,7 @@ export default function CourseFormDialog({
                             Boleh Lompat Lesson
                           </Label>
                           <p className="text-[10px] text-muted-foreground leading-normal">
-                            Izinkan siswa melompati materi secara acak.
+                            Izinkan partner melompati materi secara acak.
                           </p>
                         </div>
                         <Switch

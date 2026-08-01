@@ -38,7 +38,7 @@ const navigation = [
   { name: "Pengaturan", href: "/settings", icon: Settings },
 ];
 
-export default function DashboardLayout(PageComponent) {
+export default function DashboardLayout(PageComponent, options = {}) {
   return function CoreDashboardLayout(props) {
     const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -60,13 +60,21 @@ export default function DashboardLayout(PageComponent) {
       navigate("/");
     };
 
+    const resolvedNavigation = typeof options.navigation === "function"
+      ? options.navigation(props)
+      : options.navigation || navigation;
+
     return (
       <div className="min-h-screen bg-slate-50">
         <ImpersonationBanner />
         <div className="hidden lg:flex">
           <Sidebar
             user={user}
-            items={navigation}
+            items={resolvedNavigation}
+            basePath={options.basePath ?? "/dashboard"}
+            navigationState={options.navigationState?.(props)}
+            defaultOpenAll={Boolean(options.defaultOpenAll)}
+            openMenusStorageKey={options.openMenusStorageKey?.(props) || "sidebarOpenMenus"}
             isOpen={sidebarOpen}
             onToggle={() => setSidebarOpen((open) => !open)}
             onLogout={logout}
@@ -74,7 +82,14 @@ export default function DashboardLayout(PageComponent) {
           <main className="min-w-0 flex-1"><PageComponent {...props} /></main>
         </div>
         <div className="lg:hidden">
-          <Navbar user={user} items={navigation} onLogout={logout} />
+          <Navbar
+            user={user}
+            items={resolvedNavigation}
+            basePath={options.basePath ?? "/dashboard"}
+            homePath={options.homePath || "/dashboard"}
+            navigationState={options.navigationState?.(props)}
+            onLogout={logout}
+          />
           <main><PageComponent {...props} /></main>
         </div>
       </div>

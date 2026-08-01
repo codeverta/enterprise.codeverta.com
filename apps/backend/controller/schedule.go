@@ -396,7 +396,7 @@ func ScheduleAssignTemplate(c *gin.Context) {
 		return nil
 	})
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal assign template ke siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal assign template ke partner"})
 		return
 	}
 
@@ -433,7 +433,7 @@ func ScheduleListStudents(c *gin.Context) {
 		Order("created_at desc").
 		Limit(500).
 		Find(&users).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal memuat siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal memuat partner"})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": users})
@@ -475,7 +475,7 @@ func ScheduleCreateMyItem(c *gin.Context) {
 	db := scopedCleanDB(c)
 	schedule, err := ensureStudentSchedule(db, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyiapkan jadwal siswa"})
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal menyiapkan jadwal partner"})
 		return
 	}
 

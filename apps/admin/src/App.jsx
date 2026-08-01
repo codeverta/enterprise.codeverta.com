@@ -19,6 +19,8 @@ import EmailManagement from "./pages/dashboard/sending-email";
 import Settings from "./pages/dashboard/settings";
 import OrdersPage from "./pages/dashboard/orders";
 import NotFound from "./pages/not-found";
+import DeskPage from "./pages/desk";
+import ErpWorkspacePage from "./pages/desk/workspace";
 
 const ProtectedRoute = () => {
   const authenticated = Boolean(localStorage.getItem("accessToken"));
@@ -51,6 +53,8 @@ const router = createBrowserRouter([
       {
         element: <ProtectedRoute />,
         children: [
+          { path: "desk", element: <DeskPage /> },
+          { path: "desk/*", element: <ErpWorkspacePage /> },
           { path: "dashboard", element: <Dashboard /> },
           { path: "dashboard/users", element: <Users /> },
           { path: "dashboard/orders", element: <OrdersPage /> },

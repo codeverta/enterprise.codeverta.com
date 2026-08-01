@@ -633,7 +633,7 @@ export function useCourseManagement(user, dependencies = {}) {
       const data = new FormData();
       data.append("file", file);
       data.append("type", assetForm.type);
-      const res = await api.post("/lms/admin/upload-media", data, {
+      const res = await api.post("/admin/upload-media", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const url = res.data?.data?.url || "";
@@ -660,7 +660,7 @@ export function useCourseManagement(user, dependencies = {}) {
     try {
       const data = new FormData();
       data.append("file", file);
-      const res = await api.post("/lms/admin/upload-image", data, {
+      const res = await api.post("/admin/upload-image", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setAssetForm((prev) => ({

@@ -72,11 +72,9 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 	apiRouter.Use(middleware.GlobalAPIRateLimit(), middleware.MaxSizeMiddlewareExcept(
 		50*1024,
 		"/api/file",
-		"/api/lms/admin/upload-image",
-		"/api/lms/admin/upload-media",
-		"/api/lms/admin/courses/",
-		"/api/lms/lessons/",
-		"/api/lms/my-profile/avatar",
+		"/api/admin/upload-image",
+		"/api/admin/upload-media",
+		"/api/my-profile/avatar",
 	))
 
 	// Register Sub-Modules Router
@@ -92,6 +90,8 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		registerPublicAndTenantRoutes(tenantGroup, ctrls)
 		registerAdminRoutes(tenantGroup, ctrls)
 		registerCoreRoutes(tenantGroup, ctrls)
+		registerCoreProfileAndMediaRoutes(tenantGroup, ctrls)
+		registerCRMRoutes(tenantGroup)
 
 		// Finance & Payout Settings
 		financeRoute := tenantGroup.Group("/finance")

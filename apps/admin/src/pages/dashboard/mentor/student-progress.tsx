@@ -334,20 +334,20 @@ function StudentProgressPage() {
       const data = getData(res);
       return data.students || [];
     } catch (err) {
-      console.error("Gagal memuat data lengkap siswa:", err);
-      toast.error("Gagal memuat seluruh data siswa");
+      console.error("Gagal memuat data lengkap partner:", err);
+      toast.error("Gagal memuat seluruh data partner");
       return [];
     }
   };
 
-  // --- Print PDF Laporan (Semua Siswa + UI Rapi) ---
+  // --- Print PDF Laporan (Semua Partner + UI Rapi) ---
   const handlePrintPDF = async () => {
     const loadingToast = toast.loading("Menyiapkan data PDF laporan...");
     const allData = await fetchAllStudents();
     toast.dismiss(loadingToast);
 
     if (allData.length === 0) {
-      toast.error("Tidak ada data siswa untuk dicetak");
+      toast.error("Tidak ada data partner untuk dicetak");
       return;
     }
 
@@ -382,7 +382,7 @@ function StudentProgressPage() {
     }).join("");
 
     const headersHtml = `
-      <th style="padding: 12px 10px; border: 1px solid #cbd5e1; background-color: #f8fafc; text-align: left; font-size: 11px; font-weight: 700; color: #1e293b;">Nama Siswa</th>
+      <th style="padding: 12px 10px; border: 1px solid #cbd5e1; background-color: #f8fafc; text-align: left; font-size: 11px; font-weight: 700; color: #1e293b;">Nama Partner</th>
       <th style="padding: 12px 10px; border: 1px solid #cbd5e1; background-color: #f8fafc; text-align: left; font-size: 11px; font-weight: 700; color: #1e293b;">Email</th>
       <th style="padding: 12px 10px; border: 1px solid #cbd5e1; background-color: #f8fafc; text-align: left; font-size: 11px; font-weight: 700; color: #1e293b;">Subscription</th>
       <th style="padding: 12px 10px; border: 1px solid #cbd5e1; background-color: #f8fafc; text-align: left; font-size: 11px; font-weight: 700; color: #1e293b;">Last Active</th>
@@ -392,7 +392,7 @@ function StudentProgressPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Laporan Evaluasi Akademik Siswa</title>
+          <title>Laporan Evaluasi Akademik Partner</title>
           <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 40px; color: #1e293b; background-color: #fff; }
             .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 15px; margin-bottom: 25px; }
@@ -410,12 +410,12 @@ function StudentProgressPage() {
         </head>
         <body>
           <div class="header">
-            <h1>Laporan Evaluasi & Akademik Siswa</h1>
+            <h1>Laporan Evaluasi & Akademik Partner</h1>
             <p>KITA Future Homeschooling &middot; Dicetak pada: ${new Date().toLocaleString("id-ID")}</p>
           </div>
           <div class="summary-box">
             <div class="summary-card">
-              <div class="label">Total Siswa</div>
+              <div class="label">Total Partner</div>
               <div class="value">${allData.length}</div>
             </div>
             <div class="summary-card">
@@ -469,7 +469,7 @@ function StudentProgressPage() {
     }
 
     const headers = [
-      "Nama Siswa",
+      "Nama Partner",
       "Email",
       "Subscription Plan",
       "Subscription Status",
@@ -521,7 +521,7 @@ function StudentProgressPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `laporan_progress_siswa_${dayjs().format("YYYY-MM-DD")}.csv`);
+    link.setAttribute("download", `laporan_progress_partner_${dayjs().format("YYYY-MM-DD")}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -732,7 +732,7 @@ function StudentProgressPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-zinc-500">
-          <span>{students.length} dari {total || students.length} siswa ditampilkan</span>
+          <span>{students.length} dari {total || students.length} partner ditampilkan</span>
           <span>Last active berdasarkan heartbeat/aktivitas online, bukan login terakhir.</span>
         </div>
       </div>

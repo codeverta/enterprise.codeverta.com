@@ -92,8 +92,8 @@ func setupFreeTrialCheckoutTest(t *testing.T) (*gin.Engine, *gorm.DB, model.Tena
 func TestEmailFreeTrialCreatesAccountsAndLogsInOnce(t *testing.T) {
 	router, db, tenant, plan := setupFreeTrialCheckoutTest(t)
 	body := fmt.Sprintf(`{
-		"parent_name":"Orang Tua Trial",
-		"parent_username":"orangtuatrial",
+		"parent_name":"Merchant Trial",
+		"parent_username":"merchanttrial",
 		"parent_phone":"08123456789",
 		"student_name":"Anak Trial",
 		"student_nisn":"1234567890",
@@ -172,8 +172,8 @@ func TestEmailFreeTrialCreatesAccountsAndLogsInOnce(t *testing.T) {
 func TestPaidGuestCheckoutStillRequiresParentEmail(t *testing.T) {
 	router, _, _, plan := setupFreeTrialCheckoutTest(t)
 	body := fmt.Sprintf(`{
-		"parent_name":"Orang Tua",
-		"parent_username":"orangtuabayar",
+		"parent_name":"Merchant",
+		"parent_username":"merchantbayar",
 		"parent_phone":"08123456789",
 		"student_name":"Anak",
 		"student_nisn":"1234567890",

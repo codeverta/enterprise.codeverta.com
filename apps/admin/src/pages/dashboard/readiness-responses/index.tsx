@@ -116,7 +116,7 @@ const readinessDimensionLabels: Record<string, string> = {
   finansial: "Kesiapan Finansial",
   lingkungan: "Lingkungan Belajar",
   dukungan: "Dukungan Keluarga",
-  komitmen: "Komitmen Orang Tua",
+  komitmen: "Komitmen Merchant",
   pemahaman: "Pemahaman Homeschooling",
   teknologi: "Kesiapan Teknologi",
 };
@@ -333,7 +333,7 @@ function ReadinessResponsesPage() {
             icon={<TrendingUp className="h-4 w-4" />}
             label="Rata-rata kesiapan"
             value={`${summary?.average_parent_score ?? 0}%`}
-            note="Tes orang tua yang selesai"
+            note="Tes merchant yang selesai"
           />
           <MetricCard
             icon={<Sparkles className="h-4 w-4" />}
@@ -393,7 +393,7 @@ function ReadinessResponsesPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <EmptyChart text="Dimensi akan terlihat setelah tes orang tua selesai." />
+                  <EmptyChart text="Dimensi akan terlihat setelah tes merchant selesai." />
                 )}
               </CardContent>
             </Card>
@@ -695,10 +695,10 @@ function HumanReadableReadinessDetail({ response }: { response: ReadinessRespons
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="bg-indigo-500/20 text-indigo-200 border-indigo-400/30">
-              {response.test_type === "parent" ? "Tes Orang Tua" : "Tes Anak"}
+              {response.test_type === "parent" ? "Tes Merchant" : "Tes Anak"}
             </Badge>
             <Badge className="bg-emerald-500/20 text-emerald-200 border-emerald-400/30">
-              {response.respondent_type === "internal" ? "Orang Tua KITA" : "Eksternal / Umum"}
+              {response.respondent_type === "internal" ? "Merchant KITA" : "Eksternal / Umum"}
             </Badge>
             <Badge variant="outline" className={response.status === "completed" ? "border-emerald-400 text-emerald-300" : "border-amber-400 text-amber-300"}>
               {response.status === "completed" ? "Selesai" : "Draft (Dalam Proses)"}

@@ -28,8 +28,8 @@ const TOUR_COMPLETION_PREFIX = "roleOnboardingCompleted:";
 const SPOTLIGHT_GAP = 8;
 
 const roleLabels = {
-  [ROLES.PARENT]: "Orang Tua",
-  [ROLES.STUDENT]: "Siswa",
+  [ROLES.MERCHANT]: "Merchant",
+  [ROLES.PARTNER]: "Partner",
   [ROLES.INSTRUCTOR]: "Guru Internal",
   [ROLES.MENTOR_EXTERNAL]: "Guru External",
   [ROLES.ADMIN]: "Admin",
@@ -70,7 +70,7 @@ const commonSteps = {
 };
 
 const roleSteps: Record<number, any[]> = {
-  [ROLES.STUDENT]: [
+  [ROLES.PARTNER]: [
     {
       id: "my-classes",
       eyebrow: "Belajar",
@@ -100,13 +100,13 @@ const roleSteps: Record<number, any[]> = {
     },
     commonSteps.settings,
   ],
-  [ROLES.PARENT]: [
+  [ROLES.MERCHANT]: [
     {
       id: "children",
       eyebrow: "Pendampingan",
       title: "Kelola Akun Anak",
       description:
-        "Di sini Anda menambah atau memilih akun anak. Pastikan data anak benar agar kelas, subscription, dan progres tercatat pada siswa yang tepat.",
+        "Di sini Anda menambah atau memilih akun anak. Pastikan data anak benar agar kelas, subscription, dan progres tercatat pada partner yang tepat.",
       icon: Users,
       target: targetHref("/akun-anak"),
     },
@@ -143,7 +143,7 @@ const roleSteps: Record<number, any[]> = {
     {
       id: "student-progress",
       eyebrow: "Pendampingan",
-      title: "Pantau Progress Siswa",
+      title: "Pantau Progress Partner",
       description:
         "Lihat siapa yang aktif, siapa yang tertinggal, dan materi yang membutuhkan penjelasan tambahan melalui menu ini.",
       icon: GraduationCap,
@@ -154,7 +154,7 @@ const roleSteps: Record<number, any[]> = {
       eyebrow: "Perencanaan",
       title: "Susun Jadwal Belajar",
       description:
-        "Gunakan Jadwal Belajar untuk menyiapkan agenda yang konsisten dan mengatur kegiatan siswa.",
+        "Gunakan Jadwal Belajar untuk menyiapkan agenda yang konsisten dan mengatur kegiatan partner.",
       icon: CalendarDays,
       target: targetHref("/schedule"),
     },
@@ -214,7 +214,7 @@ const roleSteps: Record<number, any[]> = {
       eyebrow: "Akun platform",
       title: "Kelola Pengguna",
       description:
-        "Gunakan menu Pengguna untuk memeriksa siswa, parent, mentor, role, serta akun yang membutuhkan approval.",
+        "Gunakan menu Pengguna untuk memeriksa partner, parent, mentor, role, serta akun yang membutuhkan approval.",
       icon: Users,
       target: targetHref("/users/list"),
     },
@@ -302,7 +302,7 @@ export function RoleOnboarding({ user, onboarding, onCompleted }) {
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   const steps = useMemo(
-    () => [introStep, commonSteps.home, ...(roleSteps[role] || roleSteps[ROLES.STUDENT])],
+    () => [introStep, commonSteps.home, ...(roleSteps[role] || roleSteps[ROLES.PARTNER])],
     [role]
   );
   const safeIndex = Math.min(stepIndex, steps.length - 1);

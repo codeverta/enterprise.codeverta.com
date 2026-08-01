@@ -22,7 +22,7 @@ export const QuizEditor = ({
         </h2>
         <p className="text-xs text-zinc-500">
           {lessonForm.lesson_id
-            ? "Quiz ini akan muncul di dalam lesson dan wajib selesai sebelum siswa melanjutkan."
+            ? "Quiz ini akan muncul di dalam lesson dan wajib selesai sebelum partner melanjutkan."
             : "Inisialisasi awal modul ujian kompetensi."}
         </p>
       </div>

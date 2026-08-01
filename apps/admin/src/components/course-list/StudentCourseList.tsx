@@ -557,7 +557,7 @@ function StudentCourseList({ user }) {
       const data = new FormData();
       data.append("file", file);
       data.append("type", mediaType);
-      const res = await api.post("/lms/admin/upload-media", data, {
+      const res = await api.post("/admin/upload-media", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const fileUrl = res.data?.data?.url || "";
@@ -588,7 +588,7 @@ function StudentCourseList({ user }) {
     try {
       const data = new FormData();
       data.append("file", file);
-      const res = await api.post("/lms/admin/upload-image", data, {
+      const res = await api.post("/admin/upload-image", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const thumbnailUrl = res.data?.data?.url || "";

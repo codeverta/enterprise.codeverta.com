@@ -115,7 +115,7 @@ const handleLinkStudent = async (e: React.FormEvent) => {
     // SESUAIKAN DENGAN SONNER TOAST
     toast.success("Berhasil terhubung", {
       description: `${
-        res.data?.data?.student_name || "Siswa"
+        res.data?.data?.student_name || "Partner"
       } telah ditambahkan ke akun Anda.`,
     });
 
@@ -199,7 +199,7 @@ const handleUpdateStudent = async (e: React.FormEvent) => {
     });
 
     toast.success("Berhasil memperbarui", {
-      description: `Profil siswa ${editDisplayName} berhasil disimpan.`,
+      description: `Profil partner ${editDisplayName} berhasil disimpan.`,
     });
 
     setIsEditOpen(false);
@@ -219,7 +219,7 @@ const handleUpdateStudent = async (e: React.FormEvent) => {
     <div className="space-y-6 p-12">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium">Akun Anak / Siswa</h3>
+          <h3 className="text-lg font-medium">Akun Anak / Partner</h3>
           <p className="text-sm text-muted-foreground">
             Hubungkan akun belajar anak Anda untuk memantau progress materi dan
             kuis mereka.
@@ -242,7 +242,7 @@ const handleUpdateStudent = async (e: React.FormEvent) => {
               <DialogHeader>
                 <DialogTitle>Tambah Akun Anak</DialogTitle>
                 <DialogDescription>
-                  Buat akun belajar baru untuk anak atau hubungkan akun siswa
+                  Buat akun belajar baru untuk anak atau hubungkan akun partner
                   yang sudah tersedia.
                 </DialogDescription>
               </DialogHeader>
@@ -460,7 +460,7 @@ const handleUpdateStudent = async (e: React.FormEvent) => {
           </CardContent>
         </Card>
       ) : (
-        /* Daftar Siswa */
+        /* Daftar Partner */
         <div className="grid gap-4 md:grid-cols-2">
           {students.map((student) => (
             <Card key={student.id} className="overflow-hidden">
@@ -482,7 +482,7 @@ const handleUpdateStudent = async (e: React.FormEvent) => {
                       {student.full_name || student.name}
                     </CardTitle>
                     <CardDescription className="text-xs">
-                      {student.email || student.phone_number || "Siswa"}
+                      {student.email || student.phone_number || "Partner"}
                     </CardDescription>
                   </div>
                 </div>
@@ -535,7 +535,7 @@ const handleUpdateStudent = async (e: React.FormEvent) => {
               <br />
               <span className="text-xs text-muted-foreground">
                 *Aksi ini hanya memutus hubungan data dan tidak akan menghapus
-                akun siswa dari platform Codeverta School.
+                akun partner dari platform Codeverta School.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -565,9 +565,9 @@ const handleUpdateStudent = async (e: React.FormEvent) => {
         <DialogContent className="sm:max-w-[500px]">
           <form onSubmit={handleUpdateStudent}>
             <DialogHeader>
-              <DialogTitle>Edit Informasi Siswa</DialogTitle>
+              <DialogTitle>Edit Informasi Partner</DialogTitle>
               <DialogDescription>
-                Perbarui detail informasi profil dan akun login untuk siswa.
+                Perbarui detail informasi profil dan akun login untuk partner.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">

@@ -290,7 +290,7 @@ const InstructorDashboard = ({ data }) => {
           />
         )}
         <StatCard
-          title="Total Siswa"
+          title="Total Partner"
           value={summary.total_students || 0}
           icon={<Users className="h-4 w-4 text-blue-600" />}
         />
@@ -335,7 +335,7 @@ const InstructorDashboard = ({ data }) => {
             icon={<Award className="h-4 w-4 text-amber-600" />}
           />
           <EmptyState>
-            Aktivitas terbaru akan tampil saat siswa submit quiz atau
+            Aktivitas terbaru akan tampil saat partner submit quiz atau
             assignment.
           </EmptyState>
         </CardContent>
@@ -356,8 +356,8 @@ const AdminLMSDashboard = ({ data }) => {
         <StatCard title="Total Transaksi LMS" value={revenue.total_transactions || 0} icon={<CheckCircle className="h-4 w-4 text-violet-600" />} />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Total Siswa" value={users.total_students || 0} icon={<Users className="h-4 w-4 text-blue-600" />} />
-        <StatCard title="Siswa Aktif Hari Ini" value={users.active_today || 0} icon={<Flame className="h-4 w-4 text-rose-600" />} />
+        <StatCard title="Total Partner" value={users.total_students || 0} icon={<Users className="h-4 w-4 text-blue-600" />} />
+        <StatCard title="Partner Aktif Hari Ini" value={users.active_today || 0} icon={<Flame className="h-4 w-4 text-rose-600" />} />
         <StatCard title="Registrasi Baru" value={users.new_registrations || 0} icon={<BadgeCheck className="h-4 w-4 text-emerald-600" />} />
       </div>
       <div className="grid gap-4 lg:grid-cols-3">

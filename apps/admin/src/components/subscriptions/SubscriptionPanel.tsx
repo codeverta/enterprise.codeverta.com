@@ -305,7 +305,7 @@ function SubscriptionsPanel() {
           <Search className="absolute left-2.5 top-2 size-4 text-slate-400" />
           <Input
             className="h-8 pl-9 text-xs"
-            placeholder="Cari nama siswa, ortu, atau paket..."
+            placeholder="Cari nama partner, ortu, atau paket..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -400,13 +400,13 @@ function SubscriptionsPanel() {
                   className="cursor-pointer"
                   onClick={() => sort("student_name")}
                 >
-                  Siswa <SortIcon col="student_name" />
+                  Partner <SortIcon col="student_name" />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer"
                   onClick={() => sort("parent_name")}
                 >
-                  Orang Tua <SortIcon col="parent_name" />
+                  Merchant <SortIcon col="parent_name" />
                 </TableHead>
                 <TableHead
                   className="cursor-pointer"
@@ -578,7 +578,7 @@ function SubscriptionsPanel() {
           <div className="space-y-4">
             <div className="text-sm text-slate-600">
               <p className="font-medium text-slate-900">
-                {movingSubscription?.student_name || "Siswa"}
+                {movingSubscription?.student_name || "Partner"}
               </p>
               <p>
                 Paket saat ini:{" "}

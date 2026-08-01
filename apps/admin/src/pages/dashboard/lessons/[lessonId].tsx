@@ -237,7 +237,7 @@ const [askPanelOpen, setAskPanelOpen] = useState(false);
       return;
     }
 
-    // Alur reguler untuk Siswa
+    // Alur reguler untuk Partner
     setSaving(true);
     try {
       const res = await api.post(`/lms/lessons/${lesson.id}/continue`, {
@@ -598,7 +598,7 @@ const [askPanelOpen, setAskPanelOpen] = useState(false);
             />
           )}
 
-          {/* Finished notice (Hanya untuk siswa) */}
+          {/* Finished notice (Hanya untuk partner) */}
           {!isMentorOrAdmin && finished && (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-800">
               Kamu sudah menyelesaikan lesson terakhir di module ini. 🎉

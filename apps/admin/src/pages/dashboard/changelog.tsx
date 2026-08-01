@@ -37,12 +37,12 @@ const changelogData: ChangelogItem[] = [
       },
       {
         title: "Isolasi Keamanan & Data untuk",
-        description: "Membatasi visibilitas daftar kelas, statistik kelas, progress pembelajaran siswa, dan jadwal template belajar agar mentor eksternal hanya dapat mengakses siswa dan kelas milik mereka sendiri.",
+        description: "Membatasi visibilitas daftar kelas, statistik kelas, progress pembelajaran partner, dan jadwal template belajar agar mentor eksternal hanya dapat mengakses partner dan kelas milik mereka sendiri.",
         type: "security",
       },
       {
         title: "Perbaikan MySQL Table Name Error",
-        description: "Menyelaraskan kueri database untuk progress siswa dari tabel singular ke plural (student_progresses) sesuai aturan GORM, menyelesaikan error 500 internal server.",
+        description: "Menyelaraskan kueri database untuk progress partner dari tabel singular ke plural (student_progresses) sesuai aturan GORM, menyelesaikan error 500 internal server.",
         type: "fix",
       },
     ],
@@ -68,8 +68,8 @@ const changelogData: ChangelogItem[] = [
         type: "feature",
       },
       {
-        title: "Integrasi Real Data Dashboard Orang Tua",
-        description: "Menghubungkan pricing list berlangganan di Dashboard Orang Tua langsung dengan database melalui API backend, menggantikan data statis.",
+        title: "Integrasi Real Data Dashboard Merchant",
+        description: "Menghubungkan pricing list berlangganan di Dashboard Merchant langsung dengan database melalui API backend, menggantikan data statis.",
         type: "improvement",
       },
     ],

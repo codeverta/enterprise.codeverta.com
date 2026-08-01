@@ -86,3 +86,22 @@ func registerCoreRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
 		subscriptionAdmin.PUT("/:id/plan", ctrls.lms.MoveSubscriptionPlan)
 	}
 }
+
+// registerCoreProfileAndMediaRoutes exposes generic profile and media
+// capabilities without retaining the LMS namespace.
+func registerCoreProfileAndMediaRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
+	profile := rg.Group("/my-profile")
+	profile.Use(middleware.UserAuth())
+	{
+		profile.GET("", ctrls.lms.GetMyProfile)
+		profile.PUT("", ctrls.lms.UpdateMyProfile)
+		profile.POST("/avatar", middleware.MaxSizeMiddleware(5*1024*1024), middleware.UploadRateLimit(), ctrls.lms.UpdateMyAvatar)
+	}
+
+	media := rg.Group("/admin")
+	media.Use(middleware.AdminAuth())
+	{
+		media.POST("/upload-image", middleware.MaxSizeMiddleware(10*1024*1024), middleware.UploadRateLimit(), ctrls.lms.UploadImage)
+		media.POST("/upload-media", middleware.MaxSizeMiddleware(25*1024*1024), middleware.UploadRateLimit(), ctrls.lms.UploadMedia)
+	}
+}

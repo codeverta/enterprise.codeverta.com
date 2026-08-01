@@ -440,7 +440,7 @@ export default function BundleFormDialog({
                   Wajib Berurutan (Sequential Courses)
                 </Label>
                 <p className="text-[10px] text-slate-500 leading-normal">
-                  Siswa wajib menyelesaikan kuis & materi di course sebelumnya
+                  Partner wajib menyelesaikan kuis & materi di course sebelumnya
                   sebelum dapat mendaftar/mengakses course berikutnya dalam
                   bundle.
                 </p>

@@ -84,15 +84,15 @@ import { beginImpersonation } from "@/lib/impersonation";
 
 const ROLE_OPTIONS = [
   { label: "Semua Role", value: "" },
-  { label: "Orang Tua", value: "10" },
-  { label: "Siswa", value: "20" },
+  { label: "Merchant", value: "10" },
+  { label: "Partner", value: "20" },
   { label: "Mentor", value: "30" },
   { label: "Admin", value: "99" },
 ];
 
 const roleLabel = (roleNumber) => {
-  if (roleNumber === 10) return "Orang Tua";
-  if (roleNumber === 20) return "Siswa";
+  if (roleNumber === 10) return "Merchant";
+  if (roleNumber === 20) return "Partner";
   if (roleNumber === 30) return "Mentor Internal";
   if (roleNumber === 40) return "Mentor Eksternal";
   if (roleNumber === 99) return "Admin";
@@ -430,7 +430,7 @@ function UserManagementPage({ user, onlineUsers = [] }) {
               )}
             </div>
             <p className="text-muted-foreground">
-              Lihat semua user: mentor, siswa, orang tua, dan admin.
+              Lihat semua user: mentor, partner, merchant, dan admin.
             </p>
           </div>
 
@@ -811,7 +811,7 @@ function UserManagementPage({ user, onlineUsers = [] }) {
               id="impersonation-reason"
               value={impersonationReason}
               onChange={(event) => setImpersonationReason(event.target.value)}
-              placeholder="Contoh: Memeriksa course yang tidak muncul di dashboard siswa"
+              placeholder="Contoh: Memeriksa course yang tidak muncul di dashboard partner"
               maxLength={500}
               rows={3}
               autoFocus

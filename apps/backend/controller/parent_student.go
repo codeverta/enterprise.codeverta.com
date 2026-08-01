@@ -170,7 +170,7 @@ func (ctrl *LMSController) LinkStudentByCode(c *gin.Context) {
 	var student model.User
 	err := db.Where("id LIKE ?", "%"+cleanCode).First(&student).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		sendError(c, http.StatusNotFound, "Akun siswa tidak ditemukan, mohon periksa kembali kode Anda", nil)
+		sendError(c, http.StatusNotFound, "Akun partner tidak ditemukan, mohon periksa kembali kode Anda", nil)
 		return
 	}
 	if err != nil {
@@ -184,7 +184,7 @@ func (ctrl *LMSController) LinkStudentByCode(c *gin.Context) {
 		return
 	}
 
-	// Siapkan display name siswa untuk response payload
+	// Siapkan display name partner untuk response payload
 	studentName := student.DisplayName
 	if studentName == "" {
 		studentName = student.FirstName + " " + student.LastName
@@ -219,7 +219,7 @@ func (ctrl *LMSController) LinkStudentByCode(c *gin.Context) {
 		}
 
 		// Skenario B: Data ditemukan dan statusnya memang sudah aktif sedari awal
-		sendError(c, http.StatusConflict, "Siswa ini sudah terhubung dengan akun Anda", nil)
+		sendError(c, http.StatusConflict, "Partner ini sudah terhubung dengan akun Anda", nil)
 		return
 	}
 
@@ -248,7 +248,7 @@ func (ctrl *LMSController) UnlinkStudent(c *gin.Context) {
 
 	studentID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		sendBadRequest(c, "Format ID siswa tidak valid", nil)
+		sendBadRequest(c, "Format ID partner tidak valid", nil)
 		return
 	}
 
@@ -307,7 +307,7 @@ func (ctrl *LMSController) UpdateLinkedStudent(c *gin.Context) {
 
 	studentID, err := uuid.Parse(c.Param("student_id"))
 	if err != nil {
-		sendBadRequest(c, "Format ID siswa tidak valid", nil)
+		sendBadRequest(c, "Format ID partner tidak valid", nil)
 		return
 	}
 
@@ -334,7 +334,7 @@ func (ctrl *LMSController) UpdateLinkedStudent(c *gin.Context) {
 	var student model.User
 	if err := db.Where("id = ?", studentID).First(&student).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			sendError(c, http.StatusNotFound, "Akun siswa tidak ditemukan", nil)
+			sendError(c, http.StatusNotFound, "Akun partner tidak ditemukan", nil)
 			return
 		}
 		sendInternalError(c, err)
@@ -372,5 +372,5 @@ func (ctrl *LMSController) UpdateLinkedStudent(c *gin.Context) {
 		return
 	}
 
-	sendSuccess(c, student, "Informasi siswa berhasil diperbarui")
+	sendSuccess(c, student, "Informasi partner berhasil diperbarui")
 }

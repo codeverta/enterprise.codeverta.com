@@ -520,7 +520,7 @@ function SubscriptionPaymentPage() {
                     Subscription untuk
                   </p>
                   <p className="mt-1 font-semibold text-gray-900">
-                    {isParentPlan ? (currentUser.display_name || currentUser.username || "Orang Tua") : selectedChild?.full_name}
+                    {isParentPlan ? (currentUser.display_name || currentUser.username || "Merchant") : selectedChild?.full_name}
                   </p>
                   {(isParentPlan ? currentUser.email : selectedChild?.email) && (
                     <p className="text-xs text-gray-500">
@@ -711,7 +711,7 @@ function SubscriptionPaymentPage() {
     if (!parentSubscriptions.length) {
       return (
         <div className="mb-8 rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-          Kamu belum punya subscription orang tua aktif. Pilih paket di bawah untuk mulai berlangganan.
+          Kamu belum punya subscription merchant aktif. Pilih paket di bawah untuk mulai berlangganan.
         </div>
       );
     }
@@ -969,13 +969,13 @@ function SubscriptionPaymentPage() {
 
                       <div className="space-y-4">
                         <div className="border-b pb-2">
-                          <h3 className="text-lg font-bold text-gray-900">Paket Langganan Orang Tua</h3>
+                          <h3 className="text-lg font-bold text-gray-900">Paket Langganan Merchant</h3>
                           <p className="text-sm text-gray-500">Pilih paket untuk mengaktifkan fitur parent.</p>
                         </div>
 
                         {parentPlans.length === 0 ? (
                           <div className="rounded-xl border border-dashed bg-white p-6 text-center text-sm text-gray-500">
-                            Tidak ada paket orang tua yang aktif saat ini.
+                            Tidak ada paket merchant yang aktif saat ini.
                           </div>
                         ) : (
                           <div className="grid gap-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1">

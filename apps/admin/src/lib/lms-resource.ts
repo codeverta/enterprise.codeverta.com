@@ -82,7 +82,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "class-students",
     label: "Class Assignments",
-    description: "Penempatan siswa ke dalam suatu kelas (Hanya Mentor/Admin).",
+    description: "Penempatan partner ke dalam suatu kelas (Hanya Mentor/Admin).",
     icon: CheckCircle2,
     columns: ["class_id", "student_id", "created_at"],
     fields: [
@@ -108,7 +108,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "courses",
     label: "Courses",
-    description: "Kelas utama yang dijual dan dibuka untuk siswa.",
+    description: "Kelas utama yang dijual dan dibuka untuk partner.",
     icon: GraduationCap,
     columns: ["title", "slug", "level", "status", "minimum_passing_grade", "allow_skip", "sort_order"],
     defaults: { status: "draft", sort_order: 0, minimum_passing_grade: 0, allow_skip: false },
@@ -246,7 +246,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "profiles",
     label: "Profiles",
-    description: "Profil siswa, orangtua, mentor, dan admin.",
+    description: "Profil partner, merchant, mentor, dan admin.",
     icon: UsersRound,
     columns: ["full_name", "user_id", "phone_number", "display_name", "nisn"],
     defaults: { metadata: "{}" },
@@ -255,7 +255,7 @@ export const resources: ResourceConfig[] = [
       { key: "full_name", label: "Full Name" },
       { key: "display_name", label: "Display Name" },
       { key: "phone_number", label: "Phone Number" },
-      { key: "nisn", label: "NISN Siswa" },
+      { key: "nisn", label: "NISN Partner" },
       { key: "avatar_url", label: "Avatar URL" },
       { key: "bio", label: "Bio", type: "textarea" },
       { key: "date_of_birth", label: "Date of Birth", type: "datetime" },
@@ -265,7 +265,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "user-roles",
     label: "User Roles",
-    description: "Role LMS: siswa, orangtua, mentor/guru, admin.",
+    description: "Role LMS: partner, merchant, mentor/guru, admin.",
     icon: ShieldCheck,
     columns: ["user_id", "role", "created_at"],
     defaults: { role: "student" },
@@ -293,7 +293,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "memberships",
     label: "Memberships",
-    description: "Relasi orangtua dan siswa.",
+    description: "Relasi merchant dan partner.",
     icon: UsersRound,
     columns: ["parent_id", "student_id", "status"],
     defaults: { status: "active" },
@@ -306,7 +306,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "student-progress",
     label: "Student Progress",
-    description: "Progres lesson per siswa.",
+    description: "Progres lesson per partner.",
     icon: CheckCircle2,
     columns: ["student_id", "lesson_id", "is_completed", "progress_percent"],
     defaults: { is_completed: false, last_position_sec: 0, progress_percent: 0 },
@@ -414,7 +414,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "community-posts",
     label: "Community Posts",
-    description: "Post komunitas siswa/orangtua.",
+    description: "Post komunitas partner/merchant.",
     icon: MessageSquareText,
     columns: ["title", "author_id", "is_published", "published_at"],
     defaults: { is_published: false },
@@ -429,7 +429,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "parent-guides",
     label: "Parent Guides",
-    description: "Panduan khusus orangtua.",
+    description: "Panduan khusus merchant.",
     icon: FileText,
     columns: ["title", "is_published", "sort_order"],
     defaults: { is_published: false, sort_order: 0 },
@@ -443,7 +443,7 @@ export const resources: ResourceConfig[] = [
   {
     key: "level-unlocks",
     label: "Level Unlocks",
-    description: "Akses level belajar per siswa.",
+    description: "Akses level belajar per partner.",
     icon: ShieldCheck,
     columns: ["student_id", "course_id", "level", "unlocked_at"],
     fields: [

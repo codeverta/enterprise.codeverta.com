@@ -41,9 +41,10 @@ export const useSettingsStore = create((set) => ({
       
       return formattedSettings;
     } catch (error) {
-      console.error("Failed to load settings", error);
-      set({ isLoading: false });
-      throw error;
+      const fallbackSettings = { app_name: "Codeverta ERP", app_logo: "" };
+      set({ settings: fallbackSettings, isLoading: false });
+      if (!isPublic) throw error;
+      return fallbackSettings;
     }
   },
   

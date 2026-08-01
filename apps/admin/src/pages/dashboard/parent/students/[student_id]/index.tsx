@@ -598,7 +598,7 @@ function ParentStudentDetailPage() {
             <CardContent>
               {(!categoryProgress || categoryProgress.length === 0) ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  Belum ada progres kategori terdaftar untuk siswa ini.
+                  Belum ada progres kategori terdaftar untuk partner ini.
                 </p>
               ) : (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -648,14 +648,14 @@ function ParentStudentDetailPage() {
           {/* Printable Report Document for Single Student (Print Only) */}
           <div className="hidden print:block print-container bg-white p-8 max-w-4xl mx-auto text-black">
             <div className="border-b-2 border-zinc-800 pb-5 mb-6 text-center">
-              <h1 className="text-2xl font-bold uppercase tracking-wide">Laporan Hasil Belajar & Akademik Siswa</h1>
+              <h1 className="text-2xl font-bold uppercase tracking-wide">Laporan Hasil Belajar & Akademik Partner</h1>
               <p className="text-sm text-zinc-500 mt-1 font-medium">LMS Learning Management System</p>
               <p className="text-xs text-zinc-400 mt-0.5">Tanggal Cetak: {dayjs().format("DD MMMM YYYY")}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6 text-xs bg-zinc-50 p-4 border border-zinc-200 rounded-lg">
               <div>
-                <p><span className="text-zinc-500">Nama Siswa:</span> <span className="font-bold">{student.name || student.full_name}</span></p>
+                <p><span className="text-zinc-500">Nama Partner:</span> <span className="font-bold">{student.name || student.full_name}</span></p>
                 <p className="mt-1.5"><span className="text-zinc-500">Email:</span> <span className="font-mono">{student.email}</span></p>
               </div>
               <div>

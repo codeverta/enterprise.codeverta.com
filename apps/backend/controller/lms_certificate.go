@@ -44,7 +44,7 @@ func (ctrl *LMSController) GetCourseCertificate(c *gin.Context) {
 		certificateUserID = parsedStudentID
 	}
 
-	// 2. Ambil data user untuk mendapatkan Nama Siswa
+	// 2. Ambil data user untuk mendapatkan Nama Partner
 	studentName := ""
 	var user model.User
 	if err := db.First(&user, "id = ?", certificateUserID).Error; err == nil {
@@ -121,7 +121,7 @@ func (ctrl *LMSController) GetCourseCertificate(c *gin.Context) {
 		return
 	}
 
-	// Blokir jika siswa belum menyelesaikan seluruh kelas materi
+	// Blokir jika partner belum menyelesaikan seluruh kelas materi
 	if role < 99 && completedCount < totalLessons {
 		sendError(c, http.StatusForbidden, "Kamu belum menyelesaikan seluruh materi course ini", gin.H{
 			"completed_lessons":     completedCount,
@@ -133,7 +133,7 @@ func (ctrl *LMSController) GetCourseCertificate(c *gin.Context) {
 		return
 	}
 
-	// Blokir jika siswa tidak mencapai passing grade minimum
+	// Blokir jika partner tidak mencapai passing grade minimum
 	if role < 99 && course.MinimumPassingGrade > 0 && avgScore < course.MinimumPassingGrade {
 		sendError(c, http.StatusForbidden, fmt.Sprintf("Nilai rata-rata kuis Anda (%.2f) kurang dari nilai kelulusan minimum (%.2f)", avgScore, course.MinimumPassingGrade), gin.H{
 			"completed_lessons":     completedCount,

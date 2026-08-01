@@ -17,8 +17,11 @@ import (
 
 // Menggunakan level hierarki sesuai preferensi Anda
 const (
-	RoleParent       = 10
-	RoleStudent      = 20
+	RoleMerchant = 10
+	RolePartner  = 20
+	// Deprecated aliases keep dormant LMS modules source-compatible.
+	RoleParent       = RoleMerchant
+	RoleStudent      = RolePartner
 	RoleMentor       = 30
 	RoleGuruExternal = 40
 	RoleAdmin        = 99
@@ -40,7 +43,7 @@ func SeedUsers(db *gorm.DB) error {
 		}
 
 		// FIX: Parse string tenant_id menjadi objek biner uuid.UUID
-		tenantUUID, err := uuid.Parse("7c3f1a5e-9b2e-4f6a-8d1e-2a4c6b8f9e21")
+		tenantUUID, err := uuid.Parse(DefaultTenantIDString)
 		if err != nil {
 			return fmt.Errorf("failed to parse tenant uuid: %w", err)
 		}
@@ -428,16 +431,16 @@ func SeedSubscriptionPlans(db *gorm.DB) error {
 		// Seed features
 		featuresMap := map[string][]string{
 			"early-years": {
-				"Kurikulum Early Years", "Digital Library", "Audio Learning", "Video Lessons", "Portfolio Awal Anak", "Dashboard Orang Tua",
+				"Kurikulum Early Years", "Digital Library", "Audio Learning", "Video Lessons", "Portfolio Awal Anak", "Dashboard Merchant",
 			},
 			"sd-1-3": {
-				"Kurikulum SD 1–3", "Course", "Digital Library", "Komunitas Anak", "Portofolio Dunia Nyata (Awal)", "Dashboard Orang Tua",
+				"Kurikulum SD 1–3", "Course", "Digital Library", "Komunitas Anak", "Portofolio Dunia Nyata (Awal)", "Dashboard Merchant",
 			},
 			"sd-4-6": {
 				"Semua fitur SD 1–3", "Entrepreneurship Projects", "Advanced Communication", "Expanded Library", "Komunitas Anak",
 			},
 			"smp": {
-				"Semua fitur SD", "Social-Emotional Resilience", "AI Literacy", "Komunitas Proyek", "Portofolio Dunia Nyata (Proyek)", "Kolaborasi Antar Siswa",
+				"Semua fitur SD", "Social-Emotional Resilience", "AI Literacy", "Komunitas Proyek", "Portofolio Dunia Nyata (Proyek)", "Kolaborasi Antar Partner",
 			},
 			"sma": {
 				"Semua fitur SMP", "Leadership & Communication", "Financial Builder", "Business & Entrepreneurship", "AI Engineering", "High-Value Networking", "Mentor Bisnis", "Real-World Portfolio",
@@ -669,7 +672,7 @@ func SeedSubscriptionPlans(db *gorm.DB) error {
 						if pp.Slug == "legacy-contributor" {
 							features = []string{"Upload sharing perjalanan bisnis", "Berbagi pelajaran dari nol sampai sukses", "Membangun legacy untuk generasi berikutnya", "Profil contributor"}
 						} else if pp.Slug == "family-financial-builder" {
-							features = []string{"AI Financial Builder for Family", "Penemuan ide income dengan AI", "Perencanaan keuangan keluarga", "Roadmap mingguan untuk orang tua sibuk", "Skill digital untuk orang tua", "Dukungan komunitas"}
+							features = []string{"AI Financial Builder for Family", "Penemuan ide income dengan AI", "Perencanaan keuangan keluarga", "Roadmap mingguan untuk merchant sibuk", "Skill digital untuk merchant", "Dukungan komunitas"}
 						} else {
 							features = []string{"AI untuk pertumbuhan bisnis", "Workflow konten dan sales", "Prompt library untuk pebisnis", "Studi kasus bisnis", "Diskusi komunitas", "Tantangan implementasi bulanan"}
 						}

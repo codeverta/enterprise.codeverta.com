@@ -52,14 +52,14 @@ export default function SubscriptionReminderBanner() {
             if (!isActive) {
               activeReminders.push({
                 type: "danger",
-                title: "Langganan Orang Tua Berakhir",
-                message: "Langganan membership Orang Tua Anda telah berakhir. Perbarui sekarang untuk mengaktifkan kembali fitur jualan materi dan course.",
+                title: "Langganan Merchant Berakhir",
+                message: "Langganan membership Merchant Anda telah berakhir. Perbarui sekarang untuk mengaktifkan kembali fitur jualan materi dan course.",
               });
             } else if (daysRemaining !== null && daysRemaining <= 7) {
               activeReminders.push({
                 type: "warning",
-                title: "Langganan Orang Tua Hampir Berakhir",
-                message: `Langganan membership Orang Tua Anda akan berakhir dalam ${daysRemaining} hari. Perbarui sekarang agar fitur jualan tetap aktif.`,
+                title: "Langganan Merchant Hampir Berakhir",
+                message: `Langganan membership Merchant Anda akan berakhir dalam ${daysRemaining} hari. Perbarui sekarang agar fitur jualan tetap aktif.`,
               });
             }
           }
@@ -108,13 +108,13 @@ export default function SubscriptionReminderBanner() {
               activeReminders.push({
                 type: "danger",
                 title: "Masa Belajar Berakhir",
-                message: "Masa aktif belajar Anda telah berakhir. Hubungi atau ingatkan orang tua Anda untuk memperpanjang langganan belajar.",
+                message: "Masa aktif belajar Anda telah berakhir. Hubungi atau ingatkan merchant Anda untuk memperpanjang langganan belajar.",
               });
             } else if (daysRemaining !== null && daysRemaining <= 7) {
               activeReminders.push({
                 type: "warning",
                 title: "Masa Belajar Hampir Berakhir",
-                message: `Masa aktif belajar Anda akan berakhir dalam ${daysRemaining} hari. Ingatkan orang tua Anda untuk memperpanjang langganan.`,
+                message: `Masa aktif belajar Anda akan berakhir dalam ${daysRemaining} hari. Ingatkan merchant Anda untuk memperpanjang langganan.`,
               });
             }
           }

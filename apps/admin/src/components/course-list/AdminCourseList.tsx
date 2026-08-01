@@ -181,7 +181,7 @@ function AdminCourseList({ user }) {
     canManageCourseCategory ||
     role === ROLES.INSTRUCTOR ||
     role === ROLES.MENTOR_EXTERNAL ||
-    role === ROLES.PARENT;
+    role === ROLES.MERCHANT;
   const creatorScope = role >= 99 ? "internal_mentors" : undefined;
   /* ── fetchers ── */
 
@@ -586,7 +586,7 @@ function AdminCourseList({ user }) {
       const data = new FormData();
       data.append("file", file);
       data.append("type", mediaType);
-      const res = await api.post("/lms/admin/upload-media", data, {
+      const res = await api.post("/admin/upload-media", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const fileUrl = res.data?.data?.url || "";
@@ -617,7 +617,7 @@ function AdminCourseList({ user }) {
     try {
       const data = new FormData();
       data.append("file", file);
-      const res = await api.post("/lms/admin/upload-image", data, {
+      const res = await api.post("/admin/upload-image", data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       const thumbnailUrl = res.data?.data?.url || "";

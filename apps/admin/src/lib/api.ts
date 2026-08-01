@@ -4,6 +4,8 @@ import { redirectToLogin } from './navigation'; // Asumsi fungsi ini sudah terde
 import { toast } from 'sonner'; // Asumsi Anda menggunakan Sonner untuk notifikasi
 import { clearImpersonationStorage, readImpersonation, restoreOriginalAdminSession } from './impersonation';
 
+export const DEFAULT_TENANT_ID = '7c3f1a5e-9b2e-4f6a-8d1e-2a4c6b8f9e21';
+
 // --- 1. Konfigurasi Instance Axios ---
 
 // Instance utama API (menggunakan interceptor)
@@ -11,7 +13,6 @@ const api = axios.create({
     baseURL: `${BASE_API_URL}/api`,
     headers: {
         'Accept': 'application/json',
-        'X-Tenant-ID': import.meta.env.VITE_X_TENANT_ID || 'belum-di-set',
     },
     // Sesuaikan konfigurasi lain sesuai kebutuhan backend Anda
     withCredentials: false, 
@@ -68,6 +69,19 @@ api.interceptors.request.use(config => {
         // TAPI sebaiknya pisahkan penyimpanan di sisi klien menjadi accessToken dan refreshToken
         config.headers.Authorization = `Bearer ${accessToken}`;
     }
+
+    const configuredTenant = String(import.meta.env.VITE_X_TENANT_ID || '').trim();
+    let sessionTenant = '';
+    try {
+        const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+        sessionTenant = String(storedUser?.tenant_id || '').trim();
+    } catch {
+        sessionTenant = '';
+    }
+    const tenantId = configuredTenant && configuredTenant !== 'belum-di-set'
+        ? configuredTenant
+        : sessionTenant || DEFAULT_TENANT_ID;
+    config.headers['X-Tenant-ID'] = tenantId;
     return config;
 }, error => {
     return Promise.reject(error);

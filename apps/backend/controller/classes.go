@@ -18,7 +18,7 @@ func (ctrl *LMSController) AssignStudentToClass(c *gin.Context) {
 	// Pastikan minimal role Mentor (30) atau Admin (99)
 	userRole := c.GetInt("user_role")
 	if userRole < model.RoleMentor {
-		sendError(c, http.StatusForbidden, "Hanya mentor atau admin yang dapat assign siswa ke kelas", nil)
+		sendError(c, http.StatusForbidden, "Hanya mentor atau admin yang dapat assign partner ke kelas", nil)
 		return
 	}
 
@@ -44,5 +44,5 @@ func (ctrl *LMSController) AssignStudentToClass(c *gin.Context) {
 		return
 	}
 
-	sendSuccess(c, assignment, "Siswa berhasil dimasukkan ke kelas")
+	sendSuccess(c, assignment, "Partner berhasil dimasukkan ke kelas")
 }
