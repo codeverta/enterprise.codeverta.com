@@ -21,7 +21,8 @@ import OrdersPage from "./pages/dashboard/orders";
 import NotFound from "./pages/not-found";
 import DeskPage from "./pages/desk";
 import ErpWorkspacePage from "./pages/desk/workspace";
-import CRMPage from "./pages/desk/crm";
+import CRMPage from "./modules/crm";
+import BuyingModule from "./modules/buying";
 
 const ProtectedRoute = () => {
   const authenticated = Boolean(localStorage.getItem("accessToken"));
@@ -60,6 +61,7 @@ const router = createBrowserRouter([
         children: [
           { path: "desk", element: <DeskPage /> },
           { path: "desk/crm/*", element: <CRMPage /> },
+          { path: "desk/purchase-order/*", element: <BuyingModule /> },
           { path: "desk/*", element: <ErpWorkspacePage /> },
           { path: "dashboard", element: <Dashboard /> },
           { path: "dashboard/users", element: <Users /> },

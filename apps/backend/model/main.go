@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gin-template/common"
 	crmmodel "gin-template/model/crm"
+	buyingmodel "gin-template/modules/buying/model"
 	"os"
 	"regexp"
 	"strconv"
@@ -66,6 +67,9 @@ func InitDB() error {
 		return fmt.Errorf("auto migration failed: %w", err)
 	}
 	if err := crmmodel.Migrate(db); err != nil {
+		return err
+	}
+	if err := buyingmodel.Migrate(db); err != nil {
 		return err
 	}
 
