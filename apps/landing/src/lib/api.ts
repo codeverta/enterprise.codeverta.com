@@ -77,7 +77,7 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-		const isAuthRequest = ['/auth/login', '/auth/register', '/auth/refresh-token']
+		const isAuthRequest = ['/auth/login', '/auth/register', '/auth/refresh-token', '/auth/handoff/exchange', '/auth/google/']
 			.some((path) => String(originalRequest?.url || '').includes(path));
         
         // Cek jika status 401 (Unauthorized) DAN permintaan belum dicoba ulang

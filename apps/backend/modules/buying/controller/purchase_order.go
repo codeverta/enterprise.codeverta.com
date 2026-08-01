@@ -173,16 +173,28 @@ func (h *PurchaseOrderController) Options(c *gin.Context) {
 		_ = db.Model(model).Where(column+" <> ''").Distinct().Order(column+" ASC").Pluck(column, &values).Error
 		return values
 	}
+	merge := func(groups ...[]string) []string {
+		seen, values := map[string]bool{}, make([]string, 0)
+		for _, group := range groups {
+			for _, value := range group {
+				if value != "" && !seen[value] {
+					seen[value] = true
+					values = append(values, value)
+				}
+			}
+		}
+		return values
+	}
 	companies := distinct(&buyingmodel.PurchaseOrder{}, "company")
 	if len(companies) == 0 {
 		companies = []string{"PT ZENIT TECHNOLOGY SOLUTION"}
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"companies": companies, "suppliers": distinct(&buyingmodel.PurchaseOrder{}, "supplier"),
-		"warehouses": distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse"), "items": distinct(&buyingmodel.PurchaseOrderItem{}, "item_code"),
+		"companies": companies, "suppliers": merge(distinct(&buyingmodel.Supplier{}, "supplier_name"), distinct(&buyingmodel.PurchaseOrder{}, "supplier")),
+		"warehouses": distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse"), "items": merge(distinct(&buyingmodel.Item{}, "item_code"), distinct(&buyingmodel.PurchaseOrderItem{}, "item_code")),
 		"cost_centers": distinct(&buyingmodel.PurchaseOrder{}, "cost_center"), "projects": distinct(&buyingmodel.PurchaseOrder{}, "project"),
 		"currencies": []string{"IDR", "USD", "SGD", "EUR"}, "price_lists": []string{"Standard Buying"},
-		"uoms": []string{"Unit", "Pcs", "Box", "Kg", "Meter", "Set"},
+		"uoms": merge(distinct(&buyingmodel.ItemUOM{}, "uom"), []string{"Nos", "Unit", "Pcs", "Box", "Kg", "Meter", "Set"}),
 	})
 }
 

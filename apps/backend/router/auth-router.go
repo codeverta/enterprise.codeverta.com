@@ -37,6 +37,9 @@ func registerAuthRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
 	// ========== AUTH ROUTES ==========
 	authRoute := rg.Group("/auth")
 	{
+		authRoute.GET("/google/status", ctrls.auth.GoogleOAuthStatus)
+		authRoute.GET("/google/start", middleware.CriticalRateLimit(), ctrls.auth.BeginGoogleOAuth)
+		authRoute.GET("/google/callback", middleware.CriticalRateLimit(), ctrls.auth.FinishGoogleOAuth)
 		authRoute.POST("/register", middleware.CriticalRateLimit(), ctrls.auth.Register)
 		authRoute.POST("/login", middleware.RecordLoginAttempt(ctrls.auth.DB, "password"), middleware.CriticalRateLimit(), ctrls.auth.Login)
 		authRoute.GET("/password-reset/captcha", middleware.CriticalRateLimit(), ctrls.auth.PasswordResetCaptcha)

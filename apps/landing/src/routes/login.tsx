@@ -1,11 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { BASE_API_URL } from "@/lib/utils";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
     redirect: typeof search.redirect === "string" ? search.redirect : "/account",
+    googleError: typeof search.google_error === "string" ? search.google_error : "",
   }),
   head: () => ({ meta: [{ title: "Masuk — LUMÉA" }] }),
   component: BuyerLoginPage,
@@ -13,12 +15,12 @@ export const Route = createFileRoute("/login")({
 
 function BuyerLoginPage() {
   const navigate = useNavigate();
-  const { redirect } = Route.useSearch();
+  const { redirect, googleError } = Route.useSearch();
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(googleError);
   const [form, setForm] = useState({ fullName: "", email: "", password: "" });
 
   const submit = async (event: React.FormEvent) => {
@@ -32,6 +34,13 @@ function BuyerLoginPage() {
     setLoading(false);
     if (result.error) return setError(result.error);
     navigate({ to: mode === "register" ? "/" : redirect || "/account" });
+  };
+
+  const continueWithGoogle = () => {
+    const startURL = new URL(`${BASE_API_URL}/api/auth/google/start`);
+    startURL.searchParams.set("redirect", redirect || "/account");
+    startURL.searchParams.set("tenant_id", import.meta.env.VITE_X_TENANT_ID || "belum-di-set");
+    window.location.assign(startURL.toString());
   };
 
   return (
@@ -94,7 +103,18 @@ function BuyerLoginPage() {
                 </button>
               ))}
             </div>
-            <form onSubmit={submit} className="mt-7 space-y-5">
+            <button
+              type="button"
+              onClick={continueWithGoogle}
+              className="mt-7 flex h-12 w-full items-center justify-center gap-3 border border-neutral-300 bg-white text-sm font-semibold transition hover:border-black hover:bg-neutral-50"
+            >
+              <GoogleIcon />
+              Lanjut dengan Google
+            </button>
+            <div className="my-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-neutral-400">
+              <span className="h-px flex-1 bg-neutral-200" />atau gunakan email<span className="h-px flex-1 bg-neutral-200" />
+            </div>
+            <form onSubmit={submit} className="space-y-5">
               {mode === "register" && (
                 <label className="block text-sm font-semibold">
                   Nama lengkap
@@ -169,4 +189,8 @@ function BuyerLoginPage() {
       </div>
     </div>
   );
+}
+
+function GoogleIcon() {
+  return <svg aria-hidden="true" viewBox="0 0 24 24" className="size-5"><path fill="#4285F4" d="M21.6 12.23c0-.71-.06-1.4-.19-2.07H12v3.92h5.38a4.6 4.6 0 0 1-2 3.02v2.54h3.24c1.9-1.75 2.98-4.33 2.98-7.4Z"/><path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.36l-3.24-2.54c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.04v2.62A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.39 13.93A6.02 6.02 0 0 1 6.08 12c0-.67.11-1.32.31-1.93V7.45H3.04A10 10 0 0 0 2 12c0 1.62.39 3.15 1.04 4.55l3.35-2.62Z"/><path fill="#EA4335" d="M12 5.94c1.47 0 2.79.5 3.83 1.5l2.87-2.88A9.63 9.63 0 0 0 12 2a10 10 0 0 0-8.96 5.45l3.35 2.62C7.18 7.7 9.39 5.94 12 5.94Z"/></svg>;
 }

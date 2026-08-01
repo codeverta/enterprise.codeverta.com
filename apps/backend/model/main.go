@@ -56,7 +56,7 @@ func InitDB() error {
 		&Tenant{}, &File{}, &User{}, &Profile{}, &EmailTemplate{},
 		&SystemSetting{}, &AuditLog{}, &ImpersonationSession{}, &LoginAttempt{}, &SESCallbackLog{}, &PromoCode{}, &Event{},
 		&BalanceLog{}, &WebAuthnCredential{}, &PaymentMethod{},
-		&UserActivation{}, &AuthHandoff{}, &PasswordResetToken{},
+		&UserActivation{}, &AuthHandoff{}, &OAuthIdentity{}, &PasswordResetToken{},
 		&SubscriptionPlan{}, &SubscriptionPlanBundle{}, &SubscriptionFeature{}, &Subscription{}, &LMSPayment{},
 		&PricingCategory{}, &Withdrawal{}, &Order{},
 		&Wallet{}, &WalletLedger{}, &Organization{}, &PlatformFeeConfig{},

@@ -29,6 +29,7 @@ type AuthCtx = {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<AuthResult>;
   signUp: (email: string, password: string, fullName?: string) => Promise<AuthResult>;
+  completeGoogleSignIn: (handoff: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   login: (email: string, name?: string) => void;
   logout: () => Promise<void>;
@@ -157,6 +158,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const completeGoogleSignIn = async (handoff: string) => {
+    try {
+      const response = await api.post<{
+        data: { access_token: string; refresh_token: string; user: RawBuyer };
+      }>("/auth/handoff/exchange", { token: handoff });
+      localStorage.setItem("accessToken", response.data.data.access_token);
+      localStorage.setItem("refreshToken", response.data.data.refresh_token);
+      const buyer = await refreshProfile();
+      if (!buyer) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        return { error: "Profil buyer Google tidak dapat dimuat." };
+      }
+      return {};
+    } catch (error) {
+      return { error: apiError(error, "Sesi login Google tidak valid atau sudah kedaluwarsa.") };
+    }
+  };
+
   const signOut = async () => {
     try {
       await api.get("/auth/logout");
@@ -201,6 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loading,
     signIn,
     signUp,
+    completeGoogleSignIn,
     signOut,
     login: (email, name) =>
       setSession({

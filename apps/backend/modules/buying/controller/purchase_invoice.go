@@ -191,9 +191,9 @@ func (h *PurchaseInvoiceController) Options(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"companies":    companies,
-		"suppliers":    merge(distinct(&buyingmodel.PurchaseInvoice{}, "supplier"), distinct(&buyingmodel.PurchaseOrder{}, "supplier")),
+		"suppliers":    merge(distinct(&buyingmodel.Supplier{}, "supplier_name"), distinct(&buyingmodel.PurchaseInvoice{}, "supplier"), distinct(&buyingmodel.PurchaseOrder{}, "supplier")),
 		"warehouses":   merge(distinct(&buyingmodel.PurchaseInvoiceItem{}, "warehouse"), distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse")),
-		"items":        merge(distinct(&buyingmodel.PurchaseInvoiceItem{}, "item_code"), distinct(&buyingmodel.PurchaseOrderItem{}, "item_code")),
+		"items":        merge(distinct(&buyingmodel.Item{}, "item_code"), distinct(&buyingmodel.PurchaseInvoiceItem{}, "item_code"), distinct(&buyingmodel.PurchaseOrderItem{}, "item_code")),
 		"cost_centers": merge(distinct(&buyingmodel.PurchaseInvoice{}, "cost_center"), distinct(&buyingmodel.PurchaseOrder{}, "cost_center")),
 		"projects":     merge(distinct(&buyingmodel.PurchaseInvoice{}, "project"), distinct(&buyingmodel.PurchaseOrder{}, "project")),
 		"currencies":   []string{"IDR", "USD", "SGD", "EUR"}, "price_lists": []string{"Standard Buying"},

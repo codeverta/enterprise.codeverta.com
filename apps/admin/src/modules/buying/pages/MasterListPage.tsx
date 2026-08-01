@@ -1,0 +1,17 @@
+import React, { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router";
+import { Boxes, Building2, FilePlus2, Search } from "lucide-react";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { buyingApi, type Item, type Supplier } from "../api";
+
+export default function MasterListPage({ type }: { type: "supplier" | "item" }) {
+  const supplier = type === "supplier";
+  const [rows, setRows] = useState<Array<Supplier | Item>>([]); const [query, setQuery] = useState(""); const [loading, setLoading] = useState(true);
+  const load = useCallback(async () => { setLoading(true); try { setRows(supplier ? await buyingApi.supplierList(query) : await buyingApi.itemList(query)); } catch (e: any) { toast.error(e?.response?.data?.error || "Gagal mengambil data"); } finally { setLoading(false); } }, [query, supplier]);
+  useEffect(() => { const t = window.setTimeout(load, 250); return () => clearTimeout(t); }, [load]);
+  const title = supplier ? "Supplier" : "Item", base = supplier ? "/desk/supplier" : "/desk/item", Icon = supplier ? Building2 : Boxes;
+  return <div className="mx-auto max-w-screen-2xl space-y-6 p-5 lg:p-8"><header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="text-sm font-semibold text-blue-600">Buying</p><h1 className="mt-1 text-3xl font-bold">{title}</h1><p className="mt-2 text-sm text-slate-500">Kelola master {title.toLowerCase()} untuk transaksi pembelian.</p></div><Button asChild className="bg-blue-600 hover:bg-blue-700"><Link to={`${base}/new`}><FilePlus2 className="size-4" /> New {title}</Link></Button></header><section className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-950"><div className="relative border-b p-4"><Search className="absolute left-7 top-6.5 size-4 text-slate-400" /><Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={`Cari ${title.toLowerCase()}...`} /></div>{loading ? <div className="p-12 text-center text-sm text-slate-500">Memuat...</div> : rows.length === 0 ? <div className="flex flex-col items-center p-16 text-center"><Icon className="mb-4 size-10 text-blue-600" /><h2 className="font-semibold">Belum ada {title}</h2></div> : <div className="overflow-x-auto"><table className="w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900"><tr><th className="px-5 py-3">{supplier ? "Supplier Name" : "Item Code"}</th><th className="px-5 py-3">{supplier ? "Supplier Group" : "Item Name"}</th><th className="px-5 py-3">{supplier ? "Country" : "Item Group"}</th><th className="px-5 py-3">Status</th></tr></thead><tbody className="divide-y">{rows.map((row) => { const s = row as Supplier, i = row as Item; return <tr key={row.id} className="hover:bg-slate-50 dark:hover:bg-slate-900"><td className="px-5 py-4 font-semibold text-blue-600"><Link to={`${base}/${row.id}`}>{supplier ? s.supplier_name : i.item_code}</Link></td><td className="px-5 py-4">{supplier ? s.supplier_group : i.item_name}</td><td className="px-5 py-4">{supplier ? s.country : i.item_group}</td><td className="px-5 py-4"><Badge variant={row.disabled ? "destructive" : "secondary"}>{row.disabled ? "Disabled" : "Active"}</Badge></td></tr>; })}</tbody></table></div>}</section></div>;
+}
