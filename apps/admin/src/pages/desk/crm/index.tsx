@@ -1,16 +1,20 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router";
-import { Cable, Gauge, Settings2, UserRoundSearch } from "lucide-react";
+import { Building2, Cable, Columns3, Gauge, Settings2, UserRoundSearch } from "lucide-react";
 import DashboardLayout from "@/layout/DashboardLayout";
 import { isAdminRole } from "@/lib/erp-desk";
 import CRMDashboardPage from "./overview";
 import CRMLeadsPage from "./leads";
 import CRMAutomationPage from "./automation";
 import CRMIntegrationsPage from "./integrations";
+import CRMDirectoryPage from "./directory";
+import CRMOpportunitiesPage from "./opportunities";
 
 const navigation = [
   { name: "Overview", href: "/desk/crm", icon: Gauge },
   { name: "Lead & Prospek", href: "/desk/crm/leads", icon: UserRoundSearch },
+  { name: "Kontak & Perusahaan", href: "/desk/crm/directory", icon: Building2 },
+  { name: "Peluang & Deal", href: "/desk/crm/opportunities", icon: Columns3 },
   { name: "Automation", href: "/desk/crm/automation", icon: Settings2 },
   { name: "Integrations", href: "/desk/crm/integrations", icon: Cable },
 ];
@@ -18,6 +22,8 @@ const navigation = [
 function CRMContent() {
   const { pathname } = useLocation();
   if (pathname.endsWith("/leads")) return <CRMLeadsPage />;
+  if (pathname.endsWith("/directory")) return <CRMDirectoryPage />;
+  if (pathname.endsWith("/opportunities")) return <CRMOpportunitiesPage />;
   if (pathname.endsWith("/automation")) return <CRMAutomationPage />;
   if (pathname.endsWith("/integrations")) return <CRMIntegrationsPage />;
   return <CRMDashboardPage />;

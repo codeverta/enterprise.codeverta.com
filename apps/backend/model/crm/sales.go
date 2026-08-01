@@ -40,6 +40,8 @@ type Account struct {
 	Base
 	Name            string     `json:"name" gorm:"type:varchar(150);not null;index" binding:"required,max=150"`
 	Industry        string     `json:"industry" gorm:"type:varchar(100);index" binding:"max=100"`
+	CompanySize     string     `json:"company_size" gorm:"type:varchar(30);index" binding:"omitempty,oneof=micro small medium large enterprise"`
+	Region          string     `json:"region" gorm:"type:varchar(100);index" binding:"max=100"`
 	Website         string     `json:"website" gorm:"type:varchar(255)" binding:"omitempty,url,max=255"`
 	Phone           string     `json:"phone" gorm:"type:varchar(30);index" binding:"max=30"`
 	Address         string     `json:"address" gorm:"type:text"`
@@ -66,6 +68,7 @@ func (Contact) TableName() string { return "crm_contacts" }
 type PipelineStage struct {
 	Base
 	Name               string  `json:"name" gorm:"type:varchar(50);not null;index" binding:"required,max=50"`
+	StageType          string  `json:"stage_type" gorm:"type:varchar(20);not null;default:'open';index" binding:"omitempty,oneof=open won lost"`
 	SortOrder          int     `json:"sort_order" gorm:"not null;index" binding:"min=0"`
 	DefaultProbability float64 `json:"default_probability" gorm:"type:decimal(5,2);not null;default:0" binding:"min=0,max=100"`
 }

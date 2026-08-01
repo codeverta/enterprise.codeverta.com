@@ -32,7 +32,7 @@ type Controller struct {
 func NewController() *Controller {
 	return &Controller{resources: map[string]resource{
 		"leads":            resourceOf[crmmodel.Lead]("name", "email", "phone", "company_name", "source_detail", "region", "product_interest", "utm_campaign"),
-		"accounts":         resourceOf[crmmodel.Account]("name", "industry", "phone"),
+		"accounts":         resourceOf[crmmodel.Account]("name", "industry", "region", "phone"),
 		"contacts":         resourceOf[crmmodel.Contact]("first_name", "last_name", "email", "phone"),
 		"pipeline-stages":  resourceOf[crmmodel.PipelineStage]("name"),
 		"opportunities":    resourceOf[crmmodel.Opportunity]("name", "source", "lost_reason"),
@@ -119,6 +119,18 @@ func (h *Controller) Create(c *gin.Context) {
 	if lead, ok := record.(*crmmodel.Lead); ok {
 		if err := prepareLead(db, lead); err != nil {
 			writeDBError(c, err)
+			return
+		}
+	}
+	if account, ok := record.(*crmmodel.Account); ok {
+		if err := validateAccountParent(db, uuid.Nil, account.ParentAccountID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	if contact, ok := record.(*crmmodel.Contact); ok {
+		if err := validateContactAccount(db, contact.AccountID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "account_id tidak ditemukan"})
 			return
 		}
 	}
@@ -227,6 +239,18 @@ func (h *Controller) Update(c *gin.Context) {
 	if err := binding.Validator.ValidateStruct(record); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+	if account, ok := record.(*crmmodel.Account); ok {
+		if err := validateAccountParent(db, id, account.ParentAccountID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+	}
+	if contact, ok := record.(*crmmodel.Contact); ok {
+		if err := validateContactAccount(db, contact.AccountID); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "account_id tidak ditemukan"})
+			return
+		}
 	}
 	if lead, ok := record.(*crmmodel.Lead); ok {
 		updates["score"] = calculateLeadScore(lead, nil)
