@@ -112,7 +112,7 @@ func authHelper(c *gin.Context, minRole int) {
 		db = db.Set("skip_tenant_scope", true)
 	}
 
-	if err := db.Select("id", "role", "status").First(&user, "id = ?", userID).Error; err != nil || user.Status == common.UserStatusDisabled {
+	if err := db.Select("id", "status").First(&user, "id = ?", userID).Error; err != nil || user.Status == common.UserStatusDisabled {
 		c.JSON(http.StatusForbidden, gin.H{
 			"success": false,
 			"message": "Your account has been deactivated. Please contact administrator.",
@@ -120,6 +120,9 @@ func authHelper(c *gin.Context, minRole int) {
 		c.Abort()
 		return
 	}
+	// The signed claim remains the backward-compatible legacy role source.
+	// Dynamic assignments are resolved separately from the database.
+	user.Role = claims.Role
 	if !validateImpersonationClaims(c, db, claims, &user) {
 		return
 	}
@@ -252,7 +255,65 @@ func MentorAuth() func(c *gin.Context) {
 // AdminAuth: Middleware untuk Admin ke atas
 func AdminAuth() func(c *gin.Context) {
 	return func(c *gin.Context) {
-		authHelper(c, common.RoleAdminUser)
+		authHelper(c, common.RoleCommonUser)
+		if c.IsAborted() {
+			return
+		}
+		if c.GetInt("role") >= common.RoleAdminUser {
+			return
+		}
+		userID, ok := c.Get("userID")
+		id, valid := userID.(uuid.UUID)
+		if !ok || !valid || !model.UserHasPermission(model.GetDB(c), id, c.Request.URL.Path, permissionAction(c.Request.Method), "") || !model.UserHasPermission(model.GetDB(c), id, c.Request.URL.Path, "api", "") {
+			c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "Forbidden: Dynamic role permission denied"})
+			c.Abort()
+		}
+	}
+}
+
+func permissionAction(method string) string {
+	switch method {
+	case http.MethodGet, http.MethodHead:
+		return "read"
+	case http.MethodPost:
+		return "create"
+	case http.MethodPut, http.MethodPatch:
+		return "update"
+	case http.MethodDelete:
+		return "delete"
+	}
+	return "api"
+}
+
+// RequirePermission can protect new endpoints with an explicit logical resource.
+// Legacy Admin/Superadmin users always remain allowed for backward compatibility.
+func RequirePermission(resource string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHelper(c, common.RoleCommonUser)
+		if c.IsAborted() || c.GetInt("role") >= common.RoleAdminUser {
+			return
+		}
+		id, ok := c.MustGet("userID").(uuid.UUID)
+		if !ok || !model.UserHasPermission(model.GetDB(c), id, resource, permissionAction(c.Request.Method), "") {
+			c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "Forbidden: Permission denied", "resource": resource})
+			c.Abort()
+			return
+		}
+	}
+}
+
+// RequireFieldPermission is available for handlers that expose sensitive fields.
+func RequireFieldPermission(resource, field string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHelper(c, common.RoleCommonUser)
+		if c.IsAborted() || c.GetInt("role") >= common.RoleAdminUser {
+			return
+		}
+		id, ok := c.MustGet("userID").(uuid.UUID)
+		if !ok || !model.UserHasPermission(model.GetDB(c), id, resource, permissionAction(c.Request.Method), field) {
+			c.JSON(http.StatusForbidden, gin.H{"success": false, "message": "Forbidden: Field permission denied", "resource": resource, "field": field})
+			c.Abort()
+		}
 	}
 }
 

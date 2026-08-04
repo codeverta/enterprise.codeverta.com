@@ -61,6 +61,7 @@ func InitDB() error {
 		&PricingCategory{}, &Withdrawal{}, &Order{},
 		&Wallet{}, &WalletLedger{}, &Organization{}, &PlatformFeeConfig{},
 		&Guide{}, &GuideCategory{}, &Notification{},
+		&RoleDefinition{}, &RolePermission{}, &RoleProfile{}, &UserRoleAssignment{}, &UserRoleProfileAssignment{},
 	}
 
 	err = db.AutoMigrate(models...)
@@ -92,6 +93,7 @@ func InitDB() error {
 
 	SeedUsers(db)
 	SeedEmailTemplates(db)
+	SeedDefaultRoles(db)
 
 	return nil
 }

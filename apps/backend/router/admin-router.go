@@ -8,6 +8,25 @@ import (
 )
 
 func registerAdminRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
+	authorization := controller.NewAuthorizationController()
+	permissionAdmin := rg.Group("/authorization")
+	permissionAdmin.Use(middleware.AdminAuth())
+	{
+		permissionAdmin.GET("/roles", authorization.ListRoles)
+		permissionAdmin.POST("/roles", authorization.CreateRole)
+		permissionAdmin.GET("/roles/:id", authorization.GetRole)
+		permissionAdmin.PUT("/roles/:id", authorization.UpdateRole)
+		permissionAdmin.DELETE("/roles/:id", authorization.DeleteRole)
+		permissionAdmin.GET("/profiles", authorization.ListProfiles)
+		permissionAdmin.POST("/profiles", authorization.CreateProfile)
+		permissionAdmin.PUT("/profiles/:id", authorization.UpdateProfile)
+		permissionAdmin.DELETE("/profiles/:id", authorization.DeleteProfile)
+		permissionAdmin.GET("/users/:id/assignments", authorization.GetAssignments)
+		permissionAdmin.PUT("/users/:id/assignments", authorization.SetAssignments)
+	}
+	permissionSelf := rg.Group("/authorization")
+	permissionSelf.Use(middleware.UserAuth())
+	permissionSelf.GET("/me", authorization.MyPermissions)
 	// User Management
 	adminUserRoute := rg.Group("/users")
 	adminUserRoute.Use(middleware.AdminAuth())

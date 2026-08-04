@@ -70,6 +70,7 @@ export function SiteHeader() {
   const [mobileProgramOpen, setMobileProgramOpen] = useState(false);
   const { tr } = useLang();
   const { isAdmin } = useAuth();
+  const adminUrl = import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -264,9 +265,9 @@ export function SiteHeader() {
         <div className="hidden shrink-0 items-center gap-2 md:flex">
           <LangToggle />
             <Button asChild variant="outline" size="sm" className="rounded-full">
-              <Link to={import.meta.env.VITE_ADMIN_URL}>
-                <ShieldCheck className="mr-1 h-4 w-4" /> Login
-              </Link>
+              <a href={adminUrl}>
+                <ShieldCheck className="mr-1 h-4 w-4" /> Login sebagai Seller
+              </a>
             </Button>
           {/* <Button
             asChild
@@ -398,6 +399,13 @@ export function SiteHeader() {
               <ShieldCheck className="h-4 w-4" /> Admin
             </Link>
           )}
+          <a
+            href={adminUrl}
+            className="flex items-center gap-2 rounded-2xl px-4 py-3 text-base font-medium text-muted-foreground hover:bg-muted"
+            onClick={() => setOpen(false)}
+          >
+            <ShieldCheck className="h-4 w-4" /> Login sebagai Seller
+          </a>
           <div className="mt-3 border-t border-border/40 pt-3">
             <Button
               asChild

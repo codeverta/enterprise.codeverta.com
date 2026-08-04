@@ -1,0 +1,120 @@
+<svg width="1440" height="1760" viewBox="0 0 1440 1760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heroGradient" x1="88" y1="220" x2="1350" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6A4CF6"/>
+      <stop offset="0.5" stop-color="#FF2E88"/>
+      <stop offset="1" stop-color="#FDB515"/>
+    </linearGradient>
+    <linearGradient id="coolGradient" x1="80" y1="80" x2="580" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6A4CF6"/>
+      <stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+    <linearGradient id="warmGradient" x1="80" y1="80" x2="580" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FDB515"/>
+      <stop offset="1" stop-color="#FF2E88"/>
+    </linearGradient>
+    <linearGradient id="freshGradient" x1="80" y1="80" x2="580" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2DD4BF"/>
+      <stop offset="1" stop-color="#FDB515"/>
+    </linearGradient>
+    <linearGradient id="rainbowGradient" x1="80" y1="80" x2="580" y2="80" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6A4CF6"/>
+      <stop offset="0.33" stop-color="#FF2E88"/>
+      <stop offset="0.66" stop-color="#FDB515"/>
+      <stop offset="1" stop-color="#2DD4BF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="160%" filterUnits="objectBoundingBox">
+      <feDropShadow dx="0" dy="14" stdDeviation="18" flood-color="#1A2456" flood-opacity="0.1"/>
+    </filter>
+    <style>
+      .sans { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+      .eyebrow { font: 700 13px 'Plus Jakarta Sans', Arial, sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+      .label { font: 700 16px 'Plus Jakarta Sans', Arial, sans-serif; }
+      .body { font: 400 15px 'Plus Jakarta Sans', Arial, sans-serif; }
+      .mono { font: 500 13px 'SFMono-Regular', Consolas, monospace; }
+    </style>
+  </defs>
+
+  <rect width="1440" height="1760" fill="#F8F8FC"/>
+  <rect x="0" y="0" width="1440" height="8" fill="url(#rainbowGradient)"/>
+
+  <!-- Header -->
+  <text x="88" y="96" class="eyebrow" fill="#6A4CF6">KITA FUTURE HOMESCHOOL</text>
+  <text x="88" y="164" class="sans" font-size="52" font-weight="700" letter-spacing="-2" fill="#1A2456">Design system</text>
+  <text x="88" y="204" class="body" font-size="18" fill="#5B6485">A playful, calm, future-ready visual language for children and parents.</text>
+  <rect x="1114" y="86" width="238" height="64" rx="32" fill="#FFFFFF" stroke="#ECEAF7"/>
+  <circle cx="1150" cy="118" r="16" fill="#6A4CF6"/>
+  <text x="1178" y="124" class="label" fill="#1A2456">Version 01.0</text>
+
+  <!-- Color palette -->
+  <text x="88" y="294" class="eyebrow" fill="#6A4CF6">01 / COLOR PALETTE</text>
+  <text x="88" y="334" class="sans" font-size="28" font-weight="700" fill="#1A2456">Bright enough to invite. Calm enough to focus.</text>
+
+  <!-- Brand swatches -->
+  <text x="88" y="390" class="label" fill="#1A2456">Brand colors</text>
+  <g filter="url(#shadow)">
+    <rect x="88" y="414" width="256" height="136" rx="20" fill="#6A4CF6"/>
+    <rect x="364" y="414" width="256" height="136" rx="20" fill="#1A2456"/>
+    <rect x="640" y="414" width="256" height="136" rx="20" fill="#2DD4BF"/>
+    <rect x="916" y="414" width="176" height="136" rx="20" fill="#FF2E88"/>
+    <rect x="1112" y="414" width="240" height="136" rx="20" fill="#FDB515"/>
+  </g>
+  <text x="112" y="454" class="label" fill="#FFFFFF">Primary</text><text x="112" y="500" class="mono" fill="#FFFFFF">#6A4CF6</text>
+  <text x="388" y="454" class="label" fill="#FFFFFF">Navy</text><text x="388" y="500" class="mono" fill="#FFFFFF">#1A2456</text>
+  <text x="664" y="454" class="label" fill="#073C3A">Secondary</text><text x="664" y="500" class="mono" fill="#073C3A">#2DD4BF</text>
+  <text x="940" y="454" class="label" fill="#FFFFFF">Accent</text><text x="940" y="500" class="mono" fill="#FFFFFF">#FF2E88</text>
+  <text x="1136" y="454" class="label" fill="#4A3200">Gold</text><text x="1136" y="500" class="mono" fill="#4A3200">#FDB515</text>
+
+  <!-- Semantic palette -->
+  <text x="88" y="610" class="label" fill="#1A2456">Semantic colors</text>
+  <g filter="url(#shadow)">
+    <rect x="88" y="634" width="236" height="112" rx="18" fill="#16A34A"/>
+    <rect x="344" y="634" width="236" height="112" rx="18" fill="#F59E0B"/>
+    <rect x="600" y="634" width="236" height="112" rx="18" fill="#E11D48"/>
+    <rect x="856" y="634" width="236" height="112" rx="18" fill="#0284C7"/>
+    <rect x="1112" y="634" width="240" height="112" rx="18" fill="#F5F6FA" stroke="#ECEAF7"/>
+  </g>
+  <text x="108" y="670" class="label" fill="#FFFFFF">Success</text><text x="108" y="706" class="mono" fill="#FFFFFF">#16A34A</text>
+  <text x="364" y="670" class="label" fill="#FFFFFF">Warning</text><text x="364" y="706" class="mono" fill="#FFFFFF">#F59E0B</text>
+  <text x="620" y="670" class="label" fill="#FFFFFF">Error</text><text x="620" y="706" class="mono" fill="#FFFFFF">#E11D48</text>
+  <text x="876" y="670" class="label" fill="#FFFFFF">Info</text><text x="876" y="706" class="mono" fill="#FFFFFF">#0284C7</text>
+  <text x="1132" y="670" class="label" fill="#1A2456">Neutral / Gray</text><text x="1132" y="706" class="mono" fill="#5B6485">#F5F6FA</text>
+
+  <!-- Tints -->
+  <text x="88" y="806" class="label" fill="#1A2456">Soft surfaces</text>
+  <rect x="88" y="830" width="300" height="80" rx="16" fill="#F3EFFF"/><text x="112" y="865" class="label" fill="#1A2456">Lavender</text><text x="112" y="889" class="mono" fill="#5B6485">#F3EFFF</text>
+  <rect x="408" y="830" width="300" height="80" rx="16" fill="#E8FBF7"/><text x="432" y="865" class="label" fill="#1A2456">Mint</text><text x="432" y="889" class="mono" fill="#5B6485">#E8FBF7</text>
+  <rect x="728" y="830" width="300" height="80" rx="16" fill="#FFF4D6"/><text x="752" y="865" class="label" fill="#1A2456">Sand</text><text x="752" y="889" class="mono" fill="#5B6485">#FFF4D6</text>
+  <rect x="1048" y="830" width="304" height="80" rx="16" fill="#FFFFFF" stroke="#ECEAF7"/><text x="1072" y="865" class="label" fill="#1A2456">Canvas</text><text x="1072" y="889" class="mono" fill="#5B6485">#FFFFFF</text>
+
+  <!-- Gradients -->
+  <text x="88" y="980" class="eyebrow" fill="#6A4CF6">02 / GRADIENTS</text>
+  <text x="88" y="1020" class="sans" font-size="28" font-weight="700" fill="#1A2456">Use gradients as moments of momentum.</text>
+  <rect x="88" y="1050" width="300" height="78" rx="18" fill="url(#heroGradient)"/><text x="112" y="1097" class="label" fill="#FFFFFF">Primary / hero</text>
+  <rect x="408" y="1050" width="300" height="78" rx="18" fill="url(#coolGradient)"/><text x="432" y="1097" class="label" fill="#FFFFFF">Cool / learning</text>
+  <rect x="728" y="1050" width="300" height="78" rx="18" fill="url(#warmGradient)"/><text x="752" y="1097" class="label" fill="#FFFFFF">Warm / action</text>
+  <rect x="1048" y="1050" width="304" height="78" rx="18" fill="url(#freshGradient)"/><text x="1072" y="1097" class="label" fill="#073C3A">Fresh / growth</text>
+  <text x="88" y="1168" class="body" fill="#5B6485">Hero background: white canvas with low-opacity radial color blooms. Keep text areas quiet.</text>
+
+  <!-- Typography -->
+  <text x="88" y="1262" class="eyebrow" fill="#6A4CF6">03 / TYPOGRAPHY</text>
+  <text x="88" y="1302" class="sans" font-size="28" font-weight="700" fill="#1A2456">Plus Jakarta Sans</text>
+  <text x="88" y="1334" class="body" fill="#5B6485">One friendly, geometric family keeps the product warm, legible, and consistent.</text>
+
+  <rect x="88" y="1370" width="1264" height="286" rx="24" fill="#FFFFFF" stroke="#ECEAF7"/>
+  <text x="120" y="1422" class="sans" font-size="42" font-weight="700" letter-spacing="-1.5" fill="#1A2456">Future learning starts here.</text>
+  <text x="120" y="1472" class="sans" font-size="24" font-weight="600" fill="#6A4CF6">Heading / 42px / 700 / 1.05</text>
+  <text x="120" y="1522" class="sans" font-size="18" font-weight="400" fill="#5B6485">Belajar sesuai ritme anak, dengan skill yang relevan untuk dunia nyata.</text>
+  <text x="120" y="1556" class="sans" font-size="18" font-weight="400" fill="#5B6485">Body / 18px / 400 / 1.6</text>
+  <text x="820" y="1424" class="sans" font-size="12" font-weight="700" letter-spacing="1.6" fill="#6A4CF6">TYPE SCALE</text>
+  <text x="820" y="1470" class="sans" font-size="30" font-weight="700" fill="#1A2456">Display 56 / 700</text>
+  <text x="820" y="1508" class="sans" font-size="24" font-weight="700" fill="#1A2456">H2 32 / 700</text>
+  <text x="820" y="1542" class="sans" font-size="18" font-weight="600" fill="#1A2456">H3 22 / 600</text>
+  <text x="820" y="1574" class="sans" font-size="15" font-weight="400" fill="#5B6485">Body 15 / 400</text>
+  <text x="820" y="1604" class="sans" font-size="12" font-weight="700" letter-spacing="1" fill="#5B6485">LABEL 12 / 700 / 0.08em</text>
+
+  <!-- Footer note -->
+  <line x1="88" y1="1700" x2="1352" y2="1700" stroke="#ECEAF7"/>
+  <text x="88" y="1734" class="body" fill="#5B6485">Core personality: optimistic · colorful · inclusive · calm · future-facing</text>
+  <text x="1100" y="1734" class="mono" fill="#6A4CF6">KITA / DS-001</text>
+</svg>

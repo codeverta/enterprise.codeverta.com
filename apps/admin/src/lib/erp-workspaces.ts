@@ -8,6 +8,7 @@ import {
   ArrowRightLeft,
   Award,
   BadgeCheck,
+  Banknote,
   BarChart,
   BarChart2,
   BarChart3,
@@ -17,6 +18,8 @@ import {
   Bookmark,
   Box,
   Boxes,
+  Brain,
+  Briefcase,
   Building,
   Building2,
   Calculator,
@@ -29,6 +32,7 @@ import {
   Clock,
   Cog,
   Coins,
+  Compass,
   Contact,
   Copy,
   Cpu,
@@ -54,6 +58,7 @@ import {
   GitFork,
   GitMerge,
   Globe,
+  GraduationCap,
   Grid,
   Hammer,
   Handshake,
@@ -83,6 +88,7 @@ import {
   Percent,
   PieChart,
   PiggyBank,
+  Plane,
   Receipt,
   RefreshCw,
   Repeat,
@@ -296,6 +302,82 @@ const documentIconMap: Record<string, LucideIcon> = {
   "Scheduled Job Type": Clock,
   "Website Settings": Globe,
   "Email Account": Mail,
+  "Roster": Calendar,
+  "Employee Attendance Tool": UserCheck,
+  "Employee Checkin": LogIn,
+  "Shift Request": Clock,
+  "Attendance Request": ClipboardCheck,
+  "Overtime": Clock,
+  "Overtime Type": Sliders,
+  "Overtime Slip": Receipt,
+  "Shift Type": Clock,
+  "Shift Location": MapPin,
+  "Shift Schedule": Calendar,
+  "Employee Advance": Coins,
+  "Expense Claim": Receipt,
+  "Purpose of Travel": MapPin,
+  "Travel Request": Plane,
+  "Vehicle Log": FileText,
+  "Payment Entry": CreditCard,
+  "Journal Entry": BookOpen,
+  "Expense Claim Type": Tags,
+  "Driver": User,
+  "Vehicle": Truck,
+  "Hiring Pipeline": GitMerge,
+  "Job Opening": Briefcase,
+  "Job Applicant": Users,
+  "Interview": MessageSquare,
+  "Job Offer": FileCheck,
+  "Appointment Letter": Scroll,
+  "Job Requisition": FileText,
+  "Staffing Plan": Layers,
+  "Employee Referral": UserPlus,
+  "Interview Type": Sliders,
+  "Job Opening Template": FileCode,
+  "Appointment Letter Template": FileCheck,
+  "Job Offer Term Template": FileCheck,
+  "Job Portal": Globe,
+  "Organizational Chart": Network,
+  "Employee Group": Users,
+  "Employee Grade": Award,
+  "Payroll Entry": Banknote,
+  "Salary Structure Assignment": FileCheck,
+  "Salary Slip": Receipt,
+  "Additional Salary": Coins,
+  "Salary Withholding": ShieldAlert,
+  "Salary Component": Grid,
+  "Salary Structure": Layers,
+  "Goal": Target,
+  "Appraisal Cycle": RotateCcw,
+  "Appraisal": Award,
+  "Employee Performance Feedback": MessageSquare,
+  "Employee Promotion": TrendingUp,
+  "Appraisal Template": FileText,
+  "KRA": Target,
+  "Employee Feedback Criteria": ListChecks,
+  "Employee Onboarding": UserPlus,
+  "Employee Separation": UserX,
+  "Employee Grievance": AlertCircle,
+  "Employee Skill Map": Brain,
+  "Grievance Type": AlertTriangle,
+  "Training Program": GraduationCap,
+  "Training Event": Calendar,
+  "Training Feedback": MessageSquare,
+  "Training Result": Award,
+  "Leave Application": FileText,
+  "Leave Allocation": PieChart,
+  "Leave Policy": Scroll,
+  "Leave Block List": ShieldAlert,
+  "Leave Type": Tag,
+  "Leave Period": Calendar,
+  "Leave Policy Assignment": FileCheck,
+  "Employee Tax Exemption Proof Submission": Upload,
+  "Employee Tax Exemption Declaration": FileCheck,
+  "Employee Benefit Claim": Gift,
+  "Employee Benefit Application": FileText,
+  "Employee Tax Exemption Category": Grid,
+  "Employee Tax Exemption Sub Category": Layers,
+  "Benefit Scheme": Sparkles,
 };
 
 const reportIconMap: Record<string, LucideIcon> = {
@@ -364,6 +446,27 @@ const reportIconMap: Record<string, LucideIcon> = {
   "Quality Inspection Summary": ClipboardCheck,
   "Subcontracted Item To Be Received": Package,
   "Subcontract Order Summary": FileText,
+  "Monthly Attendance Sheet": FileSpreadsheet,
+  "Shift Attendance": BarChart2,
+  "Employee Hours Utilization": LineChart,
+  "Unpaid Expense Claim": AlertCircle,
+  "Vehicle Expenses": BarChart3,
+  "Accounts Receivable": PieChart,
+  "Accounts Payable": PieChart,
+  "General Ledger": BookOpen,
+  "Recruitment Analytics": LineChart,
+  "Employee CTC Break-up": PieChart,
+  "Salary Register": FileSpreadsheet,
+  "Income Tax Deductions": Percent,
+  "Professional Tax Deductions": Percent,
+  "Appraisal Overview": PieChart,
+  "Employee Exits": UserX,
+  "Employee Birthday": Gift,
+  "Employee Information": FileText,
+  "Employee Analytics": LineChart,
+  "Leave Ledger": FileBarChart,
+  "Employee Leave Balance": Scale,
+  "Employee Tax Exemption Report": FileBarChart,
 };
 
 const groupIconMap: Record<string, LucideIcon> = {
@@ -381,6 +484,9 @@ const groupIconMap: Record<string, LucideIcon> = {
   "Data": Database,
   "Administration": Shield,
   "Stock": Boxes,
+  "Travel": Compass,
+  "Accounting Entries": Landmark,
+  "Planning": Layers,
 };
 
 const fallbackIcons: LucideIcon[] = [
@@ -504,13 +610,25 @@ const selling = workspace(
       "Product Bundle", "UTM Source", "Shipping Rule",
     ]), UserCheck),
     group("Reports", sellingHome, reportLinks([
-      "Sales Register", "Item-wise Sales Register", "Sales Analytics", "Customer Addresses And Contacts",
-      "Sales Invoice Trends", "Customer Credit Balance", "Customers Without Any Sales Transactions",
-      "Sales Partners Commission", "Available Stock for Packing Items",
-      "Territory Target Variance Based On Item Group", "Sales Person Target Variance Based On Item Group",
-      "Sales Partner Target Variance Based On Item Group", "Pending SO Items For Purchase Request", "Sales Funnel",
-      "Sales Order Analysis", "Customer Acquisition and Loyalty", "Quotation Trends", "Sales Order Trends",
-      "Item-wise Sales History", "Sales Person-wise Transaction Summary",
+      "Sales Register", 
+      // "Item-wise Sales Register", 
+      // "Sales Analytics", "Customer Addresses And Contacts",
+      // "Sales Invoice Trends", 
+      // "Customer Credit Balance", 
+      // "Customers Without Any Sales Transactions",
+      // "Sales Partners Commission", 
+      // "Available Stock for Packing Items",
+      // "Territory Target Variance Based On Item Group", 
+      // "Sales Person Target Variance Based On Item Group",
+      // "Sales Partner Target Variance Based On Item Group", 
+      // "Pending SO Items For Purchase Request", 
+      // "Sales Funnel",
+      // "Sales Order Analysis",
+      // "Customer Acquisition and Loyalty", 
+      // "Quotation Trends", 
+      // "Sales Order Trends",
+      // "Item-wise Sales History", 
+      // "Sales Person-wise Transaction Summary",
     ]), LineChart),
     group("Settings", sellingHome, documentLinks(["Selling Settings"]), SlidersHorizontal),
   ],
@@ -615,7 +733,7 @@ const subcontracting = workspace("Subcontracting", "subcontracting", ["Subcontra
 
 const organizationHome = "/desk/organization";
 const organization = workspace("Organization", "organization", [
-  ["Users", "/desk/organization/users"], ["Tenants", "/desk/organization/tenants"],
+  ["Users", "/desk/organization/users"], ["Tenants", "/desk/organization/tenants"], ["Role & Permissions", "/desk/organization/permissions"],
   "Company", "Branch", "Department", "Cost Center",
 ], [
   group("People", organizationHome, documentLinks(["Employee", "Designation", "Employment Type"]), Users),
@@ -645,7 +763,298 @@ const administration = workspace("Administration", "administration", [
   ["Audit Log", "/desk/administration/audit-log"],
 ], []);
 
+const shiftAndAttendanceHome = "/desk/shift-and-attendance";
+const shiftAndAttendance = workspace(
+  "Shift & Attendance",
+  "shift-and-attendance",
+  [
+    ["Roster", "/desk/roster"],
+    ["Employee Attendance Tool", "/desk/employee-attendance-tool"],
+    ["Employee Checkin", "/desk/employee-checkin"],
+    ["Shift Request", "/desk/shift-request"],
+    ["Attendance Request", "/desk/attendance-request"],
+    ["Overtime", "/desk/overtime"],
+    ["Overtime Type", "/desk/overtime-type"],
+    ["Overtime Slip", "/desk/overtime-slip"],
+  ],
+  [
+    group("Reports", shiftAndAttendanceHome, reportLinks([
+      "Monthly Attendance Sheet",
+      "Shift Attendance",
+      "Employee Hours Utilization",
+      "Project Profitability",
+    ]), LineChart),
+    group("Setup", shiftAndAttendanceHome, documentLinks([
+      "Shift Type",
+      "Shift Location",
+      "Shift Schedule",
+      "Activity Type",
+      "Timesheet",
+    ]), Sliders),
+    group("Settings", shiftAndAttendanceHome, documentLinks([
+      ["Shift & Attendance Settings", "/desk/shift-and-attendance-settings"],
+    ]), Settings2),
+  ],
+);
+
+const expensesHome = "/desk/expenses";
+const expenses = workspace(
+  "Expenses",
+  "expenses",
+  [
+    "Employee Advance",
+    "Expense Claim",
+  ],
+  [
+    group("Travel", expensesHome, documentLinks([
+      "Purpose of Travel",
+      "Travel Request",
+      "Vehicle Log",
+    ]), Compass),
+    group("Accounting Entries", expensesHome, documentLinks([
+      "Payment Entry",
+      "Journal Entry",
+    ]), Landmark),
+    group("Reports", expensesHome, reportLinks([
+      "Unpaid Expense Claim",
+      "Vehicle Expenses",
+      "Accounts Receivable",
+      "Accounts Payable",
+      "General Ledger",
+    ]), LineChart),
+    group("Setup", expensesHome, documentLinks([
+      "Expense Claim Type",
+      "Driver",
+      "Vehicle",
+    ]), Sliders),
+    group("Settings", expensesHome, documentLinks([
+      ["Expenses Settings", "/desk/expense-settings"],
+    ]), Settings2),
+  ],
+);
+
+const recruitmentHome = "/desk/recruitment";
+const recruitment = workspace(
+  "Recruitment",
+  "recruitment",
+  [
+    ["Hiring Pipeline", "/desk/hiring-pipeline"],
+    "Job Opening",
+    "Job Applicant",
+    "Interview",
+    "Job Offer",
+    "Appointment Letter",
+  ],
+  [
+    group("Planning", recruitmentHome, documentLinks([
+      "Job Requisition",
+      "Staffing Plan",
+      "Employee Referral",
+    ]), Layers),
+    group("Reports", recruitmentHome, reportLinks([
+      "Recruitment Analytics",
+    ]), PieChart),
+    group("Setup", recruitmentHome, documentLinks([
+      "Interview Type",
+      "Job Opening Template",
+      "Appointment Letter Template",
+      "Job Offer Term Template",
+    ]), Sliders),
+    link("Job Portal", "/desk/job-portal", Globe),
+    group("Settings", recruitmentHome, documentLinks([
+      ["Recruitment Settings", "/desk/recruitment-settings"],
+    ]), Settings2),
+  ],
+);
+
+const hrSetupHome = "/desk/hr-setup";
+const hrSetup = workspace(
+  "HR Setup",
+  "hr-setup",
+  [
+    "Employee",
+    ["Organizational Chart", "/desk/organizational-chart"],
+  ],
+  [
+    group("Setup", hrSetupHome, documentLinks([
+      "Company",
+      "Branch",
+      "Department",
+      "Designation",
+      "Employee Group",
+      "Employee Grade",
+    ]), Sliders),
+    group("Settings", hrSetupHome, documentLinks([
+      ["HR Settings", "/desk/hr-settings"],
+    ]), Settings2),
+  ],
+);
+
+const payrollHome = "/desk/payroll";
+const payroll = workspace(
+  "Payroll",
+  "payroll",
+  [
+    "Payroll Entry",
+    "Salary Structure Assignment",
+    "Salary Slip",
+    "Additional Salary",
+    "Salary Withholding",
+  ],
+  [
+    group("Reports", payrollHome, reportLinks([
+      "Employee CTC Break-up",
+      "Salary Register",
+      "Income Tax Deductions",
+      "Professional Tax Deductions",
+      "General Ledger",
+      "Accounts Payable",
+    ]), PieChart),
+    group("Setup", payrollHome, documentLinks([
+      "Salary Component",
+      "Salary Structure",
+    ]), Sliders),
+    group("Settings", payrollHome, documentLinks([
+      ["Payroll Settings", "/desk/payroll-settings"],
+    ]), Settings2),
+  ],
+);
+
+const performanceHome = "/desk/performance";
+const performanceWorkspace = workspace(
+  "Performance",
+  "performance",
+  [
+    "Goal",
+    "Appraisal Cycle",
+    "Appraisal",
+    "Employee Performance Feedback",
+    "Employee Promotion",
+  ],
+  [
+    group("Reports", performanceHome, reportLinks([
+      "Appraisal Overview",
+    ]), LineChart),
+    group("Setup", performanceHome, documentLinks([
+      "Appraisal Template",
+      "KRA",
+      "Employee Feedback Criteria",
+    ]), Sliders),
+  ],
+);
+
+const tenureHome = "/desk/tenure";
+const tenure = workspace(
+  "Tenure",
+  "tenure",
+  [
+    "Employee Onboarding",
+    "Employee Separation",
+    "Employee Grievance",
+  ],
+  [
+    group("Reports", tenureHome, reportLinks([
+      "Employee Exits",
+      "Employee Birthday",
+      "Employee Information",
+      "Employee Analytics",
+    ]), LineChart),
+    group("Setup", tenureHome, documentLinks([
+      "Employee Skill Map",
+      "Grievance Type",
+      "Training Program",
+      "Training Event",
+      "Training Feedback",
+      "Training Result",
+    ]), Sliders),
+    group("Settings", tenureHome, documentLinks([
+      ["Tenure Settings", "/desk/tenure-settings"],
+    ]), Settings2),
+  ],
+);
+
+const leavesHome = "/desk/leaves";
+const leaves = workspace(
+  "Leaves",
+  "leaves",
+  [
+    "Leave Application",
+    "Leave Allocation",
+    "Leave Policy",
+    "Leave Block List",
+  ],
+  [
+    group("Reports", leavesHome, reportLinks([
+      "Leave Ledger",
+      "Employee Leave Balance",
+    ]), LineChart),
+    group("Setup", leavesHome, documentLinks([
+      "Leave Type",
+      "Leave Period",
+      "Leave Policy Assignment",
+    ]), Sliders),
+    group("Settings", leavesHome, documentLinks([
+      ["Leave Settings", "/desk/leave-settings"],
+    ]), Settings2),
+  ],
+);
+
+const taxAndBenefitsHome = "/desk/tax-and-benefits";
+const taxAndBenefits = workspace(
+  "Tax & Benefits",
+  "tax-and-benefits",
+  [
+    "Employee Tax Exemption Proof Submission",
+    "Employee Tax Exemption Declaration",
+    "Employee Benefit Claim",
+    "Employee Benefit Application",
+  ],
+  [
+    group("Reports", taxAndBenefitsHome, reportLinks([
+      "Employee Tax Exemption Report",
+    ]), LineChart),
+    group("Setup", taxAndBenefitsHome, documentLinks([
+      "Employee Tax Exemption Category",
+      "Employee Tax Exemption Sub Category",
+      "Benefit Scheme",
+    ]), Sliders),
+    group("Settings", taxAndBenefitsHome, documentLinks([
+      ["Tax & Benefits Settings", "/desk/tax-and-benefits-settings"],
+    ]), Settings2),
+  ],
+);
+
+const hrHome = "/desk/hr";
+const hr = workspace(
+  "Human Resources",
+  "hr",
+  [
+    ["Expenses", "/desk/expenses?sidebar=Expenses"],
+    ["Performance", "/desk/performance?sidebar=Performance"],
+    ["Tenure", "/desk/tenure?sidebar=Tenure"],
+    ["HR Setup", "/desk/hr-setup?sidebar=HR%20Setup"],
+    ["Recruitment", "/desk/recruitment?sidebar=Recruitment"],
+    ["Leaves", "/desk/leaves?sidebar=Leaves"],
+    ["Shift & Attendance", "/desk/shift-and-attendance?sidebar=Shift%20%26%20Attendance"],
+    ["Payroll", "/desk/payroll?sidebar=Payroll"],
+    ["Tax & Benefits", "/desk/tax-and-benefits?sidebar=Tax%20%26%20Benefits"],
+  ],
+  [],
+);
+
 export const erpWorkspaces: Record<string, ErpWorkspace> = {
+  hr,
+  "shift-and-attendance": shiftAndAttendance,
+  "shift-attendance": shiftAndAttendance,
+  expenses,
+  recruitment,
+  "hr-setup": hrSetup,
+  payroll,
+  performance: performanceWorkspace,
+  tenure,
+  leaves,
+  "tax-and-benefits": taxAndBenefits,
+  "tax-and-benef": taxAndBenefits,
   framework,
   administration,
   communication,

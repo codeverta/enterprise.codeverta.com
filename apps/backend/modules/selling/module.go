@@ -11,6 +11,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 	loyaltyHandler := controller.NewLoyaltyProgramController()
 	posHandler := controller.NewPOSController()
 	storeHandler := controller.NewStoreController()
+	priceListHandler := controller.NewPriceListController()
 
 	store := parent.Group("/store")
 	{
@@ -52,5 +53,15 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.GET("/pos/closing-entries", posHandler.ClosingEntries)
 		group.GET("/pos/invoices", posHandler.Invoices)
 		group.POST("/pos/invoices", posHandler.CreateInvoice)
+		group.GET("/price-lists", priceListHandler.ListPriceLists)
+		group.GET("/price-lists/:id", priceListHandler.GetPriceList)
+		group.POST("/price-lists", priceListHandler.CreatePriceList)
+		group.PUT("/price-lists/:id", priceListHandler.UpdatePriceList)
+		group.DELETE("/price-lists/:id", priceListHandler.DeletePriceList)
+		group.GET("/item-prices", priceListHandler.ListItemPrices)
+		group.GET("/item-prices/:id", priceListHandler.GetItemPrice)
+		group.POST("/item-prices", priceListHandler.CreateItemPrice)
+		group.PUT("/item-prices/:id", priceListHandler.UpdateItemPrice)
+		group.DELETE("/item-prices/:id", priceListHandler.DeleteItemPrice)
 	}
 }

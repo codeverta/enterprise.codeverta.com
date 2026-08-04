@@ -155,6 +155,7 @@ function BeautyHomePage() {
   const { cartCount } = useCommerce();
   const { category } = Route.useSearch();
   const navigate = useNavigate();
+  const adminUrl = import.meta.env.VITE_ADMIN_URL || "http://localhost:5174";
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -196,6 +197,7 @@ function BeautyHomePage() {
           </div>
           <div className="flex items-center gap-6">
             <button type="button" className="flex items-center gap-1.5 hover:text-white/70"><Globe2 className="h-4 w-4" /> ID <ChevronDown className="h-3 w-3" /></button>
+            <a href={adminUrl} className="flex items-center gap-2 font-semibold hover:text-white/70">Login sebagai Seller</a>
             <a href="#stores" className="flex items-center gap-2 hover:text-white/70"><MapPin className="h-4 w-4" /> Store & Events</a>
             <a href={isAuthenticated ? "/account?tab=wishlist" : "/login?redirect=/account?tab=wishlist"} className="flex items-center gap-2 hover:text-white/70"><Heart className="h-4 w-4" /> Wishlist</a>
           </div>
@@ -378,6 +380,7 @@ function BeautyHomePage() {
               <a href={isAuthenticated ? "/account" : "/login"} className="flex items-center gap-3"><UserRound className="h-5 w-5" /> {isAuthenticated ? "Akun Saya" : "Masuk / Daftar"}</a>
               <a href="#stores" className="flex items-center gap-3"><MapPin className="h-5 w-5" /> Store & Events</a>
               <a href={isAuthenticated ? "/account?tab=wishlist" : "/login"} className="flex items-center gap-3"><Heart className="h-5 w-5" /> Wishlist</a>
+              <a href={adminUrl} className="flex items-center gap-3 font-semibold"><ShieldCheck className="h-5 w-5" /> Login sebagai Seller</a>
             </div>
           </aside>
         </div>

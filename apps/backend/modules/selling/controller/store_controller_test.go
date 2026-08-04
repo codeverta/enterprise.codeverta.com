@@ -28,6 +28,10 @@ func setupStoreTestRouter(t *testing.T) *gin.Engine {
 	); err != nil {
 		t.Fatalf("migrate store test database: %v", err)
 	}
+	db.Create(&sellingmodel.StoreProduct{
+		ID: "prod-test-1", TenantID: "tenant-store-test", Name: "Test Item", Slug: "test-item",
+		SKU: "TEST-001", Price: 100000, Stock: 10, IsActive: true,
+	})
 	coremodel.DB = db
 	ctrl := NewStoreController()
 	router := gin.New()
@@ -82,8 +86,8 @@ func TestStoreCatalogCartWishlistAndCheckout(t *testing.T) {
 	if err := json.Unmarshal(productsResponse.Body.Bytes(), &productsEnvelope); err != nil {
 		t.Fatalf("decode products: %v", err)
 	}
-	if len(productsEnvelope.Data) < 5 {
-		t.Fatalf("expected seeded products, got %d", len(productsEnvelope.Data))
+	if len(productsEnvelope.Data) == 0 {
+		t.Fatalf("expected database products, got 0")
 	}
 	product := productsEnvelope.Data[0]
 

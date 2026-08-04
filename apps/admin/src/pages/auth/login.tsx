@@ -21,7 +21,7 @@ import { BASE_STORAGE_URL, getStorageUrl } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { ROLES } from "@/lib/constants";
 import { clearImpersonationStorage } from "@/lib/impersonation";
-import { getAuthenticatedLandingPath } from "@/lib/erp-desk";
+import { resolveAuthenticatedLandingPath } from "@/lib/dynamic-permissions";
 
 // --- LIBRARY PENTING UNTUK WEBAUTHN ---
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -68,7 +68,7 @@ export default function LoginPage() {
                     localStorage.setItem("refreshToken", data.refresh_token);
                     localStorage.setItem("user", JSON.stringify(data.user));
                     window.history.replaceState({}, document.title, window.location.pathname);
-                    navigate(getAuthenticatedLandingPath(data.user), { replace: true });
+                    navigate(await resolveAuthenticatedLandingPath(data.user), { replace: true });
                     return;
                 } catch (err: any) {
                     if (cancelled) return;
@@ -86,7 +86,7 @@ export default function LoginPage() {
             const storedUser = localStorage.getItem("user");
             if (token && storedUser) {
                 try {
-                    navigate(getAuthenticatedLandingPath(JSON.parse(storedUser)), { replace: true });
+                    navigate(await resolveAuthenticatedLandingPath(JSON.parse(storedUser)), { replace: true });
                 } catch {
                     navigate("/dashboard", { replace: true });
                 }
@@ -114,7 +114,7 @@ export default function LoginPage() {
     }
 
     // --- LOGIC SUKSES LOGIN (Shared) ---
-    const onLoginSuccess = (data) => {
+    const onLoginSuccess = async (data) => {
         const { access_token, refresh_token, user } = data || {};
         if (isRoleSpecificPortal) {
             const expectedRole = loginType === "merchant" ? ROLES.MERCHANT : ROLES.PARTNER;
@@ -133,7 +133,7 @@ export default function LoginPage() {
         localStorage.setItem("refreshToken", refresh_token);
         localStorage.setItem("user", JSON.stringify(user));
 
-        navigate(getAuthenticatedLandingPath(user));
+        navigate(await resolveAuthenticatedLandingPath(user));
     };
 
     // --- HANDLE LOGIN PASSKEY (DISCOVERABLE / TANPA EMAIL) ---

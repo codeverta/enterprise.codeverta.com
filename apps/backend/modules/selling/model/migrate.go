@@ -23,6 +23,8 @@ func Migrate(db *gorm.DB) error {
 		&StoreWishlistItem{},
 		&StoreOrder{},
 		&StoreOrderItem{},
+		&PriceList{},
+		&ItemPrice{},
 	); err != nil {
 		return fmt.Errorf("auto migrate Selling models: %w", err)
 	}

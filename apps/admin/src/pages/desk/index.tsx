@@ -1,8 +1,15 @@
 import React, { useMemo, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
-import { Bell, ChevronLeft, LogOut, Search } from "lucide-react";
-import { accountingMenus, deskModules, isAdminRole } from "@/lib/erp-desk";
+import { Bell, ChevronLeft, LogOut, Search, Users } from "lucide-react";
+import { accountingMenus, deskModules, hrSubmodules, isAdminRole } from "@/lib/erp-desk";
 import { clearImpersonationStorage } from "@/lib/impersonation";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const normalize = (value: string) => value.trim().toLocaleLowerCase("id-ID");
 
@@ -69,26 +76,124 @@ function DeskHeader({ query, onQueryChange, user, onLogout }: DeskHeaderProps) {
 }
 
 function ModuleLauncher({ query }: { query: string }) {
+  const navigate = useNavigate();
+  const [selectedModuleDialog, setSelectedModuleDialog] = useState<string | null>(null);
+
   const visibleModules = useMemo(() => {
     const term = normalize(query);
     return term ? deskModules.filter((module) => normalize(module.name).includes(term)) : deskModules;
   }, [query]);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-16 md:py-24">
-      {visibleModules.length ? (
-        <div className="grid grid-cols-2 gap-x-8 gap-y-12 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {visibleModules.map(({ name, slug, icon: Icon, muted }) => (
-            <Link key={slug} to={`/desk/${slug}`} className="group flex min-w-0 flex-col items-center gap-3 text-center">
-              <span className={`flex size-16 items-center justify-center rounded-2xl transition group-hover:-translate-y-1 group-hover:shadow-lg ${muted ? "bg-slate-500" : "bg-blue-500"}`}>
-                <Icon className="size-8 text-white" strokeWidth={2.2} />
+    <>
+      <main className="mx-auto w-full max-w-7xl px-6 py-10 md:px-10 md:py-14">
+        {visibleModules.length ? (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7">
+            {visibleModules.map(({ name, slug, icon: Icon, muted }) => (
+              <button
+                key={slug}
+                type="button"
+                onClick={() => {
+                  if (slug === "hr") {
+                    setSelectedModuleDialog("hr");
+                  } else {
+                    navigate(`/desk/${slug}`);
+                  }
+                }}
+                className="group flex min-w-0 flex-col items-center gap-2 text-center cursor-pointer"
+              >
+                <span
+                  className={`flex size-16 items-center justify-center rounded-2xl transition group-hover:-translate-y-1 group-hover:shadow-lg ${
+                    muted ? "bg-slate-500" : "bg-blue-500"
+                  }`}
+                >
+                  <Icon className="size-8 text-white" strokeWidth={2.2} />
+                </span>
+                <span className="text-sm font-semibold leading-tight text-slate-700 group-hover:text-blue-600">
+                  {name}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="py-20 text-center text-sm text-slate-500">No modules match “{query}”.</p>
+        )}
+      </main>
+
+      <Dialog open={selectedModuleDialog === "hr"} onOpenChange={(open) => !open && setSelectedModuleDialog(null)}>
+        <DialogContent className="max-w-2xl rounded-3xl p-6 sm:p-8">
+          <DialogHeader className="mb-4">
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600">
+                <Users className="size-5" />
               </span>
-              <span className="text-sm font-semibold leading-tight text-slate-700 group-hover:text-blue-600">{name}</span>
+              <div>
+                <DialogTitle className="text-xl font-bold text-slate-900">Human Resources (HR)</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500">
+                  Pilih item/module HR untuk membuka desk & sidebar workspace
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {hrSubmodules.map(({ name, href, icon: Icon }) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => {
+                  setSelectedModuleDialog(null);
+                  navigate(href);
+                }}
+                className="group flex items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 text-left transition hover:border-blue-300 hover:bg-blue-50/40 hover:shadow-sm cursor-pointer"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600 shadow-xs transition group-hover:bg-blue-600 group-hover:text-white">
+                  <Icon className="size-5" />
+                </span>
+                <span className="text-sm font-semibold text-slate-800 transition group-hover:text-blue-600">
+                  {name}
+                </span>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function HRLauncher({ query }: { query: string }) {
+  const visibleMenus = useMemo(() => {
+    const term = normalize(query);
+    return term ? hrSubmodules.filter((menu) => normalize(menu.name).includes(term)) : hrSubmodules;
+  }, [query]);
+
+  return (
+    <main className="mx-auto w-full max-w-5xl px-6 py-10 md:py-14">
+      <Link to="/desk" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600">
+        <ChevronLeft className="size-4" /> All modules
+      </Link>
+      <div className="mb-10">
+        <p className="text-sm font-medium text-blue-600">Module</p>
+        <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">Human Resources (HR)</h1>
+      </div>
+      {visibleMenus.length ? (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {visibleMenus.map(({ name, href, icon: Icon }) => (
+            <Link
+              key={name}
+              to={href}
+              className="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+            >
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-500 group-hover:text-white">
+                <Icon className="size-6" />
+              </span>
+              <span className="font-semibold text-slate-800 group-hover:text-blue-600">{name}</span>
             </Link>
           ))}
         </div>
       ) : (
-        <p className="py-20 text-center text-sm text-slate-500">No modules match “{query}”.</p>
+        <p className="py-20 text-center text-sm text-slate-500">No HR items match “{query}”.</p>
       )}
     </main>
   );
@@ -165,13 +270,22 @@ export default function DeskPage() {
   };
 
   const activeSlug = slug.split("/")[0];
+  const isHR = activeSlug === "hr";
   const isAccounting = activeSlug === "accounting";
   const isRoot = location.pathname === "/desk" || location.pathname === "/desk/";
 
   return (
     <div className="min-h-screen bg-white">
       <DeskHeader query={query} onQueryChange={setQuery} user={user} onLogout={logout} />
-      {isRoot ? <ModuleLauncher query={query} /> : isAccounting ? <AccountingLauncher query={query} /> : <ModulePlaceholder slug={activeSlug} />}
+      {isRoot ? (
+        <ModuleLauncher query={query} />
+      ) : isHR ? (
+        <HRLauncher query={query} />
+      ) : isAccounting ? (
+        <AccountingLauncher query={query} />
+      ) : (
+        <ModulePlaceholder slug={activeSlug} />
+      )}
     </div>
   );
 }

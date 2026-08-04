@@ -10,6 +10,7 @@ import (
 
 	"gin-template/common"
 	"gin-template/model"
+	buyingmodel "gin-template/modules/buying/model"
 	sellingmodel "gin-template/modules/selling/model"
 
 	"github.com/gin-gonic/gin"
@@ -116,33 +117,56 @@ func ensureStoreCatalog(db *gorm.DB, tenant string) error {
 		return nil
 	}
 
-	prefix := storePrefix(tenant)
-	categories := []sellingmodel.StoreCategory{
-		{ID: prefix + "-cat-makeup", TenantID: tenant, Name: "Makeup", Slug: "makeup", Description: "Warna dan essentials untuk setiap ekspresi.", Image: "/beauty/makeup.jpg", SortOrder: 1, IsActive: true},
-		{ID: prefix + "-cat-skincare", TenantID: tenant, Name: "Skincare", Slug: "skincare", Description: "Ritual harian untuk kulit yang terasa sehat.", Image: "/beauty/skincare.jpg", SortOrder: 2, IsActive: true},
-		{ID: prefix + "-cat-fragrance", TenantID: tenant, Name: "Fragrance", Slug: "fragrance", Description: "Signature scent untuk setiap suasana.", Image: "/beauty/perfume.jpg", SortOrder: 3, IsActive: true},
-		{ID: prefix + "-cat-bath-body", TenantID: tenant, Name: "Bath & Body", Slug: "bath-body", Description: "Perawatan tubuh dan little luxuries sehari-hari.", Image: "/beauty/serum.jpg", SortOrder: 4, IsActive: true},
-	}
-	categoryID := map[string]string{}
-	for i := range categories {
-		categoryID[categories[i].Slug] = categories[i].ID
-	}
-	products := []sellingmodel.StoreProduct{
-		{ID: prefix + "-p-curology", TenantID: tenant, CategoryID: categoryID["skincare"], Name: "Everyday Skin Essential", Slug: "curology-skin-essential", SKU: "LUM-SKN-001", Brand: "Curology", Description: "Daily skin essential yang ringan untuk membantu menjaga kelembapan dan tampilan kulit tetap seimbang sepanjang hari.", Ingredients: "Niacinamide, hyaluronic acid, ceramide complex.", HowToUse: "Gunakan pada wajah yang bersih setiap pagi dan malam, lalu lanjutkan dengan moisturizer.", Price: 489000, Badge: "NEW", Image: "/beauty/skincare.jpg", SecondaryImage: "/beauty/serum.jpg", Rating: 4.9, ReviewCount: 326, Stock: 48, IsFeatured: true, IsActive: true},
-		{ID: prefix + "-p-beauty-edit", TenantID: tenant, CategoryID: categoryID["makeup"], Name: "Complete Makeup Essentials Set", Slug: "beauty-edit-set", SKU: "LUM-MKP-001", Brand: "The Beauty Edit", Description: "Set makeup lengkap berisi pilihan essentials untuk menciptakan tampilan natural sampai statement look.", Ingredients: "Set berisi complexion, eye, cheek, dan lip essentials.", HowToUse: "Aplikasikan sesuai urutan complexion, mata, pipi, lalu bibir.", Price: 895000, CompareAtPrice: 1050000, Badge: "ONLY AT LUMÉA", Image: "/beauty/lipstick.jpg", SecondaryImage: "/beauty/makeup.jpg", Rating: 4.8, ReviewCount: 5600, Stock: 24, IsFeatured: true, IsActive: true},
-		{ID: prefix + "-p-soft-focus", TenantID: tenant, CategoryID: categoryID["makeup"], Name: "Soft Focus Makeup Essentials", Slug: "lumea-soft-focus", SKU: "LUM-MKP-002", Brand: "LUMÉA Collection", Description: "Koleksi soft-focus dengan hasil akhir halus dan buildable untuk tampilan effortless setiap hari.", Ingredients: "Silky mineral pigments and soft-focus powders.", HowToUse: "Gunakan tipis untuk hasil natural atau tambahkan lapisan untuk intensitas lebih tinggi.", Price: 570000, Badge: "NEW", Image: "/beauty/makeup.jpg", SecondaryImage: "/beauty/lipstick.jpg", Rating: 4.7, ReviewCount: 824, Stock: 36, IsFeatured: true, IsActive: true},
-		{ID: prefix + "-p-body-lotion", TenantID: tenant, CategoryID: categoryID["bath-body"], Name: "The Body Lotion Fragrance-Free", Slug: "necessaire-body-lotion", SKU: "LUM-BDY-001", Brand: "Nécessaire", Description: "Body lotion tanpa pewangi dengan tekstur nyaman untuk melembapkan kulit tanpa terasa berat.", Ingredients: "Peptides, niacinamide, marula oil, vitamin E.", HowToUse: "Pijatkan ke seluruh tubuh setelah mandi atau kapan pun kulit membutuhkan kelembapan.", Price: 625000, Badge: "BESTSELLER", Image: "/beauty/serum.jpg", SecondaryImage: "/beauty/skincare.jpg", Rating: 4.9, ReviewCount: 6300, Stock: 64, IsFeatured: true, IsActive: true},
-		{ID: prefix + "-p-chanel-no5", TenantID: tenant, CategoryID: categoryID["fragrance"], Name: "N°5 Eau De Parfum", Slug: "chanel-no5", SKU: "LUM-FRG-001", Brand: "Chanel", Description: "Floral aldehyde ikonis dengan karakter elegan, hangat, dan meninggalkan jejak yang tak terlupakan.", Ingredients: "Aldehydes, ylang-ylang, jasmine, rose, sandalwood, vanilla.", HowToUse: "Semprotkan pada titik nadi dari jarak sekitar 15 cm. Hindari menggosok area aplikasi.", Price: 2850000, Badge: "ONLY AT LUMÉA", Image: "/beauty/perfume.jpg", SecondaryImage: "/beauty/hero-beauty.png", Rating: 4.8, ReviewCount: 3800, Stock: 18, IsFeatured: true, IsActive: true},
+	var items []buyingmodel.Item
+	if err := db.Where("disabled = ?", false).Find(&items).Error; err != nil || len(items) == 0 {
+		return nil
 	}
 
+	prefix := storePrefix(tenant)
 	return db.Transaction(func(tx *gorm.DB) error {
-		for i := range categories {
-			if err := tx.Where("tenant_id = ? AND slug = ?", tenant, categories[i].Slug).FirstOrCreate(&categories[i]).Error; err != nil {
-				return err
+		categoryMap := map[string]string{}
+		for _, item := range items {
+			group := strings.TrimSpace(item.ItemGroup)
+			if group == "" {
+				group = "General"
 			}
-		}
-		for i := range products {
-			if err := tx.Where("tenant_id = ? AND slug = ?", tenant, products[i].Slug).FirstOrCreate(&products[i]).Error; err != nil {
+			slug := strings.ToLower(storeIDCleaner.ReplaceAllString(group, "-"))
+			if slug == "" {
+				slug = "general"
+			}
+			if _, exists := categoryMap[slug]; !exists {
+				cat := sellingmodel.StoreCategory{
+					ID:        prefix + "-cat-" + slug,
+					TenantID:  tenant,
+					Name:      group,
+					Slug:      slug,
+					IsActive:  true,
+					SortOrder: len(categoryMap) + 1,
+				}
+				if err := tx.Where("tenant_id = ? AND slug = ?", tenant, slug).FirstOrCreate(&cat).Error; err != nil {
+					return err
+				}
+				categoryMap[slug] = cat.ID
+			}
+
+			itemSlug := strings.ToLower(storeIDCleaner.ReplaceAllString(item.ItemCode, "-"))
+			if itemSlug == "" {
+				itemSlug = item.ID.String()
+			}
+			p := sellingmodel.StoreProduct{
+				ID:          prefix + "-p-" + item.ID.String(),
+				TenantID:    tenant,
+				CategoryID:  categoryMap[slug],
+				Name:        item.ItemName,
+				Slug:        itemSlug,
+				SKU:         item.ItemCode,
+				Brand:       item.Brand,
+				Description: item.Description,
+				Price:       item.StandardRate,
+				Stock:       int(item.OpeningStock),
+				IsActive:    true,
+			}
+			if err := tx.Where("tenant_id = ? AND (sku = ? OR slug = ?)", tenant, item.ItemCode, itemSlug).FirstOrCreate(&p).Error; err != nil {
 				return err
 			}
 		}

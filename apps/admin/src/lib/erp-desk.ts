@@ -32,6 +32,7 @@ export const getAuthenticatedLandingPath = (user: { role?: unknown } | null | un
 
 export const deskModules = [
   { name: "CRM", slug: "crm", icon: ContactRound, muted: false },
+  { name: "HR", slug: "hr", icon: Users, muted: false },
   { name: "Framework", slug: "framework", icon: Package, muted: true },
   { name: "Organization", slug: "organization", icon: Building2, muted: false },
   { name: "Accounting", slug: "accounting", icon: WalletCards, muted: false },
@@ -48,6 +49,18 @@ export const deskModules = [
   { name: "Settings", slug: "erpnext-settings", icon: Settings, muted: false },
 ] as const;
 
+export const hrSubmodules = [
+  { name: "Expenses", slug: "expenses", href: "/desk/expenses?sidebar=Expenses", icon: ReceiptText },
+  { name: "Performance", slug: "performance", href: "/desk/performance?sidebar=Performance", icon: FileChartColumn },
+  { name: "Tenure", slug: "tenure", href: "/desk/tenure?sidebar=Tenure", icon: Users },
+  { name: "HR Setup", slug: "hr-setup", href: "/desk/hr-setup?sidebar=HR%20Setup", icon: Building2 },
+  { name: "Recruitment", slug: "recruitment", href: "/desk/recruitment?sidebar=Recruitment", icon: ContactRound },
+  { name: "Leaves", slug: "leaves", href: "/desk/leaves?sidebar=Leaves", icon: RefreshCw },
+  { name: "Shift & Attendance", slug: "shift-and-attendance", href: "/desk/shift-and-attendance?sidebar=Shift%20%26%20Attendance", icon: ClipboardCheck },
+  { name: "Payroll", slug: "payroll", href: "/desk/payroll?sidebar=Payroll", icon: Banknote },
+  { name: "Tax & Benefits", slug: "tax-and-benefits", href: "/desk/tax-and-benefits?sidebar=Tax%20%26%20Benefits", icon: CircleDollarSign },
+] as const;
+
 export const accountingMenus = [
   { name: "Invoicing", href: "/desk/invoicing?sidebar=Invoicing", icon: ReceiptText },
   { name: "Payments", href: "/desk/dashboard-view/Payments?sidebar=Payments", icon: CreditCard },
@@ -59,3 +72,4 @@ export const accountingMenus = [
   { name: "Share Management", href: "/desk/shareholder?sidebar=Share%20Management", icon: Users },
   { name: "Subscription", href: "/desk/subscription?sidebar=Subscription", icon: Banknote },
 ] as const;
+

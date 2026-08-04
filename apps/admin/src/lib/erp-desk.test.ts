@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountingMenus, getAuthenticatedLandingPath, isAdminRole } from "./erp-desk";
+import { accountingMenus, getAuthenticatedLandingPath, hrSubmodules, isAdminRole } from "./erp-desk";
 
 describe("ERP desk navigation", () => {
   it("sends admin and superadmin accounts to the desk", () => {
@@ -26,4 +26,20 @@ describe("ERP desk navigation", () => {
       "Subscription",
     ]);
   });
+
+  it("exposes the complete HR submodules", () => {
+    expect(hrSubmodules.map((item) => item.name)).toEqual([
+      "Expenses",
+      "Performance",
+      "Tenure",
+      "HR Setup",
+      "Recruitment",
+      "Leaves",
+      "Shift & Attendance",
+      "Payroll",
+      "Tax & Benefits",
+    ]);
+  });
 });
+
+
