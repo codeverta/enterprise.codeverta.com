@@ -1,6 +1,14 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router";
-import { Building2, Cable, Columns3, Gauge, Settings2, UserRoundSearch } from "lucide-react";
+import {
+  Building2,
+  Cable,
+  Columns3,
+  Gauge,
+  MessagesSquare,
+  Settings2,
+  UserRoundSearch,
+} from "lucide-react";
 import DashboardLayout from "@/layout/DashboardLayout";
 import { isAdminRole } from "@/lib/erp-desk";
 import CRMDashboardPage from "./overview";
@@ -9,9 +17,11 @@ import CRMAutomationPage from "./automation";
 import CRMIntegrationsPage from "./integrations";
 import CRMDirectoryPage from "./directory";
 import CRMOpportunitiesPage from "./opportunities";
+import CRMInboxPage from "./inbox";
 
 const navigation = [
   { name: "Overview", href: "/desk/crm", icon: Gauge },
+  { name: "Inbox Chat", href: "/desk/crm/inbox", icon: MessagesSquare },
   { name: "Lead & Prospek", href: "/desk/crm/leads", icon: UserRoundSearch },
   { name: "Kontak & Perusahaan", href: "/desk/crm/directory", icon: Building2 },
   { name: "Peluang & Deal", href: "/desk/crm/opportunities", icon: Columns3 },
@@ -21,6 +31,7 @@ const navigation = [
 
 function CRMContent() {
   const { pathname } = useLocation();
+  if (pathname.endsWith("/inbox")) return <CRMInboxPage />;
   if (pathname.endsWith("/leads")) return <CRMLeadsPage />;
   if (pathname.endsWith("/directory")) return <CRMDirectoryPage />;
   if (pathname.endsWith("/opportunities")) return <CRMOpportunitiesPage />;
@@ -35,6 +46,7 @@ const CRMWorkspace = DashboardLayout(CRMContent, {
   homePath: "/desk",
   defaultOpenAll: true,
   openMenusStorageKey: () => "erpSidebarOpenMenus:crm",
+  moduleLabel: "CRM",
 });
 
 export default function CRMPage() {

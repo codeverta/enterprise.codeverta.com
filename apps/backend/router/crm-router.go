@@ -20,6 +20,9 @@ func registerCRMRoutes(rg *gin.RouterGroup) {
 	protected.Use(middleware.UserAuth())
 	{
 		protected.GET("/dashboard", controller.Dashboard)
+		protected.GET("/inbox/conversations", controller.ListConversations)
+		protected.GET("/inbox/conversations/:id/messages", controller.ListConversationMessages)
+		protected.POST("/inbox/conversations/:id/messages", controller.SendConversationMessage)
 		protected.POST("/leads/import", middleware.MaxSizeMiddleware(10*1024*1024), controller.ImportLeads)
 		protected.GET("/automation", controller.GetAutomation)
 		protected.PUT("/automation", controller.UpdateAutomation)

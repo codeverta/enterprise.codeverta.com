@@ -26,7 +26,9 @@ function WorkspaceContent({ workspace }: WorkspaceContentProps) {
       <div>
         <p className="text-sm font-semibold text-blue-600">{workspace.name}</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">
-          {isHome ? `${workspace.name} Workspace` : currentItem?.name || workspace.name}
+          {isHome
+            ? `Area Kerja ${workspace.name}`
+            : currentItem?.name || workspace.name}
         </h1>
         <p className="mt-2 text-sm text-slate-500">
           {isHome
@@ -38,7 +40,10 @@ function WorkspaceContent({ workspace }: WorkspaceContentProps) {
       {isHome && (
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {sections.map((section) => (
-            <section key={section.name} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section
+              key={section.name}
+              className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+            >
               <div className="mb-4 flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <FolderOpen className="size-5" />
@@ -71,7 +76,9 @@ const WorkspaceDashboard = DashboardLayout(WorkspaceContent, {
   basePath: "",
   homePath: "/desk",
   navigationState: ({ workspace }) => ({ workspace: workspace.slug }),
-  openMenusStorageKey: ({ workspace }) => `erpSidebarOpenMenus:${workspace.slug}`,
+  openMenusStorageKey: ({ workspace }) =>
+    `erpSidebarOpenMenus:${workspace.slug}`,
+  moduleLabel: ({ workspace }) => workspace.name,
   defaultOpenAll: true,
 });
 
@@ -86,8 +93,12 @@ export default function ErpWorkspacePage() {
 
   if (!isAdminRole(user?.role)) return <Navigate to="/dashboard" replace />;
 
-  const preferredWorkspace = (location.state as { workspace?: string } | null)?.workspace;
-  const workspaceConfig = getWorkspaceFromPath(location.pathname, preferredWorkspace);
+  const preferredWorkspace = (location.state as { workspace?: string } | null)
+    ?.workspace;
+  const workspaceConfig = getWorkspaceFromPath(
+    location.pathname,
+    preferredWorkspace,
+  );
   if (!workspaceConfig) return <Navigate to="/desk" replace />;
 
   return <WorkspaceDashboard workspace={workspaceConfig} />;

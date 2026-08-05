@@ -11,6 +11,7 @@ import (
 
 	"gin-template/common"
 	"gin-template/model"
+	sellingmodel "gin-template/modules/selling/model"
 	"gin-template/repository"
 
 	"github.com/gin-gonic/gin"
@@ -81,6 +82,10 @@ func (pc *PaymentXenditController) XenditWebhook(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"status": "ok", "source": "lms_payment", "payment_status": payload.Status})
 			return
 		}
+		if handleStorePaymentWebhook(c, payload.ExternalID, payload.Status) {
+			c.JSON(http.StatusOK, gin.H{"status": "ok", "source": "store_order", "payment_status": payload.Status})
+			return
+		}
 	}
 	if payload.Data.ReferenceID != "" {
 		if handleLMSPaymentWebhook(c, payload.Data.ReferenceID, payload.Data.Status) {
@@ -90,6 +95,35 @@ func (pc *PaymentXenditController) XenditWebhook(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "ignored", "message": "Not an LMS payment"})
+}
+
+func handleStorePaymentWebhook(c *gin.Context, orderID, status string) bool {
+	db := model.GetDB(c).Set("skip_tenant_scope", true)
+	var order sellingmodel.StoreOrder
+	if err := db.Where("id = ? AND payment_provider = ?", orderID, "xendit").First(&order).Error; err != nil {
+		return false
+	}
+
+	switch strings.ToUpper(strings.TrimSpace(status)) {
+	case "PAID", "SETTLED", "SUCCEEDED":
+		if strings.EqualFold(order.PaymentStatus, "PAID") {
+			return true
+		}
+		now := time.Now()
+		db.Model(&order).Updates(map[string]interface{}{
+			"status":         "Diproses",
+			"payment_status": "PAID",
+			"paid_at":        &now,
+		})
+	case "EXPIRED", "FAILED", "VOIDED":
+		db.Model(&order).Updates(map[string]interface{}{
+			"status":         "Menunggu Pembayaran",
+			"payment_status": "EXPIRED",
+		})
+	default:
+		// PENDING and unknown intermediary statuses are safe to acknowledge.
+	}
+	return true
 }
 
 func handleLMSPaymentWebhook(c *gin.Context, externalID string, status string) bool {

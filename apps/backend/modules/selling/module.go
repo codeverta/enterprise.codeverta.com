@@ -34,6 +34,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		storeAccount.DELETE("/wishlist/:productID", storeHandler.RemoveWishlist)
 		storeAccount.GET("/orders", storeHandler.Orders)
 		storeAccount.POST("/orders", storeHandler.CreateOrder)
+		storeAccount.GET("/orders/:id/payment-status", storeHandler.OrderPaymentStatus)
 	}
 
 	group := parent.Group("/selling")
@@ -48,6 +49,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.GET("/loyalty-point-entries", loyaltyHandler.EntriesList)
 		group.GET("/pos/opening-entries", posHandler.OpeningEntries)
 		group.GET("/pos/opening-entries/current", posHandler.CurrentOpening)
+		group.GET("/pos/items", posHandler.Items)
 		group.POST("/pos/opening-entries", posHandler.CreateOpening)
 		group.POST("/pos/opening-entries/:id/close", posHandler.CloseOpening)
 		group.GET("/pos/closing-entries", posHandler.ClosingEntries)

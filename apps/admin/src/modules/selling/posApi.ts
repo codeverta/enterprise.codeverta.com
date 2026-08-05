@@ -40,6 +40,7 @@ export type POSClosingEntry = {
 };
 
 export type POSItem = {
+  id: string;
   item_code: string;
   item_name: string;
   item_group: string;
@@ -47,6 +48,8 @@ export type POSItem = {
   stock: number;
   unit: string;
   image?: string;
+  is_stock_item: boolean;
+  barcodes: string[];
   color: string;
   initials: string;
 };
@@ -78,16 +81,35 @@ const OPENINGS_KEY = "erp_pos_opening_entries";
 const CLOSINGS_KEY = "erp_pos_closing_entries";
 const INVOICES_KEY = "erp_pos_invoices";
 
-export const posItems: POSItem[] = [
-  { item_code: "CS-001", item_name: "Custom Software Development", item_group: "Services", rate: 1800000, stock: 99, unit: "Nos", color: "from-slate-100 to-slate-200", initials: "CS" },
-  { item_code: "SAAS-001", item_name: "SaaS Monthly Subscription", item_group: "Services", rate: 2388000, stock: 99, unit: "Nos", color: "from-indigo-50 to-slate-200", initials: "S" },
-  { item_code: "LILIN-K-01", item_name: "Lilin Mati Lampu Kecil", item_group: "Candles", rate: 7000, stock: 10000, unit: "Nos", color: "from-amber-50 to-orange-100", initials: "LK" },
-  { item_code: "LILIN-S-01", item_name: "Lilin Mati Lampu Sedang", item_group: "Candles", rate: 15000, stock: 10000, unit: "Nos", color: "from-stone-50 to-amber-100", initials: "LS" },
-  { item_code: "LILIN-L-01", item_name: "Tall Large Candle", item_group: "Candles", rate: 25000, stock: 10000, unit: "Nos", color: "from-neutral-50 to-slate-100", initials: "TL" },
-  { item_code: "DIFF-01", item_name: "Aromatic Reed Diffuser", item_group: "Home Fragrance", rate: 129000, stock: 42, unit: "Nos", color: "from-rose-50 to-pink-100", initials: "RD" },
-  { item_code: "GIFT-01", item_name: "Candle Gift Set", item_group: "Gift Sets", rate: 189000, stock: 28, unit: "Set", color: "from-emerald-50 to-teal-100", initials: "GS" },
-  { item_code: "ROOM-01", item_name: "Room & Linen Spray", item_group: "Home Fragrance", rate: 99000, stock: 64, unit: "Nos", color: "from-sky-50 to-cyan-100", initials: "RS" },
+type POSItemPayload = Omit<POSItem, "color" | "initials">;
+
+const itemColors = [
+  "from-slate-100 to-slate-200",
+  "from-indigo-50 to-slate-200",
+  "from-amber-50 to-orange-100",
+  "from-stone-50 to-amber-100",
+  "from-rose-50 to-pink-100",
+  "from-emerald-50 to-teal-100",
+  "from-sky-50 to-cyan-100",
+  "from-violet-50 to-purple-100",
 ];
+
+function decoratePOSItem(item: POSItemPayload, index: number): POSItem {
+  const initials =
+    item.item_name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase() || item.item_code.slice(0, 2).toUpperCase();
+  return {
+    ...item,
+    barcodes: item.barcodes || [],
+    color: itemColors[index % itemColors.length],
+    initials,
+  };
+}
 
 function read<T>(key: string, fallback: T): T {
   try {
@@ -105,20 +127,22 @@ function write<T>(key: string, value: T) {
 
 function openingSeed(): POSOpeningEntry[] {
   const started = new Date(Date.now() - 14 * 60 * 60 * 1000);
-  return [{
-    id: `POS-OPEN-${started.toISOString().slice(0, 10).replaceAll("-", "")}-001`,
-    period_start_date: started.toISOString(),
-    posting_date: started.toISOString(),
-    company: "PT ZENIT TECHNOLOGY SOLUTION",
-    pos_profile: "Usaha Jualan Lilin",
-    user: "Administrator",
-    status: "Open",
-    opening_balance_total: 0,
-    balance_details: [
-      { mode_of_payment: "Cash", opening_amount: 0 },
-      { mode_of_payment: "QRIS", opening_amount: 0 },
-    ],
-  }];
+  return [
+    {
+      id: `POS-OPEN-${started.toISOString().slice(0, 10).replaceAll("-", "")}-001`,
+      period_start_date: started.toISOString(),
+      posting_date: started.toISOString(),
+      company: "PT ZENIT TECHNOLOGY SOLUTION",
+      pos_profile: "Usaha Jualan Lilin",
+      user: "Administrator",
+      status: "Open",
+      opening_balance_total: 0,
+      balance_details: [
+        { mode_of_payment: "Cash", opening_amount: 0 },
+        { mode_of_payment: "QRIS", opening_amount: 0 },
+      ],
+    },
+  ];
 }
 
 function localOpenings() {
@@ -135,36 +159,72 @@ function unwrap<T>(payload: unknown): T {
 }
 
 export const isOpeningOutdated = (entry?: POSOpeningEntry | null) =>
-  Boolean(entry && Date.now() - new Date(entry.period_start_date).getTime() > 12 * 60 * 60 * 1000);
+  Boolean(
+    entry &&
+    Date.now() - new Date(entry.period_start_date).getTime() >
+      12 * 60 * 60 * 1000,
+  );
 
 export const posApi = {
-  async listOpenings(): Promise<POSOpeningEntry[]> {
-    try { return unwrap<POSOpeningEntry[]>((await api.get("/selling/pos/opening-entries")).data); }
-    catch { return localOpenings(); }
+  async listItems(): Promise<POSItem[]> {
+    const items = unwrap<POSItemPayload[]>(
+      (await api.get("/selling/pos/items")).data,
+    );
+    return items.map(decoratePOSItem);
   },
 
-  async currentOpening(): Promise<{ data: POSOpeningEntry | null; is_outdated: boolean }> {
+  async listOpenings(): Promise<POSOpeningEntry[]> {
+    try {
+      return unwrap<POSOpeningEntry[]>(
+        (await api.get("/selling/pos/opening-entries")).data,
+      );
+    } catch {
+      return localOpenings();
+    }
+  },
+
+  async currentOpening(): Promise<{
+    data: POSOpeningEntry | null;
+    is_outdated: boolean;
+  }> {
     try {
       const response = await api.get("/selling/pos/opening-entries/current");
       return response.data;
     } catch {
-      const current = localOpenings().find((entry) => entry.status === "Open") || null;
+      const current =
+        localOpenings().find((entry) => entry.status === "Open") || null;
       return { data: current, is_outdated: isOpeningOutdated(current) };
     }
   },
 
-  async createOpening(input: Omit<POSOpeningEntry, "id" | "status" | "opening_balance_total">) {
-    try { return unwrap<POSOpeningEntry>((await api.post("/selling/pos/opening-entries", input)).data); }
-    catch (error: any) {
+  async createOpening(
+    input: Omit<POSOpeningEntry, "id" | "status" | "opening_balance_total">,
+  ) {
+    try {
+      return unwrap<POSOpeningEntry>(
+        (await api.post("/selling/pos/opening-entries", input)).data,
+      );
+    } catch (error: any) {
       const openings = localOpenings();
-      if (openings.some((entry) => entry.status === "Open" && entry.pos_profile === input.pos_profile)) {
-        throw new Error(error?.response?.data?.error || "Masih ada opening aktif. Tutup shift lama terlebih dahulu.");
+      if (
+        openings.some(
+          (entry) =>
+            entry.status === "Open" && entry.pos_profile === input.pos_profile,
+        )
+      ) {
+        throw new Error(
+          error?.response?.data?.error ||
+            "Masih ada opening aktif. Tutup shift lama terlebih dahulu.",
+        );
       }
       const created: POSOpeningEntry = {
         ...input,
         id: `POS-OPEN-${Date.now()}`,
         status: "Open",
-        opening_balance_total: input.balance_details.reduce((sum, row) => sum + Number(row.opening_amount || 0), 0),
+        opening_balance_total: input.balance_details.reduce(
+          (sum, row) => sum + Number(row.opening_amount || 0),
+          0,
+        ),
       };
       write(OPENINGS_KEY, [created, ...openings]);
       return created;
@@ -172,52 +232,106 @@ export const posApi = {
   },
 
   async closeOpening(id: string, closingAmounts: Record<string, number>) {
-    try { return unwrap<POSClosingEntry>((await api.post(`/selling/pos/opening-entries/${id}/close`, { closing_amounts: closingAmounts })).data); }
-    catch {
+    try {
+      return unwrap<POSClosingEntry>(
+        (
+          await api.post(`/selling/pos/opening-entries/${id}/close`, {
+            closing_amounts: closingAmounts,
+          })
+        ).data,
+      );
+    } catch {
       const openings = localOpenings();
-      const index = openings.findIndex((entry) => entry.id === id && entry.status === "Open");
+      const index = openings.findIndex(
+        (entry) => entry.id === id && entry.status === "Open",
+      );
       if (index < 0) throw new Error("Opening aktif tidak ditemukan");
       const opening = openings[index];
-      const invoices = read<POSInvoice[]>(INVOICES_KEY, []).filter((invoice) => invoice.opening_entry_id === id);
-      const salesByMode = invoices.reduce<Record<string, number>>((totals, invoice) => {
-        totals[invoice.mode_of_payment] = (totals[invoice.mode_of_payment] || 0) + Number(invoice.paid_amount || invoice.grand_total || 0);
-        return totals;
-      }, {});
-      const modes = new Set([...opening.balance_details.map((row) => row.mode_of_payment), ...Object.keys(salesByMode)]);
+      const invoices = read<POSInvoice[]>(INVOICES_KEY, []).filter(
+        (invoice) => invoice.opening_entry_id === id,
+      );
+      const salesByMode = invoices.reduce<Record<string, number>>(
+        (totals, invoice) => {
+          totals[invoice.mode_of_payment] =
+            (totals[invoice.mode_of_payment] || 0) +
+            Number(invoice.paid_amount || invoice.grand_total || 0);
+          return totals;
+        },
+        {},
+      );
+      const modes = new Set([
+        ...opening.balance_details.map((row) => row.mode_of_payment),
+        ...Object.keys(salesByMode),
+      ]);
       const payment_reconciliation = [...modes].map((mode) => {
-        const openingAmount = opening.balance_details.find((row) => row.mode_of_payment === mode)?.opening_amount || 0;
+        const openingAmount =
+          opening.balance_details.find((row) => row.mode_of_payment === mode)
+            ?.opening_amount || 0;
         const expected = openingAmount + (salesByMode[mode] || 0);
         const closing = closingAmounts[mode] ?? expected;
-        return { mode_of_payment: mode, opening_amount: openingAmount, expected_amount: expected, closing_amount: closing, difference: closing - expected };
+        return {
+          mode_of_payment: mode,
+          opening_amount: openingAmount,
+          expected_amount: expected,
+          closing_amount: closing,
+          difference: closing - expected,
+        };
       });
       const now = new Date().toISOString();
       const closing: POSClosingEntry = {
-        id: `POS-CLOSE-${Date.now()}`, pos_opening_entry: id, period_end_date: now, posting_date: now,
-        company: opening.company, user: opening.user,
-        net_total: invoices.reduce((sum, invoice) => sum + Number(invoice.net_total || 0), 0),
-        grand_total: invoices.reduce((sum, invoice) => sum + Number(invoice.grand_total || 0), 0),
+        id: `POS-CLOSE-${Date.now()}`,
+        pos_opening_entry: id,
+        period_end_date: now,
+        posting_date: now,
+        company: opening.company,
+        user: opening.user,
+        net_total: invoices.reduce(
+          (sum, invoice) => sum + Number(invoice.net_total || 0),
+          0,
+        ),
+        grand_total: invoices.reduce(
+          (sum, invoice) => sum + Number(invoice.grand_total || 0),
+          0,
+        ),
         payment_reconciliation,
       };
       openings[index] = { ...opening, status: "Closed", closed_at: now };
       write(OPENINGS_KEY, openings);
-      write(CLOSINGS_KEY, [closing, ...read<POSClosingEntry[]>(CLOSINGS_KEY, [])]);
+      write(CLOSINGS_KEY, [
+        closing,
+        ...read<POSClosingEntry[]>(CLOSINGS_KEY, []),
+      ]);
       return closing;
     }
   },
 
   async listClosings(): Promise<POSClosingEntry[]> {
-    try { return unwrap<POSClosingEntry[]>((await api.get("/selling/pos/closing-entries")).data); }
-    catch { return read<POSClosingEntry[]>(CLOSINGS_KEY, []); }
+    try {
+      return unwrap<POSClosingEntry[]>(
+        (await api.get("/selling/pos/closing-entries")).data,
+      );
+    } catch {
+      return read<POSClosingEntry[]>(CLOSINGS_KEY, []);
+    }
   },
 
   async createInvoice(input: POSInvoice): Promise<POSInvoice> {
-    try { return unwrap<POSInvoice>((await api.post("/selling/pos/invoices", input)).data); }
-    catch {
-      const net = input.items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+    try {
+      return unwrap<POSInvoice>(
+        (await api.post("/selling/pos/invoices", input)).data,
+      );
+    } catch {
+      const net = input.items.reduce(
+        (sum, item) => sum + item.quantity * item.rate,
+        0,
+      );
       const invoice: POSInvoice = {
         ...input,
         id: `posi-${Date.now()}`,
-        invoice_number: `POS-INV-${new Date().toISOString().replaceAll(/[-:TZ.]/g, "").slice(0, 14)}`,
+        invoice_number: `POS-INV-${new Date()
+          .toISOString()
+          .replaceAll(/[-:TZ.]/g, "")
+          .slice(0, 14)}`,
         net_total: net,
         grand_total: net + Number(input.tax_total || 0),
         paid_amount: net + Number(input.tax_total || 0),
@@ -230,10 +344,21 @@ export const posApi = {
   },
 
   async listInvoices(openingEntryId?: string): Promise<POSInvoice[]> {
-    try { return unwrap<POSInvoice[]>((await api.get("/selling/pos/invoices", { params: { opening_entry_id: openingEntryId } })).data); }
-    catch {
+    try {
+      return unwrap<POSInvoice[]>(
+        (
+          await api.get("/selling/pos/invoices", {
+            params: { opening_entry_id: openingEntryId },
+          })
+        ).data,
+      );
+    } catch {
       const invoices = read<POSInvoice[]>(INVOICES_KEY, []);
-      return openingEntryId ? invoices.filter((invoice) => invoice.opening_entry_id === openingEntryId) : invoices;
+      return openingEntryId
+        ? invoices.filter(
+            (invoice) => invoice.opening_entry_id === openingEntryId,
+          )
+        : invoices;
     }
   },
 };

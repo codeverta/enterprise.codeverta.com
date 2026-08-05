@@ -596,41 +596,23 @@ const selling = workspace(
     ["Loyalty Program", "/desk/loyalty-program"],
   ],
   [
-    group("POS", sellingHome, documentLinks([
+    group("Point of Sale (Kasir)", sellingHome, documentLinks([
       ["Open POS", "/desk/point-of-sale"], "POS Profile", "POS Invoice", "POS Opening Entry", "POS Closing Entry",
       "POS Invoice Merge Log", "POS Settings", "Loyalty Program", "Loyalty Point Entry",
     ]), Store),
-    group("Items & Pricing", sellingHome, documentLinks([
+    group("Item & Harga", sellingHome, documentLinks([
       "Item", "Item Group", "Price List", "Item Price", "Pricing Rule", "Promotional Scheme",
       "Coupon Code", "Blanket Order",
     ]), Tags),
-    group("Setup", sellingHome, documentLinks([
+    group("Pengaturan & Master Data", sellingHome, documentLinks([
       "Customer", "Customer Group", "Address", "Contact", "Territory", "Campaign", "Sales Person",
       "Sales Partner", "Monthly Distribution", "Terms Template", ["Tax Template", "/desk/sales-taxes-and-charges-template"],
       "Product Bundle", "UTM Source", "Shipping Rule",
     ]), UserCheck),
-    group("Reports", sellingHome, reportLinks([
+    group("Laporan & Analisis", sellingHome, reportLinks([
       "Sales Register", 
-      // "Item-wise Sales Register", 
-      // "Sales Analytics", "Customer Addresses And Contacts",
-      // "Sales Invoice Trends", 
-      // "Customer Credit Balance", 
-      // "Customers Without Any Sales Transactions",
-      // "Sales Partners Commission", 
-      // "Available Stock for Packing Items",
-      // "Territory Target Variance Based On Item Group", 
-      // "Sales Person Target Variance Based On Item Group",
-      // "Sales Partner Target Variance Based On Item Group", 
-      // "Pending SO Items For Purchase Request", 
-      // "Sales Funnel",
-      // "Sales Order Analysis",
-      // "Customer Acquisition and Loyalty", 
-      // "Quotation Trends", 
-      // "Sales Order Trends",
-      // "Item-wise Sales History", 
-      // "Sales Person-wise Transaction Summary",
     ]), LineChart),
-    group("Settings", sellingHome, documentLinks(["Selling Settings"]), SlidersHorizontal),
+    group("Pengaturan", sellingHome, documentLinks(["Selling Settings"]), SlidersHorizontal),
   ],
 );
 
@@ -640,17 +622,17 @@ const buying = workspace(
   "buying",
   ["Material Request", "Request for Quotation", "Supplier Quotation", "Purchase Order", "Purchase Invoice"],
   [
-    group("Setup", buyingHome, documentLinks([
+    group("Pengaturan & Master Data", buyingHome, documentLinks([
       "Supplier", "Supplier Group", "Item", "Price List", "Address", ["Contacts", "/desk/contact"],
       "Supplier Scorecard", "Supplier Scorecard Criteria", "Supplier Scorecard Variable", "Supplier Scorecard Standing",
     ]), Building2),
-    group("Reports", buyingHome, reportLinks([
+    group("Laporan & Analisis", buyingHome, reportLinks([
       "Purchase Analytics", "Purchase Order Analysis", "Requested Items to Order and Receive", "Items To Be Requested",
       "Item-wise Purchase History", "Purchase Receipt Trends", "Purchase Invoice Trends", "Purchase Order Trends",
       "Procurement Tracker", "Supplier-Wise Sales Analytics", "Supplier Quotation Comparison",
       "Supplier Addresses And Contacts",
     ]), PieChart),
-    group("Settings", buyingHome, [link("Buying Settings", "/desk/buying-settings/Buying%20Settings", Settings2)], Settings2),
+    group("Pengaturan", buyingHome, [link("Buying Settings", "/desk/buying-settings/Buying%20Settings", Settings2)], Settings2),
   ],
 );
 
@@ -658,24 +640,24 @@ const stockHome = "/desk/stock";
 const stock = workspace(
   "Stock",
   "stock",
-  ["Stock Entry", "Purchase Receipt", "Delivery Note", "Material Request", "Pick List"],
+  ["Stock Entry", "Purchase Receipt", "Delivery Note", "Material Request", "Pick List", "Shipment"],
   [
-    group("Tools", stockHome, documentLinks([
+    group("Alat & Operasional", stockHome, documentLinks([
       "Stock Reconciliation", "Landed Cost Voucher", "Repost Item Valuation", "Packing Slip", "Quality Inspection",
     ]), PackageCheck),
-    group("Setup", stockHome, documentLinks([
+    group("Pengaturan & Master Data", stockHome, documentLinks([
       "Item", "Item Group", "Item Attribute", "Brand", "Warehouse", ["Unit of Measure (UOM)", "/desk/uom"],
       "UOM Conversion Factor", "Serial No", "Batch No", "Serial and Batch Bundle", "Inventory Dimension",
       "Shipping Rule", "Item Alternative", "Quality Inspection Template", "Delivery Trip",
     ]), Warehouse),
-    group("Reports", stockHome, reportLinks([
+    group("Laporan & Analisis", stockHome, reportLinks([
       "Stock Ledger", "Stock Balance", "Quick Stock Balance", "Stock Projected Qty", "Stock Analytics", "Stock Ageing",
       "Purchase Receipt Trends", "Delivery Note Trends", "Item Price Stock", "Warehouse Wise Stock Balance",
       "Item Shortage Report", "Serial No and Batch Traceability", "Serial No Status", "Serial No Ledger",
       "Serial No Warranty Expiry", "Batch-Wise Balance History", "Batch Item Expiry Status",
       "Requested Items To Be Transferred", "Itemwise Recommended Reorder Level", "Item Variant Details",
     ]), AreaChart),
-    group("Settings", stockHome, documentLinks([
+    group("Pengaturan", stockHome, documentLinks([
       "Stock Settings", "Item Variant Settings", "Stock Reposting Settings", "Delivery Settings",
     ]), Sliders),
   ],
@@ -741,7 +723,7 @@ const organization = workspace("Organization", "organization", [
 ]);
 
 const settingsHome = "/desk/erpnext-settings";
-const erpnextSettings = workspace("ERPNext Settings", "erpnext-settings", [["System Configuration", "/desk/erpnext-settings/system-settings"]], [
+const erpnextSettings = workspace("Settings", "erpnext-settings", [["System Configuration", "/desk/erpnext-settings/system-settings"]], [
   group("Defaults", settingsHome, documentLinks(["Global Defaults", "System Settings", "Domain Settings", "Session Default Settings"]), Globe),
   group("Modules", settingsHome, documentLinks(["Selling Settings", "Buying Settings", "Stock Settings", "Accounts Settings", "Manufacturing Settings"]), Grid),
   group("Data", settingsHome, documentLinks(["Data Import", "Data Export", "Customize Form", "Role Permission Manager"]), Database),

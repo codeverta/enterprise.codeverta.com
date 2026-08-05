@@ -21,7 +21,7 @@ func (LeadAutomationConfig) TableName() string { return "crm_lead_automation_con
 
 type Integration struct {
 	Base
-	Provider        string         `json:"provider" gorm:"type:varchar(30);not null;index" binding:"required,oneof=google_analytics meta_ads tiktok_ads"`
+	Provider        string         `json:"provider" gorm:"type:varchar(30);not null;index" binding:"required,oneof=google_analytics meta_ads tiktok_ads meta_messaging"`
 	Enabled         bool           `json:"enabled" gorm:"not null;default:false;index"`
 	Config          datatypes.JSON `json:"config" gorm:"type:json"`
 	SecretEncrypted string         `json:"-" gorm:"type:text"`

@@ -3,7 +3,10 @@ package controller
 import (
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
+	"net/url"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -12,6 +15,7 @@ import (
 	"gin-template/model"
 	buyingmodel "gin-template/modules/buying/model"
 	sellingmodel "gin-template/modules/selling/model"
+	"gin-template/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -379,6 +383,18 @@ type storeOrderInput struct {
 	Address       string `json:"address"`
 }
 
+func storefrontPaymentURL(orderID, result string) (string, error) {
+	base := strings.TrimRight(strings.TrimSpace(os.Getenv("STORE_FRONTEND_URL")), "/")
+	if base == "" {
+		return "", fmt.Errorf("STORE_FRONTEND_URL is not configured")
+	}
+	query := url.Values{"order_id": []string{orderID}}
+	if result != "" {
+		query.Set("result", result)
+	}
+	return base + "/payments?" + query.Encode(), nil
+}
+
 func (ctrl *StoreController) CreateOrder(ctx *gin.Context) {
 	userID, ok := storeUserID(ctx)
 	if !ok {
@@ -400,13 +416,18 @@ func (ctrl *StoreController) CreateOrder(ctx *gin.Context) {
 			return fmt.Errorf("EMPTY_CART")
 		}
 		now := time.Now()
+		isXendit := strings.EqualFold(strings.TrimSpace(input.PaymentMethod), "XENDIT")
 		created = sellingmodel.StoreOrder{
 			ID: "order-" + uuid.NewString(), TenantID: tenant, UserID: userID,
 			OrderNumber: "LUM-" + now.Format("060102150405") + strings.ToUpper(uuid.NewString()[:4]),
 			Status:      "Diproses", PaymentMethod: strings.TrimSpace(input.PaymentMethod), Address: strings.TrimSpace(input.Address), CreatedAt: now, UpdatedAt: now,
 		}
-		if strings.EqualFold(created.PaymentMethod, "Bank Transfer") {
+		if isXendit || strings.EqualFold(created.PaymentMethod, "Bank Transfer") {
 			created.Status = "Menunggu Pembayaran"
+		}
+		if isXendit {
+			created.PaymentProvider = "xendit"
+			created.PaymentStatus = "PENDING"
 		}
 		for _, cartItem := range cart {
 			if !cartItem.Product.IsActive || cartItem.Product.Stock < cartItem.Quantity {
@@ -429,6 +450,41 @@ func (ctrl *StoreController) CreateOrder(ctx *gin.Context) {
 		}
 		if err := tx.Create(&created).Error; err != nil {
 			return err
+		}
+		if isXendit {
+			var user model.User
+			if err := tx.First(&user, "id = ?", userID).Error; err != nil {
+				return err
+			}
+			successURL, err := storefrontPaymentURL(created.ID, "success")
+			if err != nil {
+				return err
+			}
+			failureURL, err := storefrontPaymentURL(created.ID, "failed")
+			if err != nil {
+				return err
+			}
+			invoice, err := services.GenerateStoreInvoice(
+				created.ID,
+				user.Email,
+				user.DisplayName,
+				created.Total,
+				successURL,
+				failureURL,
+			)
+			if err != nil {
+				return err
+			}
+			created.PaymentReference = invoice.ID
+			created.PaymentURL = invoice.URL
+			created.PaymentExpiresAt = &invoice.ExpiresAt
+			if err := tx.Model(&created).Updates(map[string]interface{}{
+				"payment_reference":  invoice.ID,
+				"payment_url":        invoice.URL,
+				"payment_expires_at": invoice.ExpiresAt,
+			}).Error; err != nil {
+				return err
+			}
 		}
 		for _, item := range cart {
 			result := tx.Model(&sellingmodel.StoreProduct{}).
@@ -455,6 +511,54 @@ func (ctrl *StoreController) CreateOrder(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusCreated, gin.H{"success": true, "data": created})
+}
+
+func (ctrl *StoreController) OrderPaymentStatus(ctx *gin.Context) {
+	userID, ok := storeUserID(ctx)
+	if !ok {
+		return
+	}
+	var order sellingmodel.StoreOrder
+	if err := storeDB(ctx).Where(
+		"tenant_id = ? AND user_id = ? AND id = ?",
+		storeTenant(ctx), userID, ctx.Param("id"),
+	).First(&order).Error; err != nil {
+		storeError(ctx, http.StatusNotFound, "Pesanan tidak ditemukan")
+		return
+	}
+	if strings.EqualFold(order.PaymentProvider, "xendit") &&
+		strings.EqualFold(order.PaymentStatus, "PENDING") &&
+		strings.TrimSpace(order.PaymentReference) != "" {
+		remote, err := services.GetStoreInvoiceStatus(ctx.Request.Context(), order.PaymentReference)
+		if err == nil && remote.ExternalID == order.ID && math.Abs(remote.Amount-order.Total) < 0.01 {
+			switch strings.ToUpper(remote.Status) {
+			case "PAID", "SETTLED":
+				now := time.Now()
+				if err := storeDB(ctx).Model(&order).Updates(map[string]interface{}{
+					"status":         "Diproses",
+					"payment_status": "PAID",
+					"paid_at":        &now,
+				}).Error; err == nil {
+					order.Status = "Diproses"
+					order.PaymentStatus = "PAID"
+					order.PaidAt = &now
+				}
+			case "EXPIRED":
+				if err := storeDB(ctx).Model(&order).Updates(map[string]interface{}{
+					"status":         "Menunggu Pembayaran",
+					"payment_status": "EXPIRED",
+				}).Error; err == nil {
+					order.PaymentStatus = "EXPIRED"
+				}
+			}
+		}
+	}
+	storeSuccess(ctx, gin.H{
+		"id": order.ID, "order_number": order.OrderNumber, "total": order.Total,
+		"status": order.Status, "payment_status": order.PaymentStatus,
+		"payment_url": order.PaymentURL, "payment_reference": order.PaymentReference,
+		"payment_expires_at": order.PaymentExpiresAt, "paid_at": order.PaidAt,
+	})
 }
 
 func (ctrl *StoreController) Me(ctx *gin.Context) {

@@ -34,6 +34,7 @@ import {
   History,
   Settings,
   Lock,
+  Boxes,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import clsx from "clsx";
@@ -141,6 +142,7 @@ const Sidebar = ({
   navigationState,
   defaultOpenAll = false,
   openMenusStorageKey = "sidebarOpenMenus",
+  moduleLabel = "Core",
 }) => {
   const [openMenus, setOpenMenus] = useState(() => {
     try {
@@ -174,14 +176,14 @@ const Sidebar = ({
     const currentPath = location.pathname;
     const activeParentMenu = items.find((item) =>
       item.items?.some((subItem) =>
-        currentPath.startsWith(resolveHref(subItem.href))
-      )
+        currentPath.startsWith(resolveHref(subItem.href)),
+      ),
     );
     if (activeParentMenu) {
       setOpenMenus((prev) =>
         prev.includes(activeParentMenu.name)
           ? prev
-          : [...prev, activeParentMenu.name]
+          : [...prev, activeParentMenu.name],
       );
     }
   }, [location.pathname, items]);
@@ -231,7 +233,7 @@ const Sidebar = ({
     setOpenMenus((prev) =>
       prev.includes(name)
         ? prev.filter((item) => item !== name)
-        : [...prev, name]
+        : [...prev, name],
     );
   };
 
@@ -285,50 +287,78 @@ const Sidebar = ({
 
         {settings?.app_name && (
           <AppSwitcherMenu onLogout={onLogout} side="right" align="start">
-          <button type="button" className="mb-6 flex w-full flex-col gap-2 rounded-xl p-1 text-left outline-none transition hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500">
-            <div className={clsx("flex items-center gap-3", !isOpen && "justify-center")}>
-              {settings?.app_logo ? (
-                <img
-                  src={getStorageUrl(settings.app_logo)}
-                  alt="App Logo"
-                  className="w-9 h-9 rounded-lg object-cover shadow-sm flex-shrink-0"
-                />
-              ) : (
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm flex-shrink-0">
-                  <span className="text-white font-semibold text-base">
-                    {settings.app_name?.charAt(0).toUpperCase() || "M"}
+            <button
+              type="button"
+              className="mb-6 flex w-full flex-col gap-2 rounded-xl p-1 text-left outline-none transition hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500"
+            >
+              <div
+                className={clsx(
+                  "flex items-center gap-3",
+                  !isOpen && "justify-center",
+                )}
+              >
+                {settings?.app_logo ? (
+                  <img
+                    src={getStorageUrl(settings.app_logo)}
+                    alt="App Logo"
+                    className="w-9 h-9 rounded-lg object-cover shadow-sm flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm flex-shrink-0">
+                    <span className="text-white font-semibold text-base">
+                      {settings.app_name?.charAt(0).toUpperCase() || "M"}
+                    </span>
+                  </div>
+                )}
+
+                {isOpen && (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-base font-semibold text-gray-800 truncate">
+                        {settings.app_name}
+                      </h2>
+                      <p className="text-xs text-gray-500 truncate">
+                        {settings?.app_tagline ||
+                          settings?.banner_text ||
+                          "Future of Homeschooling"}
+                      </p>
+                    </div>
+
+                    <AppVersion />
+                  </>
+                )}
+              </div>
+
+              {isOpen && user?.active_subscription && (
+                <div className="px-1 mt-0.5">
+                  <span
+                    className="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold border border-blue-100 block text-center truncate"
+                    title={user.active_subscription}
+                  >
+                    Plan: {user.active_subscription}
                   </span>
                 </div>
               )}
-
-              {isOpen && (
-                <>
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-base font-semibold text-gray-800 truncate">
-                      {settings.app_name}
-                    </h2>
-                    <p className="text-xs text-gray-500 truncate">
-                      {settings?.app_tagline || settings?.banner_text || "Future of Homeschooling"}
-                    </p>
-                  </div>
-
-                  <AppVersion />
-                </>
-              )}
-            </div>
-
-            {isOpen && user?.active_subscription && (
-              <div className="px-1 mt-0.5">
-                <span
-                  className="text-[11px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-semibold border border-blue-100 block text-center truncate"
-                  title={user.active_subscription}
-                >
-                  Plan: {user.active_subscription}
-                </span>
-              </div>
-            )}
-          </button>
+            </button>
           </AppSwitcherMenu>
+        )}
+
+        {isOpen ? (
+          <div className="mb-3 px-1 flex items-center">
+            <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs">
+              <Boxes className="size-3.5 text-blue-600" />
+              {moduleLabel}
+            </span>
+          </div>
+        ) : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="mb-3 flex h-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
+                <Boxes className="size-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right">Modul: {moduleLabel}</TooltipContent>
+          </Tooltip>
         )}
 
         <nav className="flex-grow overflow-y-auto pr-2">
@@ -417,7 +447,7 @@ const Sidebar = ({
                                 subItem.locked &&
                                   subItem.allowWhenLocked &&
                                   "bg-amber-50/60",
-                                !isOpen && "justify-center"
+                                !isOpen && "justify-center",
                               )}
                             >
                               {subItem.icon && (
@@ -434,7 +464,7 @@ const Sidebar = ({
                                     "h-3.5 w-3.5 shrink-0 text-amber-600",
                                     isOpen
                                       ? "ml-auto"
-                                      : "absolute ml-5 -mt-4 rounded-full bg-white p-0.5"
+                                      : "absolute ml-5 -mt-4 rounded-full bg-white p-0.5",
                                   )}
                                   aria-label="Menu terkunci"
                                 />
@@ -481,20 +511,20 @@ const Sidebar = ({
                           item.locked &&
                             item.allowWhenLocked &&
                             "bg-amber-50/60",
-                          !isOpen && "justify-center"
+                          !isOpen && "justify-center",
                         )}
                       >
                         <item.icon
                           className={clsx(
                             `h-5 w-5 text-gray-600 ${isOpen ? "mr-3" : "mr-0"}`,
-                            item.style || ""
+                            item.style || "",
                           )}
                         />
                         {isOpen && (
                           <span
                             className={clsx(
                               "font-semibold text-gray-700",
-                              item.style || ""
+                              item.style || "",
                             )}
                           >
                             {item.name}
@@ -506,7 +536,7 @@ const Sidebar = ({
                               "h-3.5 w-3.5 shrink-0 text-amber-600",
                               isOpen
                                 ? "ml-auto"
-                                : "absolute ml-5 -mt-4 rounded-full bg-white p-0.5"
+                                : "absolute ml-5 -mt-4 rounded-full bg-white p-0.5",
                             )}
                             aria-label="Menu terkunci"
                           />
@@ -524,7 +554,7 @@ const Sidebar = ({
                   </TooltipContent>
                 )}
               </Tooltip>
-            )
+            ),
           )}
         </nav>
         <div className="mb-2 px-1 flex flex-col gap-1">

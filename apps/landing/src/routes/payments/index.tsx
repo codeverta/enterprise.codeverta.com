@@ -1,141 +1,84 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircle2, Copy, CreditCard, Lock, QrCode, Receipt, RefreshCw } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { SiteLayout } from "@/components/site-layout";
-import { createPaymentIntent } from "@/lib/payments";
-import { activateSubscription, readSubscription } from "@/lib/subscriptions";
-import { formatRupiah, getLevelPlan, type LevelPlanId } from "@/lib/level-plans";
+import { AlertCircle, CheckCircle2, Clock3, CreditCard, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { RequireAuth } from "@/lib/auth";
+import api from "@/lib/api";
+import { formatPrice } from "@/lib/store-data";
+
+type PaymentStatusData = {
+  id: string;
+  order_number: string;
+  total: number;
+  status: string;
+  payment_status: string;
+  payment_url?: string;
+  payment_reference?: string;
+  payment_expires_at?: string;
+  paid_at?: string;
+};
 
 export const Route = createFileRoute("/payments/")({
-  validateSearch: (search: Record<string, unknown>): { level?: LevelPlanId; email?: string } => ({
-    level: typeof search.level === "string" ? (search.level as LevelPlanId) : undefined,
-    email: typeof search.email === "string" ? search.email : undefined,
+  validateSearch: (search: Record<string, unknown>): { order_id?: string; result?: string } => ({
+    order_id: typeof search.order_id === "string" ? search.order_id : undefined,
+    result: typeof search.result === "string" ? search.result : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "Xendit Payment Status — KITA Future Homeschool" },
-      { name: "robots", content: "noindex" },
-    ],
-  }),
-  component: PaymentStatusPage,
+  head: () => ({ meta: [{ title: "Status Pembayaran — LUMÉA" }, { name: "robots", content: "noindex" }] }),
+  component: () => <RequireAuth><PaymentStatusPage /></RequireAuth>,
 });
 
 function PaymentStatusPage() {
-  const search = Route.useSearch();
-  const plan = getLevelPlan(search.level);
-  const subscription = readSubscription();
-  const [pending, setPending] = useState(false);
-  const [reference, setReference] = useState(subscription?.providerReference ?? "");
-  const parentEmail = search.email ?? subscription?.parentEmail ?? "orangtua@kita.test";
+  const { order_id: orderID, result } = Route.useSearch();
+  const [payment, setPayment] = useState<PaymentStatusData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  async function createMockXenditPayment() {
-    setPending(true);
-    try {
-      const payment = await createPaymentIntent({
-        parentEmail,
-        amountIdr: plan.price,
-        method: "qris",
-        seats: 1,
-      });
-      const active = activateSubscription({
-        parentEmail,
-        levelId: plan.id,
-        seats: 1,
-        amountIdr: plan.price,
-        providerReference: payment.record.id,
-      });
-      setReference(payment.record.id);
-      toast.success(`Subscription aktif sampai ${new Date(active.currentPeriodEnd).toLocaleDateString("id-ID")}`);
-    } finally {
-      setPending(false);
+  const loadStatus = useCallback(async () => {
+    if (!orderID) {
+      setError("Nomor pesanan tidak ditemukan pada tautan pembayaran.");
+      setLoading(false);
+      return;
     }
-  }
+    try {
+      const response = await api.get<{ data: PaymentStatusData }>(`/store/orders/${encodeURIComponent(orderID)}/payment-status`);
+      setPayment(response.data.data);
+      setError("");
+    } catch (requestError) {
+      const message = (requestError as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setError(message || "Status pembayaran belum dapat dimuat.");
+    } finally {
+      setLoading(false);
+    }
+  }, [orderID]);
 
-  return (
-    <SiteLayout>
-      <section className="mx-auto max-w-4xl px-4 py-12">
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            <Lock className="h-3.5 w-3.5" />
-            Xendit Subscription
-          </div>
-          <h1 className="mt-4 text-3xl font-bold tracking-tight md:text-5xl">
-            Status pembayaran akses belajar
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm text-muted-foreground md:text-base">
-            Halaman ini siap dihubungkan ke webhook Xendit. Untuk mode lokal, tombol di bawah mensimulasikan pembayaran sukses, mengaktifkan subscription, dan menandai receipt serta credentials sebagai terkirim via Tencent SES.
-          </p>
+  useEffect(() => {
+    void loadStatus();
+  }, [loadStatus]);
+
+  useEffect(() => {
+    if (!orderID || payment?.payment_status === "PAID" || payment?.payment_status === "EXPIRED") return;
+    const timer = window.setInterval(() => void loadStatus(), 4000);
+    return () => window.clearInterval(timer);
+  }, [loadStatus, orderID, payment?.payment_status]);
+
+  const status = payment?.payment_status?.toUpperCase();
+  const paid = status === "PAID";
+  const expired = status === "EXPIRED";
+
+  return <div className="min-h-screen bg-[#f7f7f7] text-neutral-950">
+    <header className="border-b bg-white"><div className="mx-auto flex h-20 max-w-[1100px] items-center justify-between px-5 sm:px-8"><Link to="/" className="text-2xl font-black tracking-[0.25em]">LUMÉA</Link><div className="flex items-center gap-2 text-xs font-semibold"><ShieldCheck className="size-4" /> SECURE PAYMENT</div></div></header>
+    <main className="mx-auto flex max-w-[1100px] justify-center px-5 py-14 sm:px-8 lg:py-20">
+      <section className={`w-full max-w-lg overflow-hidden rounded-2xl border bg-white shadow-sm ${paid ? "border-t-4 border-t-emerald-500" : expired || error ? "border-t-4 border-t-rose-500" : "border-t-4 border-t-black"}`}>
+        <div className="p-7 text-center sm:p-9">
+          {loading ? <><Loader2 className="mx-auto size-12 animate-spin text-neutral-400" /><h1 className="mt-5 text-2xl font-bold">Memeriksa pembayaran</h1><p className="mt-2 text-sm text-neutral-500">Menunggu konfirmasi aman dari Xendit.</p></> : error ? <><AlertCircle className="mx-auto size-14 text-rose-600" /><h1 className="mt-5 text-2xl font-bold">Pembayaran tidak dapat dimuat</h1><p className="mt-2 text-sm text-neutral-500">{error}</p></> : paid ? <><CheckCircle2 className="mx-auto size-16 text-emerald-600" /><h1 className="mt-5 text-2xl font-bold">Pembayaran berhasil!</h1><p className="mt-2 text-sm text-neutral-500">Pesanan Anda sudah dikonfirmasi dan akan segera kami proses.</p></> : expired ? <><AlertCircle className="mx-auto size-16 text-rose-600" /><h1 className="mt-5 text-2xl font-bold">Pembayaran kedaluwarsa</h1><p className="mt-2 text-sm text-neutral-500">Batas waktu pembayaran Xendit telah berakhir. Silakan buat pesanan baru.</p></> : <><Clock3 className="mx-auto size-16 text-amber-500" /><h1 className="mt-5 text-2xl font-bold">Menunggu pembayaran</h1><p className="mt-2 text-sm text-neutral-500">{result === "failed" ? "Pembayaran belum diselesaikan. Anda masih dapat melanjutkannya selama invoice aktif." : "Status diperbarui otomatis setelah Xendit mengonfirmasi pembayaran."}</p></>}
+
+          {payment && <div className="mt-7 rounded-xl border bg-neutral-50 p-5 text-left"><div className="flex items-center justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Nomor Pesanan</p><p className="mt-1 font-mono text-sm font-semibold">{payment.order_number}</p></div><div className="text-right"><p className="text-[10px] font-bold uppercase tracking-wider text-neutral-400">Total</p><p className="mt-1 font-bold">{formatPrice(Number(payment.total))}</p></div></div>{payment.payment_expires_at && !paid && !expired && <p className="mt-4 border-t pt-3 text-xs text-neutral-500">Berlaku sampai {new Date(payment.payment_expires_at).toLocaleString("id-ID")}</p>}</div>}
+
+          {!loading && !error && !paid && !expired && payment?.payment_url && <a href={payment.payment_url} className="mt-6 flex h-12 w-full items-center justify-center gap-2 bg-black text-xs font-bold tracking-[0.12em] text-white transition hover:bg-[#e4003f]"><CreditCard className="size-4" /> LANJUTKAN DI XENDIT</a>}
+          {!loading && <button type="button" onClick={() => void loadStatus()} className="mt-4 inline-flex items-center gap-2 text-xs font-semibold text-neutral-500 hover:text-black"><RefreshCw className="size-3.5" /> Perbarui status</button>}
+          {(paid || expired || error) && <a href={paid ? "/account?tab=orders" : "/"} className="mt-6 flex h-12 w-full items-center justify-center bg-black text-xs font-bold tracking-[0.12em] text-white">{paid ? "LIHAT PESANAN" : "KEMBALI KE BERANDA"}</a>}
         </div>
-
-        <div className="grid gap-5 md:grid-cols-[1.2fr_0.8fr]">
-          <Card className="rounded-3xl border-border/60 bg-card/90 shadow-soft">
-            <CardContent className="p-7">
-              <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-primary/10 text-primary">
-                  <QrCode className="h-5 w-5" />
-                </span>
-                <div>
-                  <h2 className="font-bold">{plan.product}</h2>
-                  <p className="text-xs text-muted-foreground">{parentEmail}</p>
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-border/60 bg-muted/40 p-5">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="text-sm text-muted-foreground">Tagihan bulanan</span>
-                  <span className="text-2xl font-extrabold text-primary">{formatRupiah(plan.price)}</span>
-                </div>
-                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
-                  <CreditCard className="h-3.5 w-3.5" />
-                  QRIS, virtual account, e-wallet, dan card diproses oleh Xendit.
-                </div>
-              </div>
-
-              {reference && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText(reference);
-                    toast.success("Reference disalin");
-                  }}
-                  className="mt-5 flex w-full items-center justify-between rounded-2xl border border-border/60 bg-background px-4 py-3 text-left text-sm"
-                >
-                  <span>
-                    <span className="block text-xs text-muted-foreground">Provider reference</span>
-                    <span className="font-mono">{reference}</span>
-                  </span>
-                  <Copy className="h-4 w-4 text-muted-foreground" />
-                </button>
-              )}
-
-              <Button className="mt-6 h-12 w-full rounded-2xl" onClick={createMockXenditPayment} disabled={pending}>
-                {pending ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Receipt className="mr-2 h-4 w-4" />}
-                {pending ? "Memproses..." : "Simulasikan pembayaran sukses"}
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border-emerald-500/30 bg-emerald-500/10 shadow-soft">
-            <CardContent className="p-7">
-              <CheckCircle2 className="h-10 w-10 text-emerald-600" />
-              <h2 className="mt-4 text-lg font-bold">Flow setelah paid</h2>
-              <ul className="mt-4 space-y-3 text-sm text-foreground/80">
-                <li>Subscription parent menjadi active.</li>
-                <li>Akses dashboard siswa/orangtua terbuka.</li>
-                <li>Receipt pembayaran dikirim via Tencent SES.</li>
-                <li>Credentials akun siswa dikirim ke email orang tua.</li>
-                <li>Admin bisa audit di tabs Payments dan Subscriptions.</li>
-              </ul>
-              <Button asChild variant="outline" className="mt-6 w-full rounded-2xl bg-card/80">
-                <Link to="/siswa">Buka Dashboard Siswa</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+        <div className="border-t bg-neutral-50 px-7 py-4 text-center text-[11px] text-neutral-400">Pembayaran diproses secara aman oleh Xendit. Secret key tidak pernah dikirim ke browser.</div>
       </section>
-    </SiteLayout>
-  );
+    </main>
+  </div>;
 }

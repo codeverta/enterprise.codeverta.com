@@ -6,6 +6,7 @@ import (
 	"gin-template/middleware"
 	buyingmodule "gin-template/modules/buying"
 	sellingmodule "gin-template/modules/selling"
+	stockmodule "gin-template/modules/stock"
 	"gin-template/repository"
 	"gin-template/services"
 	"log"
@@ -98,6 +99,7 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		registerCRMRoutes(tenantGroup)
 		buyingmodule.RegisterRoutes(tenantGroup)
 		sellingmodule.RegisterRoutes(tenantGroup)
+		stockmodule.RegisterRoutes(tenantGroup)
 
 		// Finance & Payout Settings
 		financeRoute := tenantGroup.Group("/finance")

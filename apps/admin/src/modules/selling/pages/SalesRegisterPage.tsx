@@ -5,32 +5,457 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import api from "@/lib/api";
-import { posApi, posItems, type POSInvoice } from "../posApi";
+import { posApi, type POSInvoice } from "../posApi";
 
-type SaleRow = { id: string; date: string; voucher: string; customer: string; customerGroup: string; company: string; payment: string; owner: string; costCenter: string; warehouse: string; brand: string; itemGroup: string; itemCode: string; itemName: string; quantity: number; rate: number; amount: number };
-type Filters = { from: string; to: string; customer: string; customerGroup: string; company: string; payment: string; owner: string; costCenter: string; warehouse: string; brand: string; itemGroup: string; itemCode: string };
+type SaleRow = {
+  id: string;
+  date: string;
+  voucher: string;
+  customer: string;
+  customerGroup: string;
+  company: string;
+  payment: string;
+  owner: string;
+  costCenter: string;
+  warehouse: string;
+  brand: string;
+  itemGroup: string;
+  itemCode: string;
+  itemName: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+};
+type Filters = {
+  from: string;
+  to: string;
+  customer: string;
+  customerGroup: string;
+  company: string;
+  payment: string;
+  owner: string;
+  costCenter: string;
+  warehouse: string;
+  brand: string;
+  itemGroup: string;
+  itemCode: string;
+};
 
-const date = (offset = 0) => { const d = new Date(); d.setDate(d.getDate() + offset); return d.toISOString().slice(0, 10); };
-const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
-const cacheOrders = (): any[] => { try { const value = JSON.parse(localStorage.getItem("erp.sales-orders.details") || "{}"); return Object.values(value); } catch { return []; } };
-const optionValues = (rows: SaleRow[], key: keyof SaleRow) => Array.from(new Set(rows.map(row => String(row[key] || "")).filter(Boolean))).sort();
+const date = (offset = 0) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return d.toISOString().slice(0, 10);
+};
+const money = (value: number) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+const cacheOrders = (): any[] => {
+  try {
+    const value = JSON.parse(
+      localStorage.getItem("erp.sales-orders.details") || "{}",
+    );
+    return Object.values(value);
+  } catch {
+    return [];
+  }
+};
+const optionValues = (rows: SaleRow[], key: keyof SaleRow) =>
+  Array.from(
+    new Set(rows.map((row) => String(row[key] || "")).filter(Boolean)),
+  ).sort();
 
-function SelectFilter({ label, value, onChange, values }: { label: string; value: string; onChange: (value: string) => void; values: string[] }) {
-  return <label className="space-y-1"><span className="text-xs font-medium text-slate-500">{label}</span><select className="h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500" value={value} onChange={e => onChange(e.target.value)}><option value="">All {label}</option>{values.map(value => <option key={value} value={value}>{value}</option>)}</select></label>;
+function SelectFilter({
+  label,
+  value,
+  onChange,
+  values,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  values: string[];
+}) {
+  return (
+    <label className="space-y-1">
+      <span className="text-xs font-medium text-slate-500">{label}</span>
+      <select
+        className="h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      >
+        <option value="">All {label}</option>
+        {values.map((value) => (
+          <option key={value} value={value}>
+            {value}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 export default function SalesRegisterPage() {
-  const [rows, setRows] = useState<SaleRow[]>([]); const [loading, setLoading] = useState(true); const [ledger, setLedger] = useState(false); const [filters, setFilters] = useState<Filters>({ from: date(-30), to: date(), customer: "", customerGroup: "", company: "PT ZENIT TECHNOLOGY SOLUTION", payment: "", owner: "", costCenter: "", warehouse: "", brand: "", itemGroup: "", itemCode: "" });
-  const load = async () => { setLoading(true); try {
-    const invoices = await posApi.listInvoices(); const itemMap = new Map(posItems.map(item => [item.item_code, item])); const invoiceRows: SaleRow[] = invoices.flatMap((invoice: POSInvoice) => invoice.items.map((item, index) => { const catalog = itemMap.get(item.item_code); return { id: `${invoice.id || invoice.invoice_number}-${index}`, date: (invoice.created_at || date()).slice(0, 10), voucher: invoice.invoice_number || invoice.id || "POS Invoice", customer: invoice.customer || "Walk-in Customer", customerGroup: "", company: "PT ZENIT TECHNOLOGY SOLUTION", payment: invoice.mode_of_payment || "", owner: "", costCenter: "", warehouse: "", brand: "", itemGroup: catalog?.item_group || "", itemCode: item.item_code, itemName: item.item_name || catalog?.item_name || item.item_code, quantity: Number(item.quantity) || 0, rate: Number(item.rate) || 0, amount: Number(item.amount ?? (item.quantity * item.rate)) || 0 }; }));
-    const orderRows: SaleRow[] = cacheOrders().flatMap(order => (order.items || []).map((item: any, index: number) => ({ id: `${order.id}-${index}`, date: String(order.transaction_date || date()).slice(0, 10), voucher: order.order_number || order.id || "Sales Order", customer: order.customer || "", customerGroup: order.customer_group || "", company: order.company || "PT ZENIT TECHNOLOGY SOLUTION", payment: "", owner: order.owner || "", costCenter: order.cost_center || "", warehouse: item.target_warehouse || order.set_warehouse || "", brand: item.brand || "", itemGroup: item.item_group || "", itemCode: item.item_code || "", itemName: item.item_name || item.item_code || "", quantity: Number(item.quantity) || 0, rate: Number(item.rate) || 0, amount: Number(item.amount ?? ((item.quantity || 0) * (item.rate || 0))) || 0 })));
-    setRows([...invoiceRows, ...orderRows]);
-  } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal memuat Sales Register"); } finally { setLoading(false); } };
-  useEffect(() => { load(); }, []);
-  const setFilter = (key: keyof Filters, value: string) => setFilters(current => ({ ...current, [key]: value }));
-  const filtered = useMemo(() => rows.filter(row => row.date >= filters.from && row.date <= filters.to && (!filters.customer || row.customer === filters.customer) && (!filters.customerGroup || row.customerGroup === filters.customerGroup) && (!filters.company || row.company === filters.company) && (!filters.payment || row.payment === filters.payment) && (!filters.owner || row.owner === filters.owner) && (!filters.costCenter || row.costCenter === filters.costCenter) && (!filters.warehouse || row.warehouse === filters.warehouse) && (!filters.brand || row.brand === filters.brand) && (!filters.itemGroup || row.itemGroup === filters.itemGroup) && (!filters.itemCode || `${row.itemCode} ${row.itemName}`.toLowerCase().includes(filters.itemCode.toLowerCase()))), [rows, filters]);
-  const grouped = useMemo(() => { const map = new Map<string, SaleRow>(); filtered.forEach(row => { const current = map.get(row.itemCode) || { ...row, id: row.itemCode, voucher: "", quantity: 0, amount: 0 }; current.quantity += row.quantity; current.amount += row.amount; map.set(row.itemCode, current); }); return Array.from(map.values()).map(row => ({ ...row, rate: row.quantity ? row.amount / row.quantity : 0 })); }, [filtered]);
-  const displayRows = ledger ? filtered : grouped; const totalQty = displayRows.reduce((sum, row) => sum + row.quantity, 0); const totalAmount = displayRows.reduce((sum, row) => sum + row.amount, 0); const values = (key: keyof SaleRow) => optionValues(rows, key);
-  return <div className="min-h-full bg-slate-50/60 p-4 lg:p-7"><div className="mx-auto max-w-[1800px] space-y-5"><header className="flex flex-col justify-between gap-4 rounded-2xl border bg-white p-5 shadow-sm md:flex-row md:items-center"><div><p className="text-sm text-slate-500">Selling / Reports</p><h1 className="mt-1 text-2xl font-bold">Sales Register</h1><p className="mt-1 text-sm text-slate-500">Telusuri penjualan per item dan cocokkan dengan transaksi sumber.</p></div><div className="flex gap-2"><Button variant="outline" onClick={load} disabled={loading}><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Refresh</Button><Button variant="outline"><SlidersHorizontal className="size-4" /> Actions</Button></div></header><section className="rounded-2xl border bg-white p-5 shadow-sm"><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6"><label className="space-y-1"><span className="text-xs font-medium text-slate-500">From Date</span><Input type="date" value={filters.from} onChange={e => setFilter("from", e.target.value)} /></label><label className="space-y-1"><span className="text-xs font-medium text-slate-500">To Date</span><Input type="date" value={filters.to} onChange={e => setFilter("to", e.target.value)} /></label><SelectFilter label="Customer" value={filters.customer} onChange={v => setFilter("customer", v)} values={values("customer")} /><SelectFilter label="Customer Group" value={filters.customerGroup} onChange={v => setFilter("customerGroup", v)} values={values("customerGroup")} /><SelectFilter label="Company" value={filters.company} onChange={v => setFilter("company", v)} values={values("company")} /><SelectFilter label="Mode of Payment" value={filters.payment} onChange={v => setFilter("payment", v)} values={values("payment")} /><SelectFilter label="Owner" value={filters.owner} onChange={v => setFilter("owner", v)} values={values("owner")} /><SelectFilter label="Cost Center" value={filters.costCenter} onChange={v => setFilter("costCenter", v)} values={values("costCenter")} /><SelectFilter label="Warehouse" value={filters.warehouse} onChange={v => setFilter("warehouse", v)} values={values("warehouse")} /><SelectFilter label="Brand" value={filters.brand} onChange={v => setFilter("brand", v)} values={values("brand")} /><SelectFilter label="Item Group" value={filters.itemGroup} onChange={v => setFilter("itemGroup", v)} values={values("itemGroup")} /><label className="space-y-1"><span className="text-xs font-medium text-slate-500">Search Item</span><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /><Input className="pl-9" placeholder="Item code / name" value={filters.itemCode} onChange={e => setFilter("itemCode", e.target.value)} /></div></label></div><label className="mt-4 flex items-center gap-2 text-sm"><Checkbox checked={ledger} onCheckedChange={value => setLedger(Boolean(value))} /> Show Ledger View <span className="text-xs text-slate-400">({filtered.length} transaksi)</span></label></section><section className="overflow-hidden rounded-2xl border bg-white shadow-sm"><div className="flex items-center justify-between border-b px-5 py-4"><div><h2 className="font-semibold">{ledger ? "Sales Ledger" : "Item-wise Sales Summary"}</h2><p className="text-xs text-slate-500">{displayRows.length} {ledger ? "baris transaksi" : "item"} ditemukan</p></div><Badge variant="secondary">{money(totalAmount)}</Badge></div><div className="overflow-x-auto"><table className="w-full min-w-[1100px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>{ledger && <><th className="px-4 py-3">Voucher</th><th className="px-4 py-3">Date</th></>}<th className="px-4 py-3">Item Code</th><th className="px-4 py-3">Item Name</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Item Group</th><th className="px-4 py-3">Warehouse</th><th className="px-4 py-3 text-right">Quantity</th><th className="px-4 py-3 text-right">Rate (IDR)</th><th className="px-4 py-3 text-right">Amount (IDR)</th></tr></thead><tbody className="divide-y">{loading ? <tr><td colSpan={ledger ? 10 : 8} className="p-12 text-center text-slate-500">Memuat report...</td></tr> : displayRows.map(row => <tr key={row.id} className="hover:bg-slate-50">{ledger && <><td className="px-4 py-3 font-medium text-blue-600">{row.voucher}</td><td className="px-4 py-3">{row.date}</td></>}<td className="px-4 py-3 font-semibold">{row.itemCode || "—"}</td><td className="px-4 py-3">{row.itemName || "—"}</td><td className="px-4 py-3">{row.customer || "—"}</td><td className="px-4 py-3">{row.itemGroup || "—"}</td><td className="px-4 py-3">{row.warehouse || "—"}</td><td className="px-4 py-3 text-right">{row.quantity}</td><td className="px-4 py-3 text-right">{money(row.rate)}</td><td className="px-4 py-3 text-right font-semibold">{money(row.amount)}</td></tr>)}{!loading && displayRows.length === 0 && <tr><td colSpan={ledger ? 10 : 8} className="p-14 text-center text-slate-500">Tidak ada transaksi pada filter tersebut.</td></tr>}</tbody><tfoot className="border-t bg-slate-50 font-semibold"><tr><td colSpan={ledger ? 7 : 5} className="px-4 py-4">Total</td><td className="px-4 py-4 text-right">{totalQty}</td><td /><td className="px-4 py-4 text-right">{money(totalAmount)}</td></tr></tfoot></table></div><p className="border-t px-5 py-3 text-xs text-slate-500">Data POS Invoice dan Sales Order lokal yang tersedia. Gunakan filter item untuk mencocokkan kuantitas dan nominal setiap produk.</p></section></div></div>;
+  const [rows, setRows] = useState<SaleRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [ledger, setLedger] = useState(false);
+  const [filters, setFilters] = useState<Filters>({
+    from: date(-30),
+    to: date(),
+    customer: "",
+    customerGroup: "",
+    company: "PT ZENIT TECHNOLOGY SOLUTION",
+    payment: "",
+    owner: "",
+    costCenter: "",
+    warehouse: "",
+    brand: "",
+    itemGroup: "",
+    itemCode: "",
+  });
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [invoices, catalogItems] = await Promise.all([
+        posApi.listInvoices(),
+        posApi.listItems(),
+      ]);
+      const itemMap = new Map(
+        catalogItems.map((item) => [item.item_code, item]),
+      );
+      const invoiceRows: SaleRow[] = invoices.flatMap((invoice: POSInvoice) =>
+        invoice.items.map((item, index) => {
+          const catalog = itemMap.get(item.item_code);
+          return {
+            id: `${invoice.id || invoice.invoice_number}-${index}`,
+            date: (invoice.created_at || date()).slice(0, 10),
+            voucher: invoice.invoice_number || invoice.id || "POS Invoice",
+            customer: invoice.customer || "Walk-in Customer",
+            customerGroup: "",
+            company: "PT ZENIT TECHNOLOGY SOLUTION",
+            payment: invoice.mode_of_payment || "",
+            owner: "",
+            costCenter: "",
+            warehouse: "",
+            brand: "",
+            itemGroup: catalog?.item_group || "",
+            itemCode: item.item_code,
+            itemName: item.item_name || catalog?.item_name || item.item_code,
+            quantity: Number(item.quantity) || 0,
+            rate: Number(item.rate) || 0,
+            amount: Number(item.amount ?? item.quantity * item.rate) || 0,
+          };
+        }),
+      );
+      const orderRows: SaleRow[] = cacheOrders().flatMap((order) =>
+        (order.items || []).map((item: any, index: number) => ({
+          id: `${order.id}-${index}`,
+          date: String(order.transaction_date || date()).slice(0, 10),
+          voucher: order.order_number || order.id || "Sales Order",
+          customer: order.customer || "",
+          customerGroup: order.customer_group || "",
+          company: order.company || "PT ZENIT TECHNOLOGY SOLUTION",
+          payment: "",
+          owner: order.owner || "",
+          costCenter: order.cost_center || "",
+          warehouse: item.target_warehouse || order.set_warehouse || "",
+          brand: item.brand || "",
+          itemGroup: item.item_group || "",
+          itemCode: item.item_code || "",
+          itemName: item.item_name || item.item_code || "",
+          quantity: Number(item.quantity) || 0,
+          rate: Number(item.rate) || 0,
+          amount:
+            Number(item.amount ?? (item.quantity || 0) * (item.rate || 0)) || 0,
+        })),
+      );
+      setRows([...invoiceRows, ...orderRows]);
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.error || "Gagal memuat Sales Register",
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    load();
+  }, []);
+  const setFilter = (key: keyof Filters, value: string) =>
+    setFilters((current) => ({ ...current, [key]: value }));
+  const filtered = useMemo(
+    () =>
+      rows.filter(
+        (row) =>
+          row.date >= filters.from &&
+          row.date <= filters.to &&
+          (!filters.customer || row.customer === filters.customer) &&
+          (!filters.customerGroup ||
+            row.customerGroup === filters.customerGroup) &&
+          (!filters.company || row.company === filters.company) &&
+          (!filters.payment || row.payment === filters.payment) &&
+          (!filters.owner || row.owner === filters.owner) &&
+          (!filters.costCenter || row.costCenter === filters.costCenter) &&
+          (!filters.warehouse || row.warehouse === filters.warehouse) &&
+          (!filters.brand || row.brand === filters.brand) &&
+          (!filters.itemGroup || row.itemGroup === filters.itemGroup) &&
+          (!filters.itemCode ||
+            `${row.itemCode} ${row.itemName}`
+              .toLowerCase()
+              .includes(filters.itemCode.toLowerCase())),
+      ),
+    [rows, filters],
+  );
+  const grouped = useMemo(() => {
+    const map = new Map<string, SaleRow>();
+    filtered.forEach((row) => {
+      const current = map.get(row.itemCode) || {
+        ...row,
+        id: row.itemCode,
+        voucher: "",
+        quantity: 0,
+        amount: 0,
+      };
+      current.quantity += row.quantity;
+      current.amount += row.amount;
+      map.set(row.itemCode, current);
+    });
+    return Array.from(map.values()).map((row) => ({
+      ...row,
+      rate: row.quantity ? row.amount / row.quantity : 0,
+    }));
+  }, [filtered]);
+  const displayRows = ledger ? filtered : grouped;
+  const totalQty = displayRows.reduce((sum, row) => sum + row.quantity, 0);
+  const totalAmount = displayRows.reduce((sum, row) => sum + row.amount, 0);
+  const values = (key: keyof SaleRow) => optionValues(rows, key);
+  return (
+    <div className="min-h-full bg-slate-50/60 p-4 lg:p-7">
+      <div className="mx-auto max-w-[1800px] space-y-5">
+        <header className="flex flex-col justify-between gap-4 rounded-2xl border bg-white p-5 shadow-sm md:flex-row md:items-center">
+          <div>
+            <p className="text-sm text-slate-500">Selling / Reports</p>
+            <h1 className="mt-1 text-2xl font-bold">Sales Register</h1>
+            <p className="mt-1 text-sm text-slate-500">
+              Telusuri penjualan per item dan cocokkan dengan transaksi sumber.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={load} disabled={loading}>
+              <RefreshCw
+                className={`size-4 ${loading ? "animate-spin" : ""}`}
+              />{" "}
+              Refresh
+            </Button>
+            <Button variant="outline">
+              <SlidersHorizontal className="size-4" /> Actions
+            </Button>
+          </div>
+        </header>
+        <section className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-500">
+                From Date
+              </span>
+              <Input
+                type="date"
+                value={filters.from}
+                onChange={(e) => setFilter("from", e.target.value)}
+              />
+            </label>
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-500">
+                To Date
+              </span>
+              <Input
+                type="date"
+                value={filters.to}
+                onChange={(e) => setFilter("to", e.target.value)}
+              />
+            </label>
+            <SelectFilter
+              label="Customer"
+              value={filters.customer}
+              onChange={(v) => setFilter("customer", v)}
+              values={values("customer")}
+            />
+            <SelectFilter
+              label="Customer Group"
+              value={filters.customerGroup}
+              onChange={(v) => setFilter("customerGroup", v)}
+              values={values("customerGroup")}
+            />
+            <SelectFilter
+              label="Company"
+              value={filters.company}
+              onChange={(v) => setFilter("company", v)}
+              values={values("company")}
+            />
+            <SelectFilter
+              label="Mode of Payment"
+              value={filters.payment}
+              onChange={(v) => setFilter("payment", v)}
+              values={values("payment")}
+            />
+            <SelectFilter
+              label="Owner"
+              value={filters.owner}
+              onChange={(v) => setFilter("owner", v)}
+              values={values("owner")}
+            />
+            <SelectFilter
+              label="Cost Center"
+              value={filters.costCenter}
+              onChange={(v) => setFilter("costCenter", v)}
+              values={values("costCenter")}
+            />
+            <SelectFilter
+              label="Warehouse"
+              value={filters.warehouse}
+              onChange={(v) => setFilter("warehouse", v)}
+              values={values("warehouse")}
+            />
+            <SelectFilter
+              label="Brand"
+              value={filters.brand}
+              onChange={(v) => setFilter("brand", v)}
+              values={values("brand")}
+            />
+            <SelectFilter
+              label="Item Group"
+              value={filters.itemGroup}
+              onChange={(v) => setFilter("itemGroup", v)}
+              values={values("itemGroup")}
+            />
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-slate-500">
+                Search Item
+              </span>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  className="pl-9"
+                  placeholder="Item code / name"
+                  value={filters.itemCode}
+                  onChange={(e) => setFilter("itemCode", e.target.value)}
+                />
+              </div>
+            </label>
+          </div>
+          <label className="mt-4 flex items-center gap-2 text-sm">
+            <Checkbox
+              checked={ledger}
+              onCheckedChange={(value) => setLedger(Boolean(value))}
+            />{" "}
+            Show Ledger View{" "}
+            <span className="text-xs text-slate-400">
+              ({filtered.length} transaksi)
+            </span>
+          </label>
+        </section>
+        <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b px-5 py-4">
+            <div>
+              <h2 className="font-semibold">
+                {ledger ? "Sales Ledger" : "Item-wise Sales Summary"}
+              </h2>
+              <p className="text-xs text-slate-500">
+                {displayRows.length} {ledger ? "baris transaksi" : "item"}{" "}
+                ditemukan
+              </p>
+            </div>
+            <Badge variant="secondary">{money(totalAmount)}</Badge>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1100px] text-left text-sm">
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+                <tr>
+                  {ledger && (
+                    <>
+                      <th className="px-4 py-3">Voucher</th>
+                      <th className="px-4 py-3">Date</th>
+                    </>
+                  )}
+                  <th className="px-4 py-3">Item Code</th>
+                  <th className="px-4 py-3">Item Name</th>
+                  <th className="px-4 py-3">Customer</th>
+                  <th className="px-4 py-3">Item Group</th>
+                  <th className="px-4 py-3">Warehouse</th>
+                  <th className="px-4 py-3 text-right">Quantity</th>
+                  <th className="px-4 py-3 text-right">Rate (IDR)</th>
+                  <th className="px-4 py-3 text-right">Amount (IDR)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {loading ? (
+                  <tr>
+                    <td
+                      colSpan={ledger ? 10 : 8}
+                      className="p-12 text-center text-slate-500"
+                    >
+                      Memuat report...
+                    </td>
+                  </tr>
+                ) : (
+                  displayRows.map((row) => (
+                    <tr key={row.id} className="hover:bg-slate-50">
+                      {ledger && (
+                        <>
+                          <td className="px-4 py-3 font-medium text-blue-600">
+                            {row.voucher}
+                          </td>
+                          <td className="px-4 py-3">{row.date}</td>
+                        </>
+                      )}
+                      <td className="px-4 py-3 font-semibold">
+                        {row.itemCode || "—"}
+                      </td>
+                      <td className="px-4 py-3">{row.itemName || "—"}</td>
+                      <td className="px-4 py-3">{row.customer || "—"}</td>
+                      <td className="px-4 py-3">{row.itemGroup || "—"}</td>
+                      <td className="px-4 py-3">{row.warehouse || "—"}</td>
+                      <td className="px-4 py-3 text-right">{row.quantity}</td>
+                      <td className="px-4 py-3 text-right">
+                        {money(row.rate)}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold">
+                        {money(row.amount)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+                {!loading && displayRows.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={ledger ? 10 : 8}
+                      className="p-14 text-center text-slate-500"
+                    >
+                      Tidak ada transaksi pada filter tersebut.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+              <tfoot className="border-t bg-slate-50 font-semibold">
+                <tr>
+                  <td colSpan={ledger ? 7 : 5} className="px-4 py-4">
+                    Total
+                  </td>
+                  <td className="px-4 py-4 text-right">{totalQty}</td>
+                  <td />
+                  <td className="px-4 py-4 text-right">{money(totalAmount)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p className="border-t px-5 py-3 text-xs text-slate-500">
+            Data POS Invoice dan Sales Order lokal yang tersedia. Gunakan filter
+            item untuk mencocokkan kuantitas dan nominal setiap produk.
+          </p>
+        </section>
+      </div>
+    </div>
+  );
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gin-template/model"
+	buyingmodel "gin-template/modules/buying/model"
 	sellingmodel "gin-template/modules/selling/model"
 
 	"github.com/gin-gonic/gin"
@@ -26,8 +27,56 @@ func tenantString(ctx *gin.Context) string {
 	return tenant
 }
 
+func posDB(ctx *gin.Context) *gorm.DB {
+	return model.GetDB(ctx).WithContext(ctx.Request.Context())
+}
+
+type posItemResponse struct {
+	ID          uuid.UUID `json:"id"`
+	ItemCode    string    `json:"item_code"`
+	ItemName    string    `json:"item_name"`
+	ItemGroup   string    `json:"item_group"`
+	Rate        float64   `json:"rate"`
+	Stock       float64   `json:"stock"`
+	Unit        string    `json:"unit"`
+	IsStockItem bool      `json:"is_stock_item"`
+	Barcodes    []string  `json:"barcodes"`
+}
+
+// Items exposes the active Item master as the canonical POS catalog.
+func (c *POSController) Items(ctx *gin.Context) {
+	db := model.GetDB(ctx).WithContext(ctx.Request.Context()).
+		Preload("Barcodes", func(query *gorm.DB) *gorm.DB { return query.Order("idx ASC") }).
+		Where("disabled = ?", false)
+	if query := strings.TrimSpace(ctx.Query("q")); query != "" {
+		like := "%" + query + "%"
+		db = db.Where("item_code LIKE ? OR item_name LIKE ? OR item_group LIKE ?", like, like, like)
+	}
+	var items []buyingmodel.Item
+	if err := db.Order("item_group ASC, item_name ASC").Limit(500).Find(&items).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil item POS"})
+		return
+	}
+
+	result := make([]posItemResponse, 0, len(items))
+	for _, item := range items {
+		barcodes := make([]string, 0, len(item.Barcodes))
+		for _, barcode := range item.Barcodes {
+			if value := strings.TrimSpace(barcode.Barcode); value != "" {
+				barcodes = append(barcodes, value)
+			}
+		}
+		result = append(result, posItemResponse{
+			ID: item.ID, ItemCode: item.ItemCode, ItemName: item.ItemName,
+			ItemGroup: item.ItemGroup, Rate: item.StandardRate, Stock: item.OpeningStock,
+			Unit: item.StockUOM, IsStockItem: item.IsStockItem, Barcodes: barcodes,
+		})
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": result})
+}
+
 func (c *POSController) OpeningEntries(ctx *gin.Context) {
-	query := model.DB.Preload("BalanceDetails").Order("period_start_date desc")
+	query := posDB(ctx).Preload("BalanceDetails").Order("period_start_date desc")
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
@@ -41,7 +90,7 @@ func (c *POSController) OpeningEntries(ctx *gin.Context) {
 
 func (c *POSController) CurrentOpening(ctx *gin.Context) {
 	var entry sellingmodel.POSOpeningEntry
-	query := model.DB.Preload("BalanceDetails").Where("status = ?", sellingmodel.POSOpeningStatusOpen)
+	query := posDB(ctx).Preload("BalanceDetails").Where("status = ?", sellingmodel.POSOpeningStatusOpen)
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
@@ -96,7 +145,7 @@ func (c *POSController) CreateOpening(ctx *gin.Context) {
 		input.OpeningBalanceTotal += input.BalanceDetails[i].OpeningAmount
 	}
 
-	err := model.DB.Transaction(func(tx *gorm.DB) error {
+	err := posDB(ctx).Transaction(func(tx *gorm.DB) error {
 		var count int64
 		query := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Model(&sellingmodel.POSOpeningEntry{}).
 			Where("status = ? AND pos_profile = ?", sellingmodel.POSOpeningStatusOpen, input.POSProfile)
@@ -129,7 +178,7 @@ type closingInput struct {
 func (c *POSController) CloseOpening(ctx *gin.Context) {
 	var input closingInput
 	_ = ctx.ShouldBindJSON(&input)
-	closing, err := closePOSOpening(model.DB, tenantString(ctx), ctx.Param("id"), input.ClosingAmounts)
+	closing, err := closePOSOpening(posDB(ctx), tenantString(ctx), ctx.Param("id"), input.ClosingAmounts)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "POS Opening Entry aktif tidak ditemukan"})
@@ -211,7 +260,7 @@ func closePOSOpening(db *gorm.DB, tenant, openingID string, closingAmounts map[s
 }
 
 func (c *POSController) ClosingEntries(ctx *gin.Context) {
-	query := model.DB.Preload("Reconciliations").Order("period_end_date desc")
+	query := posDB(ctx).Preload("Reconciliations").Order("period_end_date desc")
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
@@ -235,12 +284,36 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 	}
 	tenant := tenantString(ctx)
 	var opening sellingmodel.POSOpeningEntry
-	query := model.DB.Where("id = ? AND status = ?", input.OpeningEntryID, sellingmodel.POSOpeningStatusOpen)
+	query := posDB(ctx).Where("id = ? AND status = ?", input.OpeningEntryID, sellingmodel.POSOpeningStatusOpen)
 	if tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
 	if err := query.First(&opening).Error; err != nil {
 		ctx.JSON(http.StatusConflict, gin.H{"error": "POS shift belum dibuka atau sudah ditutup"})
+		return
+	}
+	itemCodes := make([]string, 0, len(input.Items))
+	for index := range input.Items {
+		input.Items[index].ItemCode = strings.TrimSpace(input.Items[index].ItemCode)
+		if input.Items[index].ItemCode == "" || input.Items[index].Quantity <= 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Kode item dan quantity POS harus valid"})
+			return
+		}
+		itemCodes = append(itemCodes, input.Items[index].ItemCode)
+	}
+	var masterItems []buyingmodel.Item
+	itemQuery := model.GetDB(ctx).WithContext(ctx.Request.Context()).
+		Where("disabled = ? AND item_code IN ?", false, itemCodes)
+	if err := itemQuery.Find(&masterItems).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memvalidasi item POS"})
+		return
+	}
+	itemsByCode := make(map[string]buyingmodel.Item, len(masterItems))
+	for _, item := range masterItems {
+		itemsByCode[item.ItemCode] = item
+	}
+	if len(itemsByCode) != len(itemCodes) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Satu atau lebih item POS tidak aktif atau tidak ditemukan"})
 		return
 	}
 
@@ -252,16 +325,21 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 	input.CreatedAt = now
 	input.NetTotal = 0
 	for i := range input.Items {
+		masterItem, exists := itemsByCode[input.Items[i].ItemCode]
+		if !exists {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Item POS tidak ditemukan: " + input.Items[i].ItemCode})
+			return
+		}
 		input.Items[i].ID = "posii-" + uuid.New().String()[:8]
 		input.Items[i].InvoiceID = input.ID
+		input.Items[i].ItemName = masterItem.ItemName
+		input.Items[i].Rate = masterItem.StandardRate
 		input.Items[i].Amount = input.Items[i].Quantity * input.Items[i].Rate
 		input.NetTotal += input.Items[i].Amount
 	}
 	input.GrandTotal = input.NetTotal + input.TaxTotal
-	if input.PaidAmount == 0 {
-		input.PaidAmount = input.GrandTotal
-	}
-	if err := model.DB.Create(&input).Error; err != nil {
+	input.PaidAmount = input.GrandTotal
+	if err := posDB(ctx).Create(&input).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan transaksi POS"})
 		return
 	}
@@ -269,7 +347,7 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 }
 
 func (c *POSController) Invoices(ctx *gin.Context) {
-	query := model.DB.Preload("Items").Order("created_at desc").Limit(100)
+	query := posDB(ctx).Preload("Items").Order("created_at desc").Limit(100)
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}

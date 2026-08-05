@@ -54,10 +54,13 @@ func (h *Controller) ListIntegrations(c *gin.Context) {
 	for _, row := range rows {
 		byProvider[row.Provider] = row
 	}
-	result := make([]integrationResponse, 0, 3)
-	for _, provider := range []string{"google_analytics", "meta_ads", "tiktok_ads"} {
+	result := make([]integrationResponse, 0, 4)
+	for _, provider := range []string{"google_analytics", "meta_ads", "tiktok_ads", "meta_messaging"} {
 		if row, ok := byProvider[provider]; ok {
 			result = append(result, integrationView(row))
+		} else if provider == "meta_messaging" && metaMessagingEnvConfigured() {
+			config, _ := json.Marshal(metaMessagingEnvConfig())
+			result = append(result, integrationResponse{Provider: provider, Enabled: true, Config: config, HasSecrets: true})
 		} else {
 			result = append(result, integrationResponse{Provider: provider, Config: json.RawMessage(`{}`)})
 		}
@@ -67,7 +70,7 @@ func (h *Controller) ListIntegrations(c *gin.Context) {
 
 func (h *Controller) UpdateIntegration(c *gin.Context) {
 	provider := c.Param("provider")
-	if provider != "google_analytics" && provider != "meta_ads" && provider != "tiktok_ads" {
+	if provider != "google_analytics" && provider != "meta_ads" && provider != "tiktok_ads" && provider != "meta_messaging" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "integration provider not found"})
 		return
 	}
@@ -101,7 +104,20 @@ func (h *Controller) UpdateIntegration(c *gin.Context) {
 			c.JSON(http.StatusServiceUnavailable, gin.H{"error": "DB_ENCRYPTION_KEY must be configured before saving CRM credentials"})
 			return
 		}
-		secretJSON, _ := json.Marshal(input.Secrets)
+		mergedSecrets := make(map[string]string)
+		if integration.SecretEncrypted != "" {
+			if existing, decryptErr := decryptIntegrationSecrets(integration); decryptErr == nil {
+				for key, value := range existing {
+					mergedSecrets[key] = value
+				}
+			}
+		}
+		for key, value := range input.Secrets {
+			if strings.TrimSpace(value) != "" {
+				mergedSecrets[key] = value
+			}
+		}
+		secretJSON, _ := json.Marshal(mergedSecrets)
 		encrypted, encryptErr := model.Encrypt(string(secretJSON))
 		if encryptErr != nil {
 			writeDBError(c, encryptErr)
@@ -119,6 +135,52 @@ func (h *Controller) UpdateIntegration(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, integrationView(integration))
+}
+
+func metaMessagingEnvConfig() map[string]interface{} {
+	return map[string]interface{}{
+		"api_version":              firstNonEmpty(os.Getenv("META_GRAPH_API_VERSION"), "v24.0"),
+		"whatsapp_phone_number_id": strings.TrimSpace(os.Getenv("META_WHATSAPP_PHONE_NUMBER_ID")),
+		"facebook_page_id":         strings.TrimSpace(os.Getenv("META_FACEBOOK_PAGE_ID")),
+		"instagram_account_id":     strings.TrimSpace(os.Getenv("META_INSTAGRAM_ACCOUNT_ID")),
+	}
+}
+
+func metaMessagingEnvSecrets() map[string]string {
+	return map[string]string{
+		"access_token":           strings.TrimSpace(os.Getenv("META_ACCESS_TOKEN")),
+		"whatsapp_access_token":  strings.TrimSpace(os.Getenv("META_WHATSAPP_ACCESS_TOKEN")),
+		"facebook_access_token":  strings.TrimSpace(os.Getenv("META_FACEBOOK_PAGE_ACCESS_TOKEN")),
+		"instagram_access_token": strings.TrimSpace(os.Getenv("META_INSTAGRAM_ACCESS_TOKEN")),
+		"app_secret":             strings.TrimSpace(os.Getenv("META_APP_SECRET")),
+		"webhook_verify_token":   strings.TrimSpace(os.Getenv("META_WEBHOOK_VERIFY_TOKEN")),
+	}
+}
+
+func metaMessagingEnvConfigured() bool {
+	secrets := metaMessagingEnvSecrets()
+	hasAccessToken := secrets["access_token"] != "" || secrets["whatsapp_access_token"] != "" || secrets["facebook_access_token"] != "" || secrets["instagram_access_token"] != ""
+	return hasAccessToken && secrets["app_secret"] != "" && secrets["webhook_verify_token"] != ""
+}
+
+func metaMessagingCredentials(c *gin.Context) (crmmodel.Integration, map[string]string, error) {
+	var integration crmmodel.Integration
+	err := model.GetDB(c).WithContext(c.Request.Context()).Where("provider = ?", "meta_messaging").First(&integration).Error
+	if err == nil {
+		if !integration.Enabled {
+			return integration, nil, fmt.Errorf("Meta Messaging integration is disabled")
+		}
+		secrets, decryptErr := decryptIntegrationSecrets(integration)
+		return integration, secrets, decryptErr
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) || !metaMessagingEnvConfigured() {
+		return integration, nil, err
+	}
+	config, _ := json.Marshal(metaMessagingEnvConfig())
+	integration.Provider = "meta_messaging"
+	integration.Enabled = true
+	integration.Config = datatypes.JSON(config)
+	return integration, metaMessagingEnvSecrets(), nil
 }
 
 func dispatchLeadCreated(db *gorm.DB, lead *crmmodel.Lead) {

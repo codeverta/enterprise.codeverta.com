@@ -20,7 +20,7 @@ import (
 
 func (h *Controller) VerifyAdWebhook(c *gin.Context) {
 	provider := c.Param("provider")
-	if provider != "meta_ads" {
+	if provider != "meta_ads" && provider != "meta_messaging" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "webhook provider not found"})
 		return
 	}
@@ -34,6 +34,10 @@ func (h *Controller) VerifyAdWebhook(c *gin.Context) {
 
 func (h *Controller) ReceiveAdWebhook(c *gin.Context) {
 	provider := c.Param("provider")
+	if provider == "meta_messaging" {
+		h.ReceiveMessagingWebhook(c)
+		return
+	}
 	if provider != "meta_ads" && provider != "tiktok_ads" {
 		c.JSON(http.StatusNotFound, gin.H{"error": "webhook provider not found"})
 		return
@@ -90,6 +94,9 @@ func (h *Controller) ReceiveAdWebhook(c *gin.Context) {
 }
 
 func webhookIntegration(c *gin.Context, provider string) (crmmodel.Integration, map[string]string, error) {
+	if provider == "meta_messaging" {
+		return metaMessagingCredentials(c)
+	}
 	var integration crmmodel.Integration
 	err := model.GetDB(c).WithContext(c.Request.Context()).Where("provider = ?", provider).First(&integration).Error
 	if err != nil {
@@ -100,7 +107,7 @@ func webhookIntegration(c *gin.Context, provider string) (crmmodel.Integration, 
 }
 
 func validWebhookSignature(c *gin.Context, provider string, body []byte, secrets map[string]string) bool {
-	if provider == "meta_ads" {
+	if provider == "meta_ads" || provider == "meta_messaging" {
 		appSecret := secrets["app_secret"]
 		signature := strings.TrimPrefix(c.GetHeader("X-Hub-Signature-256"), "sha256=")
 		if appSecret == "" || signature == "" {

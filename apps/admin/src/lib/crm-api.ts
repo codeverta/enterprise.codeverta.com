@@ -1,6 +1,7 @@
 import api from "@/lib/api";
 
-export type LeadStatus = "new" | "contacted" | "qualified" | "unqualified" | "converted";
+export type LeadStatus =
+  "new" | "contacted" | "qualified" | "unqualified" | "converted";
 
 export type CRMLead = {
   id: string;
@@ -46,12 +47,41 @@ export type CRMAutomation = {
 
 export type CRMIntegration = {
   id?: string;
-  provider: "google_analytics" | "meta_ads" | "tiktok_ads";
+  provider: "google_analytics" | "meta_ads" | "tiktok_ads" | "meta_messaging";
   enabled: boolean;
   config: Record<string, string>;
   has_secrets: boolean;
   last_sync_at?: string;
   last_error?: string;
+};
+
+export type CRMChannel = "whatsapp" | "instagram" | "facebook";
+
+export type CRMMessage = {
+  id: string;
+  conversation_id: string;
+  external_id: string;
+  direction: "inbound" | "outbound";
+  type: "text" | "image" | "audio" | "video" | "file" | "sticker" | "unknown";
+  text: string;
+  media_url: string;
+  status: "received" | "queued" | "sent" | "delivered" | "read" | "failed";
+  sent_at: string;
+  error_message?: string;
+};
+
+export type CRMConversation = {
+  id: string;
+  channel: CRMChannel;
+  external_account_id: string;
+  external_participant_id: string;
+  participant_name: string;
+  participant_avatar_url: string;
+  preview: string;
+  unread_count: number;
+  status: "open" | "resolved" | "archived";
+  last_message_at?: string;
+  last_message?: CRMMessage;
 };
 
 export type CRMAccount = {
@@ -130,14 +160,29 @@ export type CRMPipeline = {
   stages: CRMPipelineStage[];
   opportunities: CRMOpportunity[];
   accounts: Array<Pick<CRMAccount, "id" | "name">>;
-  contacts: Array<Pick<CRMContact, "id" | "account_id" | "first_name" | "last_name">>;
+  contacts: Array<
+    Pick<CRMContact, "id" | "account_id" | "first_name" | "last_name">
+  >;
   sales_reps: CRMSalesRep[];
 };
 export type CRMForecast = {
   from: string;
   to: string;
-  periods: Array<{ period: string; pipeline: number; weighted: number; won: number; deals: number }>;
-  by_rep: Array<{ owner_id: string; owner_name: string; pipeline: number; weighted: number; won: number; deals: number }>;
+  periods: Array<{
+    period: string;
+    pipeline: number;
+    weighted: number;
+    won: number;
+    deals: number;
+  }>;
+  by_rep: Array<{
+    owner_id: string;
+    owner_name: string;
+    pipeline: number;
+    weighted: number;
+    won: number;
+    deals: number;
+  }>;
   lost_reasons: Array<{ reason: string; deals: number; amount: number }>;
 };
 
@@ -154,16 +199,35 @@ export type CRMOpportunityInput = {
   lost_reason: string;
 };
 
-type Page<T> = { data: T[]; meta: { page: number; page_size: number; total: number } };
-export type CRMAccountInput = Omit<CRMAccount, "id" | "parent_name" | "contact_count" | "created_at">;
-export type CRMContactInput = Omit<CRMContact, "id" | "account_name" | "created_at">;
+type Page<T> = {
+  data: T[];
+  meta: { page: number; page_size: number; total: number };
+};
+export type CRMAccountInput = Omit<
+  CRMAccount,
+  "id" | "parent_name" | "contact_count" | "created_at"
+>;
+export type CRMContactInput = Omit<
+  CRMContact,
+  "id" | "account_name" | "created_at"
+>;
 
 export const crmApi = {
   async dashboard() {
     return (await api.get<CRMDashboard>("/crm/dashboard")).data;
   },
-  async leads(params: { page?: number; page_size?: number; q?: string; status?: string }) {
-    return (await api.get<{ data: CRMLead[]; meta: { page: number; page_size: number; total: number } }>("/crm/leads", { params })).data;
+  async leads(params: {
+    page?: number;
+    page_size?: number;
+    q?: string;
+    status?: string;
+  }) {
+    return (
+      await api.get<{
+        data: CRMLead[];
+        meta: { page: number; page_size: number; total: number };
+      }>("/crm/leads", { params })
+    ).data;
   },
   async createLead(input: Partial<LeadInput>) {
     return (await api.post<CRMLead>("/crm/leads", input)).data;
@@ -177,7 +241,12 @@ export const crmApi = {
   async importLeads(file: File) {
     const form = new FormData();
     form.append("file", file);
-    return (await api.post<{ created: number; failed: number; errors: string[] }>("/crm/leads/import", form)).data;
+    return (
+      await api.post<{ created: number; failed: number; errors: string[] }>(
+        "/crm/leads/import",
+        form,
+      )
+    ).data;
   },
   async automation() {
     return (await api.get<CRMAutomation>("/crm/automation")).data;
@@ -188,60 +257,129 @@ export const crmApi = {
   async integrations() {
     return (await api.get<CRMIntegration[]>("/crm/integrations")).data;
   },
-  async saveIntegration(provider: CRMIntegration["provider"], input: {
-    enabled: boolean;
-    config: Record<string, string>;
-    secrets?: Record<string, string>;
-  }) {
-    return (await api.put<CRMIntegration>(`/crm/integrations/${provider}`, input)).data;
+  async saveIntegration(
+    provider: CRMIntegration["provider"],
+    input: {
+      enabled: boolean;
+      config: Record<string, string>;
+      secrets?: Record<string, string>;
+    },
+  ) {
+    return (
+      await api.put<CRMIntegration>(`/crm/integrations/${provider}`, input)
+    ).data;
+  },
+  async conversations(
+    params: { channel?: CRMChannel | "all"; q?: string } = {},
+  ) {
+    return (
+      await api.get<CRMConversation[]>("/crm/inbox/conversations", { params })
+    ).data;
+  },
+  async conversationMessages(id: string) {
+    return (
+      await api.get<CRMMessage[]>(`/crm/inbox/conversations/${id}/messages`)
+    ).data;
+  },
+  async sendConversationMessage(id: string, text: string) {
+    return (
+      await api.post<CRMMessage>(`/crm/inbox/conversations/${id}/messages`, {
+        text,
+      })
+    ).data;
   },
   async accounts(params: Record<string, string | number | undefined> = {}) {
-    return (await api.get<Page<CRMAccount>>("/crm/directory/accounts", { params })).data;
+    return (
+      await api.get<Page<CRMAccount>>("/crm/directory/accounts", { params })
+    ).data;
   },
   async createAccount(input: CRMAccountInput) {
     return (await api.post<CRMAccount>("/crm/directory/accounts", input)).data;
   },
   async updateAccount(id: string, input: CRMAccountInput) {
-    return (await api.patch<CRMAccount>(`/crm/directory/accounts/${id}`, input)).data;
+    return (await api.patch<CRMAccount>(`/crm/directory/accounts/${id}`, input))
+      .data;
   },
-  async deleteAccount(id: string) { await api.delete(`/crm/directory/accounts/${id}`); },
+  async deleteAccount(id: string) {
+    await api.delete(`/crm/directory/accounts/${id}`);
+  },
   async contacts(params: Record<string, string | number | undefined> = {}) {
-    return (await api.get<Page<CRMContact>>("/crm/directory/contacts", { params })).data;
+    return (
+      await api.get<Page<CRMContact>>("/crm/directory/contacts", { params })
+    ).data;
   },
   async createContact(input: CRMContactInput) {
     return (await api.post<CRMContact>("/crm/directory/contacts", input)).data;
   },
   async updateContact(id: string, input: CRMContactInput) {
-    return (await api.patch<CRMContact>(`/crm/directory/contacts/${id}`, input)).data;
+    return (await api.patch<CRMContact>(`/crm/directory/contacts/${id}`, input))
+      .data;
   },
-  async deleteContact(id: string) { await api.delete(`/crm/directory/contacts/${id}`); },
+  async deleteContact(id: string) {
+    await api.delete(`/crm/directory/contacts/${id}`);
+  },
   async interactions(kind: "accounts" | "contacts", id: string) {
-    return (await api.get<CRMInteraction[]>(`/crm/directory/${kind}/${id}/interactions`)).data;
+    return (
+      await api.get<CRMInteraction[]>(
+        `/crm/directory/${kind}/${id}/interactions`,
+      )
+    ).data;
   },
-  async createInteraction(kind: "accounts" | "contacts", id: string, input: Partial<CRMInteraction>) {
-    return (await api.post<CRMInteraction>(`/crm/directory/${kind}/${id}/interactions`, input)).data;
+  async createInteraction(
+    kind: "accounts" | "contacts",
+    id: string,
+    input: Partial<CRMInteraction>,
+  ) {
+    return (
+      await api.post<CRMInteraction>(
+        `/crm/directory/${kind}/${id}/interactions`,
+        input,
+      )
+    ).data;
   },
   async pipeline(params: { q?: string; owner_id?: string } = {}) {
     return (await api.get<CRMPipeline>("/crm/pipeline", { params })).data;
   },
   async createOpportunity(input: CRMOpportunityInput) {
-    return (await api.post<CRMOpportunity>("/crm/pipeline/opportunities", input)).data;
+    return (
+      await api.post<CRMOpportunity>("/crm/pipeline/opportunities", input)
+    ).data;
   },
   async updateOpportunity(id: string, input: CRMOpportunityInput) {
-    return (await api.patch<CRMOpportunity>(`/crm/pipeline/opportunities/${id}`, input)).data;
+    return (
+      await api.patch<CRMOpportunity>(
+        `/crm/pipeline/opportunities/${id}`,
+        input,
+      )
+    ).data;
   },
-  async deleteOpportunity(id: string) { await api.delete(`/crm/pipeline/opportunities/${id}`); },
+  async deleteOpportunity(id: string) {
+    await api.delete(`/crm/pipeline/opportunities/${id}`);
+  },
   async moveOpportunity(id: string, stage_id: string, lost_reason = "") {
-    return (await api.post<CRMOpportunity>(`/crm/pipeline/opportunities/${id}/move`, { stage_id, lost_reason })).data;
+    return (
+      await api.post<CRMOpportunity>(`/crm/pipeline/opportunities/${id}/move`, {
+        stage_id,
+        lost_reason,
+      })
+    ).data;
   },
   async createPipelineStage(input: Omit<CRMPipelineStage, "id">) {
-    return (await api.post<CRMPipelineStage>("/crm/pipeline/stages", input)).data;
+    return (await api.post<CRMPipelineStage>("/crm/pipeline/stages", input))
+      .data;
   },
   async updatePipelineStage(id: string, input: Omit<CRMPipelineStage, "id">) {
-    return (await api.patch<CRMPipelineStage>(`/crm/pipeline/stages/${id}`, input)).data;
+    return (
+      await api.patch<CRMPipelineStage>(`/crm/pipeline/stages/${id}`, input)
+    ).data;
   },
-  async deletePipelineStage(id: string) { await api.delete(`/crm/pipeline/stages/${id}`); },
-  async forecast(params: { from?: string; to?: string; owner_id?: string } = {}) {
-    return (await api.get<CRMForecast>("/crm/pipeline/forecast", { params })).data;
+  async deletePipelineStage(id: string) {
+    await api.delete(`/crm/pipeline/stages/${id}`);
+  },
+  async forecast(
+    params: { from?: string; to?: string; owner_id?: string } = {},
+  ) {
+    return (await api.get<CRMForecast>("/crm/pipeline/forecast", { params }))
+      .data;
   },
 };

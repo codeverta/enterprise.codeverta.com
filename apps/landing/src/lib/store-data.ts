@@ -83,6 +83,12 @@ export type StoreOrderResponse = {
   shipping: number;
   total: number;
   payment_method: string;
+  payment_provider?: string;
+  payment_status?: string;
+  payment_reference?: string;
+  payment_url?: string;
+  payment_expires_at?: string;
+  paid_at?: string;
   address: string;
   created_at: string;
   items: Array<{

@@ -49,8 +49,8 @@ function DeskHeader({ query, onQueryChange, user, onLogout }: DeskHeaderProps) {
           <input
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search"
-            aria-label="Search modules"
+            placeholder="Cari modul, transaksi, master data..."
+            aria-label="Cari modul"
             className="h-10 w-full rounded-xl border-0 bg-slate-100 pl-9 pr-14 text-sm text-slate-800 outline-none ring-blue-500 placeholder:text-slate-500 focus:ring-2"
           />
           <span className="absolute right-3 top-1/2 hidden -translate-y-1/2 text-xs text-slate-400 sm:block">⌘K</span>

@@ -44,6 +44,40 @@ type TicketComment struct {
 
 func (TicketComment) TableName() string { return "crm_ticket_comments" }
 
+// Conversation represents one external participant on one Meta messaging
+// channel. ExternalAccountID is the Page, Instagram account, or WhatsApp phone
+// number ID receiving the message.
+type Conversation struct {
+	Base
+	Channel               string     `json:"channel" gorm:"type:varchar(20);not null;index" binding:"required,oneof=whatsapp instagram facebook"`
+	ExternalAccountID     string     `json:"external_account_id" gorm:"type:varchar(100);not null;index"`
+	ExternalParticipantID string     `json:"external_participant_id" gorm:"type:varchar(100);not null;index"`
+	ParticipantName       string     `json:"participant_name" gorm:"type:varchar(150);index"`
+	ParticipantAvatarURL  string     `json:"participant_avatar_url" gorm:"type:text"`
+	Preview               string     `json:"preview" gorm:"type:varchar(500)"`
+	UnreadCount           int        `json:"unread_count" gorm:"not null;default:0"`
+	Status                string     `json:"status" gorm:"type:varchar(20);not null;default:'open';index" binding:"omitempty,oneof=open resolved archived"`
+	LastMessageAt         *time.Time `json:"last_message_at" gorm:"index"`
+}
+
+func (Conversation) TableName() string { return "crm_conversations" }
+
+type Message struct {
+	Base
+	ConversationID uuid.UUID  `json:"conversation_id" gorm:"type:char(36);not null;index" binding:"required"`
+	ExternalID     string     `json:"external_id" gorm:"type:varchar(191);index"`
+	Direction      string     `json:"direction" gorm:"type:varchar(10);not null;index" binding:"required,oneof=inbound outbound"`
+	Type           string     `json:"type" gorm:"type:varchar(20);not null;default:'text'" binding:"omitempty,oneof=text image audio video file sticker unknown"`
+	Text           string     `json:"text" gorm:"type:text"`
+	MediaURL       string     `json:"media_url" gorm:"type:text"`
+	Status         string     `json:"status" gorm:"type:varchar(20);not null;default:'received';index" binding:"omitempty,oneof=received queued sent delivered read failed"`
+	SentAt         time.Time  `json:"sent_at" gorm:"not null;index"`
+	ErrorMessage   string     `json:"error_message,omitempty" gorm:"type:text"`
+	ContactID      *uuid.UUID `json:"contact_id,omitempty" gorm:"type:char(36);index"`
+}
+
+func (Message) TableName() string { return "crm_messages" }
+
 type Note struct {
 	Base
 	RelatedToType string    `json:"related_to_type" gorm:"type:varchar(30);not null;index:idx_crm_note_related,priority:1" binding:"required,oneof=lead account contact opportunity ticket campaign"`

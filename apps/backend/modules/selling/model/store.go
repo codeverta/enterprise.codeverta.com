@@ -62,19 +62,25 @@ type StoreWishlistItem struct {
 }
 
 type StoreOrder struct {
-	ID            string           `gorm:"primaryKey;size:64" json:"id"`
-	TenantID      string           `gorm:"size:64;not null;index" json:"tenant_id"`
-	UserID        string           `gorm:"size:64;not null;index" json:"user_id"`
-	OrderNumber   string           `gorm:"size:64;not null;uniqueIndex" json:"order_number"`
-	Status        string           `gorm:"size:40;not null;index" json:"status"`
-	Subtotal      float64          `gorm:"type:decimal(16,2);not null" json:"subtotal"`
-	Shipping      float64          `gorm:"type:decimal(16,2);default:0" json:"shipping"`
-	Total         float64          `gorm:"type:decimal(16,2);not null" json:"total"`
-	PaymentMethod string           `gorm:"size:100;not null" json:"payment_method"`
-	Address       string           `gorm:"type:text;not null" json:"address"`
-	Items         []StoreOrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
-	CreatedAt     time.Time        `json:"created_at"`
-	UpdatedAt     time.Time        `json:"updated_at"`
+	ID               string           `gorm:"primaryKey;size:64" json:"id"`
+	TenantID         string           `gorm:"size:64;not null;index" json:"tenant_id"`
+	UserID           string           `gorm:"size:64;not null;index" json:"user_id"`
+	OrderNumber      string           `gorm:"size:64;not null;uniqueIndex" json:"order_number"`
+	Status           string           `gorm:"size:40;not null;index" json:"status"`
+	Subtotal         float64          `gorm:"type:decimal(16,2);not null" json:"subtotal"`
+	Shipping         float64          `gorm:"type:decimal(16,2);default:0" json:"shipping"`
+	Total            float64          `gorm:"type:decimal(16,2);not null" json:"total"`
+	PaymentMethod    string           `gorm:"size:100;not null" json:"payment_method"`
+	PaymentProvider  string           `gorm:"size:40;not null;default:'';index" json:"payment_provider"`
+	PaymentStatus    string           `gorm:"size:40;not null;default:'';index" json:"payment_status"`
+	PaymentReference string           `gorm:"size:128;index" json:"payment_reference"`
+	PaymentURL       string           `gorm:"type:text" json:"payment_url"`
+	PaymentExpiresAt *time.Time       `json:"payment_expires_at"`
+	PaidAt           *time.Time       `json:"paid_at"`
+	Address          string           `gorm:"type:text;not null" json:"address"`
+	Items            []StoreOrderItem `gorm:"foreignKey:OrderID;constraint:OnDelete:CASCADE" json:"items"`
+	CreatedAt        time.Time        `json:"created_at"`
+	UpdatedAt        time.Time        `json:"updated_at"`
 }
 
 type StoreOrderItem struct {

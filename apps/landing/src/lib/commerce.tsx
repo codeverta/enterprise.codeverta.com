@@ -20,6 +20,12 @@ export type BuyerOrder = {
   shipping: number;
   total: number;
   paymentMethod: string;
+  paymentProvider: string;
+  paymentStatus: string;
+  paymentReference: string;
+  paymentUrl: string;
+  paymentExpiresAt?: string;
+  paidAt?: string;
   address: string;
 };
 
@@ -51,6 +57,12 @@ function mapOrder(order: StoreOrderResponse): BuyerOrder {
     shipping: Number(order.shipping),
     total: Number(order.total),
     paymentMethod: order.payment_method,
+    paymentProvider: order.payment_provider || "",
+    paymentStatus: order.payment_status || "",
+    paymentReference: order.payment_reference || "",
+    paymentUrl: order.payment_url || "",
+    paymentExpiresAt: order.payment_expires_at,
+    paidAt: order.paid_at,
     address: order.address,
     items: order.items.map((item) => ({
       id: item.product_id,

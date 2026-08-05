@@ -50,11 +50,11 @@ export default function AppSwitcherMenu({ children, onLogout, side = "bottom", a
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent side={side} align={align} sideOffset={8} className="z-[80] w-64 rounded-2xl p-2 shadow-xl">
         <DropdownMenuItem onSelect={() => navigate("/desk")} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <LayoutGrid className="size-5" /> Desktop
+          <LayoutGrid className="size-5" /> Dashboard Utama
         </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="gap-3 rounded-xl px-3 py-2.5 text-base">
-            <MonitorUp className="size-5" /> Workspaces
+            <MonitorUp className="size-5" /> Modul & Workspaces
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent sideOffset={10} className="z-[90] max-h-[70vh] w-64 overflow-y-auto rounded-2xl p-2 shadow-xl">
             {deskModules.filter((module) => !module.muted).map(({ name, slug, icon: Icon }) => (
@@ -66,27 +66,27 @@ export default function AppSwitcherMenu({ children, onLogout, side = "bottom", a
           </DropdownMenuSubContent>
         </DropdownMenuSub>
         <DropdownMenuItem onSelect={() => window.open(websiteURL, "_blank", "noopener,noreferrer")} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <Globe2 className="size-5" /> Website
+          <Globe2 className="size-5" /> Situs Web
         </DropdownMenuItem>
         <DropdownMenuSeparator className="my-2" />
         <DropdownMenuItem onSelect={() => navigate("/desk/erpnext-settings")} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <SlidersHorizontal className="size-5" /> Session Defaults
+          <SlidersHorizontal className="size-5" /> Default Sesi
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => window.location.reload()} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <RotateCcw className="size-5" /> Reload
+          <RotateCcw className="size-5" /> Muat Ulang Tampilan
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={toggleFullWidth} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <Maximize2 className="size-5" /> Toggle Full Width
+          <Maximize2 className="size-5" /> Ubah Lebar Layar
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={toggleTheme} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <Moon className="size-5" /> Toggle Theme
+          <Moon className="size-5" /> Ubah Tema (Gelap/Terang)
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => navigate("/desk/erpnext-settings/system-settings")} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <CircleHelp className="size-5" /> Help
+          <CircleHelp className="size-5" /> Pusat Bantuan
         </DropdownMenuItem>
         <DropdownMenuSeparator className="my-2" />
         <DropdownMenuItem variant="destructive" onSelect={onLogout} className="gap-3 rounded-xl px-3 py-2.5 text-base">
-          <LogOut className="size-5" /> Logout
+          <LogOut className="size-5" /> Keluar Akun
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

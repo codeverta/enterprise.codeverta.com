@@ -93,6 +93,90 @@ func GenerateInvoice(
 	return paymentURL, nil
 }
 
+// StoreInvoiceResult contains only the hosted-checkout data that is safe to
+// persist and return to the storefront. The secret API key never leaves this
+// service and is loaded by InitXenditClient from XENDIT_SECRET_KEY.
+type StoreInvoiceResult struct {
+	ID        string
+	URL       string
+	ExpiresAt time.Time
+}
+
+type StoreInvoiceStatus struct {
+	ID         string
+	ExternalID string
+	Status     string
+	Amount     float64
+	ExpiresAt  time.Time
+}
+
+// GenerateStoreInvoice creates a hosted Xendit checkout for a storefront
+// order. Xendit handles the concrete channel selection (QRIS, VA, e-wallet,
+// card) on its own secure page.
+func GenerateStoreInvoice(orderID, email, customerName string, amount float64, successURL, failureURL string) (*StoreInvoiceResult, error) {
+	if xenditClient == nil {
+		return nil, fmt.Errorf("xendit client is not initialized")
+	}
+	const invoiceDurationSeconds = 24 * 60 * 60
+	request := *invoice.NewCreateInvoiceRequest(orderID, amount)
+	request.SetPayerEmail(email)
+	request.SetDescription(fmt.Sprintf("Pembayaran pesanan %s - %s", orderID, customerName))
+	request.SetInvoiceDuration(float32(invoiceDurationSeconds))
+	request.SetShouldSendEmail(false)
+	if successURL != "" {
+		request.SetSuccessRedirectUrl(successURL)
+	}
+	if failureURL != "" {
+		request.SetFailureRedirectUrl(failureURL)
+	}
+
+	resp, httpResponse, err := xenditClient.InvoiceApi.CreateInvoice(context.Background()).
+		CreateInvoiceRequest(request).
+		Execute()
+	if err != nil {
+		status := 0
+		if httpResponse != nil {
+			status = httpResponse.StatusCode
+		}
+		return nil, fmt.Errorf("xendit create storefront invoice failed (status %d): %w", status, err)
+	}
+	if resp.GetInvoiceUrl() == "" || resp.GetId() == "" {
+		return nil, fmt.Errorf("xendit returned incomplete storefront invoice data")
+	}
+
+	return &StoreInvoiceResult{
+		ID:        resp.GetId(),
+		URL:       resp.GetInvoiceUrl(),
+		ExpiresAt: time.Now().UTC().Add(invoiceDurationSeconds * time.Second),
+	}, nil
+}
+
+// GetStoreInvoiceStatus provides a server-side reconciliation fallback when a
+// webhook is delayed or cannot reach a local/staging backend.
+func GetStoreInvoiceStatus(ctx context.Context, invoiceID string) (*StoreInvoiceStatus, error) {
+	if xenditClient == nil {
+		return nil, fmt.Errorf("xendit client is not initialized")
+	}
+	invoiceData, httpResponse, err := xenditClient.InvoiceApi.GetInvoiceById(ctx, invoiceID).Execute()
+	if err != nil {
+		status := 0
+		if httpResponse != nil {
+			status = httpResponse.StatusCode
+		}
+		return nil, fmt.Errorf("xendit get storefront invoice failed (status %d): %w", status, err)
+	}
+	if invoiceData.GetId() == "" {
+		return nil, fmt.Errorf("xendit returned an invoice without an id")
+	}
+	return &StoreInvoiceStatus{
+		ID:         invoiceData.GetId(),
+		ExternalID: invoiceData.GetExternalId(),
+		Status:     invoiceData.GetStatus().String(),
+		Amount:     invoiceData.GetAmount(),
+		ExpiresAt:  invoiceData.GetExpiryDate(),
+	}, nil
+}
+
 // services/xendit.go
 func GetXenditPaymentStatus(paymentRequestID string) (string, error) {
 	req, err := http.NewRequest("GET", xenditBaseURL+"/payment_requests/"+paymentRequestID, nil)

@@ -15,6 +15,7 @@ import CRMPage from "./modules/crm";
 import BuyingModule from "./modules/buying";
 import OrganizationModule from "./modules/organization";
 import SellingModule from "./modules/selling";
+import StockModule from "./modules/stock";
 import AccountingModule from "./modules/accounting";
 import CommunicationModule from "./modules/communication";
 import AdministrationModule from "./modules/administration";
@@ -81,6 +82,8 @@ const router = createBrowserRouter([
           { path: "desk/pos-invoice/*", element: <SellingModule /> },
           { path: "desk/sales-order/*", element: <SellingModule /> },
           { path: "desk/price-list/*", element: <SellingModule /> },
+          { path: "desk/shipment/*", element: <StockModule /> },
+          { path: "desk/delivery-note/*", element: <StockModule /> },
           { path: "desk/query-report/Sales%20Register", element: <SellingModule /> },
           { path: "desk/query-report/*", element: <SellingModule /> },
           { path: "desk/loyalty-program/*", element: <SellingModule /> },
