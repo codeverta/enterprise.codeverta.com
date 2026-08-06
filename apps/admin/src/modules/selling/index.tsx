@@ -17,6 +17,7 @@ import SalesRegisterPage from "./pages/SalesRegisterPage";
 import PriceListPage from "./pages/PriceListPage";
 import MasterListPage from "../buying/pages/MasterListPage";
 import ItemFormPage from "../buying/pages/ItemFormPage";
+import SalesInvoiceFormPage, { SalesInvoiceListPage } from "./pages/SalesInvoicePage";
 
 export default function SellingModule() {
   const { pathname } = useLocation();
@@ -31,6 +32,9 @@ export default function SellingModule() {
   } else if (pathname.startsWith("/desk/sales-order")) {
     const isForm = pathname === "/desk/sales-order/new" || /^\/desk\/sales-order\/[^/]+$/.test(pathname);
     content = isForm ? <SalesOrderFormPage /> : <SalesOrderListPage />;
+  } else if (pathname.startsWith("/desk/sales-invoice")) {
+    const isForm = pathname === "/desk/sales-invoice/new" || /^\/desk\/sales-invoice\/[^/]+$/.test(pathname);
+    content = isForm ? <SalesInvoiceFormPage /> : <SalesInvoiceListPage />;
   } else if (pathname === "/desk/query-report/Sales%20Register" || pathname === "/desk/query-report/Sales Register") {
     content = <SalesRegisterPage />;
   } else if (pathname === "/desk/point-of-sale" || pathname.startsWith("/desk/point-of-sale/")) {

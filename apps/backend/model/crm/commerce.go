@@ -54,6 +54,8 @@ type SalesOrder struct {
 	ShippingAmount   float64          `json:"shipping_amount" gorm:"type:decimal(18,2);not null;default:0" binding:"min=0"`
 	TotalAmount      float64          `json:"total_amount" gorm:"type:decimal(18,2);not null;default:0" binding:"min=0"`
 	PaymentStatus    string           `json:"payment_status" gorm:"type:varchar(20);index"`
+	PaymentMethod    string           `json:"payment_method" gorm:"type:varchar(100);index"`
+	PaymentProvider  string           `json:"payment_provider" gorm:"type:varchar(40);index"`
 	PaymentReference string           `json:"payment_reference" gorm:"type:varchar(128);index"`
 	PaidAt           *time.Time       `json:"paid_at"`
 	Status           string           `json:"status" gorm:"type:varchar(20);not null;default:'processing';index" binding:"omitempty,oneof=processing confirmed completed cancelled"`

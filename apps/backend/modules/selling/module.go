@@ -12,6 +12,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 	posHandler := controller.NewPOSController()
 	storeHandler := controller.NewStoreController()
 	priceListHandler := controller.NewPriceListController()
+	salesInvoiceHandler := controller.NewSalesInvoiceController()
 
 	store := parent.Group("/store")
 	{
@@ -65,5 +66,14 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.POST("/item-prices", priceListHandler.CreateItemPrice)
 		group.PUT("/item-prices/:id", priceListHandler.UpdateItemPrice)
 		group.DELETE("/item-prices/:id", priceListHandler.DeleteItemPrice)
+		group.GET("/sales-invoices", salesInvoiceHandler.List)
+		group.POST("/sales-invoices", salesInvoiceHandler.Create)
+		group.GET("/sales-invoices/:id", salesInvoiceHandler.Get)
+		group.PUT("/sales-invoices/:id", salesInvoiceHandler.Update)
+		group.POST("/sales-invoices/:id/submit", salesInvoiceHandler.Submit)
+		group.POST("/sales-invoices/:id/return", salesInvoiceHandler.CreateReturn)
+		group.POST("/sales-invoices/:id/mark-paid", salesInvoiceHandler.MarkPaid)
+		group.POST("/sales-invoices/:id/refund", salesInvoiceHandler.Refund)
+		group.DELETE("/sales-invoices/:id", salesInvoiceHandler.Delete)
 	}
 }

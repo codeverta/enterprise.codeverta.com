@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	coremodel "gin-template/model"
 	stockmodel "gin-template/modules/stock/model"
 )
 
@@ -18,6 +19,7 @@ func TestDeliveryNoteCRUDAndSubmit(t *testing.T) {
 	router.POST("/stock/delivery-notes", dnCtrl.Create)
 	router.PUT("/stock/delivery-notes/:id", dnCtrl.Update)
 	router.POST("/stock/delivery-notes/:id/submit", dnCtrl.Submit)
+	router.POST("/stock/delivery-notes/:id/return", dnCtrl.CreateReturn)
 	router.DELETE("/stock/delivery-notes/:id", dnCtrl.Delete)
 
 	// 1. Create Delivery Note
@@ -82,5 +84,72 @@ func TestDeliveryNoteCRUDAndSubmit(t *testing.T) {
 	_ = json.Unmarshal(resSubmit.Body.Bytes(), &submitted)
 	if submitted.Status != stockmodel.DeliveryNoteStatusSubmitted {
 		t.Fatalf("expected status = Submitted, got %s", submitted.Status)
+	}
+
+	// 4. Partial return creates a separate document and a positive stock movement.
+	returnPayload := map[string]interface{}{
+		"reason": "2 item rusak",
+		"items": []map[string]interface{}{{
+			"against_item_id": created.Items[0].ID,
+			"quantity":        2,
+		}},
+	}
+	resReturn := stockRequest(t, router, http.MethodPost, "/stock/delivery-notes/"+created.ID+"/return", returnPayload)
+	if resReturn.Code != http.StatusCreated {
+		t.Fatalf("create return status = %d, body = %s", resReturn.Code, resReturn.Body.String())
+	}
+	var returned stockmodel.DeliveryNote
+	if err := json.Unmarshal(resReturn.Body.Bytes(), &returned); err != nil {
+		t.Fatalf("decode returned delivery note: %v", err)
+	}
+	if !returned.IsReturn || returned.ReturnAgainstID != created.ID || returned.TotalQty != 2 {
+		t.Fatalf("unexpected delivery return: %+v", returned)
+	}
+	resSubmitReturn := stockRequest(t, router, http.MethodPost, "/stock/delivery-notes/"+returned.ID+"/submit", nil)
+	if resSubmitReturn.Code != http.StatusOK {
+		t.Fatalf("submit return status = %d, body = %s", resSubmitReturn.Code, resSubmitReturn.Body.String())
+	}
+
+	var stockBalance float64
+	if err := coremodel.DB.Model(&stockmodel.StockLedgerEntry{}).
+		Where("item_code = ?", "ITEM-TEST-001").Select("COALESCE(SUM(actual_qty), 0)").Scan(&stockBalance).Error; err != nil {
+		t.Fatalf("calculate stock balance: %v", err)
+	}
+	if stockBalance != -3 {
+		t.Fatalf("expected net stock movement -3 after returning 2 of 5, got %v", stockBalance)
+	}
+
+	// 5. A second return cannot exceed the remaining three items.
+	overReturn := map[string]interface{}{
+		"reason": "too many",
+		"items":  []map[string]interface{}{{"against_item_id": created.Items[0].ID, "quantity": 4}},
+	}
+	resOverReturn := stockRequest(t, router, http.MethodPost, "/stock/delivery-notes/"+created.ID+"/return", overReturn)
+	if resOverReturn.Code != http.StatusConflict {
+		t.Fatalf("over-return status = %d, body = %s", resOverReturn.Code, resOverReturn.Body.String())
+	}
+
+	// 6. Exchange is a new outbound Delivery Note referencing the submitted return.
+	replacementPayload := map[string]interface{}{
+		"replacement_for_id": returned.ID,
+		"company":            "PT ZENIT TECHNOLOGY SOLUTION",
+		"items": []map[string]interface{}{{
+			"item_code": "ITEM-REPLACEMENT-001", "quantity": 1, "rate": 10000,
+			"uom": "Nos", "warehouse": "Stores - PT ZENIT",
+		}},
+	}
+	resReplacement := stockRequest(t, router, http.MethodPost, "/stock/delivery-notes", replacementPayload)
+	if resReplacement.Code != http.StatusCreated {
+		t.Fatalf("create replacement status = %d, body = %s", resReplacement.Code, resReplacement.Body.String())
+	}
+	var replacement stockmodel.DeliveryNote
+	if err := json.Unmarshal(resReplacement.Body.Bytes(), &replacement); err != nil {
+		t.Fatalf("decode replacement: %v", err)
+	}
+	if replacement.ReplacementForID != returned.ID || replacement.IsReturn || replacement.Customer != created.Customer {
+		t.Fatalf("unexpected replacement delivery: %+v", replacement)
+	}
+	if response := stockRequest(t, router, http.MethodPost, "/stock/delivery-notes/"+replacement.ID+"/submit", nil); response.Code != http.StatusOK {
+		t.Fatalf("submit replacement status = %d, body = %s", response.Code, response.Body.String())
 	}
 }

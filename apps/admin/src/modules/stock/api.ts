@@ -92,6 +92,7 @@ export type DeliveryNoteItem = {
   rate: number;
   amount: number;
   warehouse: string;
+  against_item_id?: string;
 };
 
 export type DeliveryNoteTax = {
@@ -117,6 +118,9 @@ export type DeliveryNote = {
   set_posting_time: boolean;
   company: string;
   is_return: boolean;
+  return_against_id?: string;
+  return_reason?: string;
+  replacement_for_id?: string;
 
   sales_order_id?: string;
   set_warehouse: string;
@@ -212,6 +216,11 @@ export const stockApi = {
 
   async deliveryNoteSubmit(id: string): Promise<DeliveryNote> {
     const res = await api.post<DeliveryNote>(`/stock/delivery-notes/${id}/submit`);
+    return res.data;
+  },
+
+  async deliveryNoteCreateReturn(id: string, input: { reason: string; items: Array<{ against_item_id: string; quantity: number }> }): Promise<DeliveryNote> {
+    const res = await api.post<DeliveryNote>(`/stock/delivery-notes/${id}/return`, input);
     return res.data;
   },
 

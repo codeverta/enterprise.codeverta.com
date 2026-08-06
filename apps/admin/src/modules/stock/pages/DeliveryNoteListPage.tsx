@@ -65,7 +65,7 @@ export default function DeliveryNoteListPage() {
           <p className="text-sm font-semibold text-blue-600">Stock / Logistics</p>
           <h1 className="text-2xl font-bold tracking-tight">Delivery Note (Surat Jalan)</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Kelola pengeluaran barang, pengiriman pesanan customer, dan Surat Jalan resmi.
+            Kelola barang keluar, return masuk gudang, replacement, dan audit trail Surat Jalan.
           </p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700" asChild>
@@ -151,9 +151,9 @@ export default function DeliveryNoteListPage() {
                   <td className="p-4 text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="sm" onClick={() => navigate(`/desk/delivery-note/${row.id}`)}>
-                        Edit
+                        {row.status === "Draft" ? "Edit" : "View"}
                       </Button>
-                      {row.id && (
+                      {row.id && row.status === "Draft" && (
                         <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id!, row.number)}>
                           <Trash2 className="size-4 text-red-500" />
                         </Button>

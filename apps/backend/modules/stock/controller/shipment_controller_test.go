@@ -11,6 +11,7 @@ import (
 	stockmodel "gin-template/modules/stock/model"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -18,13 +19,14 @@ import (
 func setupStockTestRouter(t *testing.T) *gin.Engine {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
-	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open("file:"+uuid.NewString()+"?mode=memory&cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("open stock test database: %v", err)
 	}
 	if err := db.AutoMigrate(
 		&stockmodel.Shipment{}, &stockmodel.ShipmentParcel{}, &stockmodel.ShipmentDeliveryNote{},
 		&stockmodel.DeliveryNote{}, &stockmodel.DeliveryNoteItem{}, &stockmodel.DeliveryNoteTax{},
+		&stockmodel.StockLedgerEntry{},
 	); err != nil {
 		t.Fatalf("migrate stock test database: %v", err)
 	}
@@ -67,12 +69,12 @@ func TestShipmentCRUDAndSubmit(t *testing.T) {
 
 	// 1. Create Shipment
 	createPayload := map[string]interface{}{
-		"pickup_from_type":     "Company",
-		"pickup_company":       "PT ZENIT TECHNOLOGY SOLUTION",
-		"delivery_to_type":     "Customer",
-		"delivery_customer":   "Zenit Customer Test",
-		"carrier":             "JNE",
-		"awb_number":          "JNE-123456789",
+		"pickup_from_type":  "Company",
+		"pickup_company":    "PT ZENIT TECHNOLOGY SOLUTION",
+		"delivery_to_type":  "Customer",
+		"delivery_customer": "Zenit Customer Test",
+		"carrier":           "JNE",
+		"awb_number":        "JNE-123456789",
 		"parcels": []map[string]interface{}{
 			{"length": 20, "width": 15, "height": 10, "weight": 2.5, "count": 2, "parcel_template": "Medium Box"},
 		},

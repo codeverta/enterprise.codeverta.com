@@ -28,6 +28,8 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.POST("/delivery-notes", deliveryNoteHandler.Create)
 		group.PUT("/delivery-notes/:id", deliveryNoteHandler.Update)
 		group.POST("/delivery-notes/:id/submit", deliveryNoteHandler.Submit)
+		group.POST("/delivery-notes/:id/return", deliveryNoteHandler.CreateReturn)
 		group.DELETE("/delivery-notes/:id", deliveryNoteHandler.Delete)
+		group.GET("/stock-balances", deliveryNoteHandler.StockBalances)
 	}
 }

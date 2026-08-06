@@ -8,9 +8,12 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"gin-template/model"
 	crmmodel "gin-template/model/crm"
+	sellingcontroller "gin-template/modules/selling/controller"
+	sellingmodel "gin-template/modules/selling/model"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -202,6 +205,23 @@ func (h *Controller) Get(c *gin.Context) {
 	if err := db.First(record, "id = ?", id).Error; err != nil {
 		writeLookupError(c, err)
 		return
+	}
+	if salesOrder, isSalesOrder := record.(*crmmodel.SalesOrder); isSalesOrder && salesOrder.StoreOrderID != nil {
+		var storeOrder sellingmodel.StoreOrder
+		if err := db.Preload("Items").Where("tenant_id = ? AND id = ?", salesOrder.TenantID, *salesOrder.StoreOrderID).First(&storeOrder).Error; err == nil {
+			paidAt := time.Now()
+			if storeOrder.PaidAt != nil {
+				paidAt = *storeOrder.PaidAt
+			}
+			if err := sellingcontroller.EnsureERPSalesOrder(db, &storeOrder, paidAt); err != nil {
+				writeDBError(c, err)
+				return
+			}
+			if err := db.Preload("Items").First(record, "id = ?", id).Error; err != nil {
+				writeLookupError(c, err)
+				return
+			}
+		}
 	}
 	c.JSON(http.StatusOK, record)
 }

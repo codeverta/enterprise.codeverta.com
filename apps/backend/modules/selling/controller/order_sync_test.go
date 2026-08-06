@@ -65,7 +65,26 @@ func TestMarkStoreOrderPaidCreatesOneERPSalesOrder(t *testing.T) {
 	if got.OrderNumber != order.OrderNumber || got.Status != "confirmed" || got.PaymentStatus != "PAID" {
 		t.Fatalf("unexpected ERP sales order: %+v", got)
 	}
+	if got.PaymentMethod != "XENDIT" || got.PaymentProvider != "xendit" || got.PaymentReference != order.PaymentReference {
+		t.Fatalf("unexpected ERP payment details: %+v", got)
+	}
 	if len(got.Items) != 1 || got.Items[0].ItemCode != product.SKU || got.Items[0].Quantity != 2 {
 		t.Fatalf("unexpected ERP sales order items: %+v", got.Items)
+	}
+
+	// Opening an older Sales Order with missing detail rows must repair it from
+	// the immutable storefront order instead of showing a blank item table.
+	if err := db.Where("sales_order_id = ?", got.ID).Delete(&crmmodel.SalesOrderItem{}).Error; err != nil {
+		t.Fatalf("remove projected items: %v", err)
+	}
+	if err := EnsureERPSalesOrder(db, &order, paidAt); err != nil {
+		t.Fatalf("repair ERP sales order: %v", err)
+	}
+	var repaired crmmodel.SalesOrder
+	if err := db.Preload("Items").First(&repaired, "id = ?", got.ID).Error; err != nil {
+		t.Fatalf("load repaired order: %v", err)
+	}
+	if len(repaired.Items) != 1 || repaired.Items[0].ItemCode != product.SKU {
+		t.Fatalf("expected projected items to be backfilled, got %+v", repaired.Items)
 	}
 }

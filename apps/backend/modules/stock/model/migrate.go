@@ -14,6 +14,7 @@ func Migrate(db *gorm.DB) error {
 		&DeliveryNote{},
 		&DeliveryNoteItem{},
 		&DeliveryNoteTax{},
+		&StockLedgerEntry{},
 	); err != nil {
 		return fmt.Errorf("auto migrate Stock models: %w", err)
 	}
@@ -28,6 +29,7 @@ func Migrate(db *gorm.DB) error {
 		{&DeliveryNote{}, "idx_dn_tenant_status", "tenant_id, status"},
 		{&DeliveryNoteItem{}, "idx_dn_item_dn", "delivery_note_id"},
 		{&DeliveryNoteTax{}, "idx_dn_tax_dn", "delivery_note_id"},
+		{&StockLedgerEntry{}, "idx_stock_ledger_balance", "tenant_id, item_code, warehouse, posting_date"},
 	}
 
 	for _, index := range indexes {

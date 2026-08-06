@@ -590,7 +590,7 @@ const selling = workspace(
   "selling",
   [
     "Quotation", "Sales Order", "Sales Invoice", ["POS", "/desk/point-of-sale"],
-    ["Orders", "/desk/selling/orders"],
+    // ["Orders", "/desk/selling/orders"],
     ["Subscriptions", "/desk/selling/subscriptions"],
     ["Promotions", "/desk/selling/promotions"],
     ["Loyalty Program", "/desk/loyalty-program"],

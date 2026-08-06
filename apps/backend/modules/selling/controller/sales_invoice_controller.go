@@ -1,0 +1,408 @@
+package controller
+
+import (
+	"errors"
+	"fmt"
+	"math"
+	"net/http"
+	"strings"
+	"time"
+
+	sellingmodel "gin-template/modules/selling/model"
+	stockmodel "gin-template/modules/stock/model"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+type SalesInvoiceController struct{}
+
+func NewSalesInvoiceController() *SalesInvoiceController { return &SalesInvoiceController{} }
+
+type salesInvoiceReturnInput struct {
+	Reason string `json:"reason"`
+	Items  []struct {
+		AgainstItemID string  `json:"against_item_id"`
+		Quantity      float64 `json:"quantity"`
+	} `json:"items"`
+}
+
+type refundInput struct {
+	Reference string `json:"reference"`
+}
+
+func loadSalesInvoice(db *gorm.DB, tenant, id string) (sellingmodel.SalesInvoice, error) {
+	var invoice sellingmodel.SalesInvoice
+	err := db.Preload("Items").Where("tenant_id = ? AND (id = ? OR number = ?)", tenant, id, id).First(&invoice).Error
+	return invoice, err
+}
+
+func calculateSalesInvoice(invoice *sellingmodel.SalesInvoice) {
+	sign := 1.0
+	if invoice.IsReturn {
+		sign = -1
+	}
+	var net float64
+	for i := range invoice.Items {
+		qty := math.Abs(invoice.Items[i].Quantity)
+		invoice.Items[i].Quantity = sign * qty
+		invoice.Items[i].Amount = sign * qty * math.Abs(invoice.Items[i].Rate)
+		net += invoice.Items[i].Amount
+	}
+	invoice.NetTotal = net
+	invoice.TaxAmount = net * math.Abs(invoice.TaxRate) / 100
+	invoice.GrandTotal = invoice.NetTotal + invoice.TaxAmount
+	if invoice.IsReturn {
+		invoice.OutstandingAmount = 0
+	} else if !invoice.IsPaid {
+		invoice.OutstandingAmount = invoice.GrandTotal
+	}
+}
+
+func prepareSalesInvoice(invoice *sellingmodel.SalesInvoice, tenant string) {
+	now := time.Now()
+	invoice.ID = "sinv-" + uuid.NewString()[:8]
+	invoice.TenantID = tenant
+	invoice.Status = sellingmodel.SalesInvoiceStatusDraft
+	if invoice.PostingDate.IsZero() {
+		invoice.PostingDate = now
+	}
+	if invoice.Currency == "" {
+		invoice.Currency = "IDR"
+	}
+	if invoice.Company == "" {
+		invoice.Company = "PT ZENIT TECHNOLOGY SOLUTION"
+	}
+	if invoice.Number == "" {
+		prefix := "ACC-SINV"
+		if invoice.IsReturn {
+			prefix = "ACC-SINV-RET"
+		}
+		invoice.Number = fmt.Sprintf("%s-%s-%s", prefix, now.Format("2006"), strings.ToUpper(uuid.NewString()[:8]))
+	}
+	invoice.CreatedAt, invoice.UpdatedAt = now, now
+	for i := range invoice.Items {
+		invoice.Items[i].ID = "sii-" + uuid.NewString()[:8]
+		invoice.Items[i].SalesInvoiceID = invoice.ID
+		if invoice.Items[i].UOM == "" {
+			invoice.Items[i].UOM = "Nos"
+		}
+	}
+	calculateSalesInvoice(invoice)
+}
+
+func (ctrl *SalesInvoiceController) List(ctx *gin.Context) {
+	db, tenant := posDB(ctx), tenantString(ctx)
+	var rows []sellingmodel.SalesInvoice
+	query := db.Preload("Items").Where("tenant_id = ?", tenant)
+	if value := strings.TrimSpace(ctx.Query("status")); value != "" {
+		query = query.Where("status = ?", value)
+	}
+	if value := strings.TrimSpace(ctx.Query("q")); value != "" {
+		like := "%" + value + "%"
+		query = query.Where("number LIKE ? OR customer LIKE ?", like, like)
+	}
+	if err := query.Order("created_at DESC").Find(&rows).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil Sales Invoice"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": rows})
+}
+
+func (ctrl *SalesInvoiceController) Get(ctx *gin.Context) {
+	invoice, err := loadSalesInvoice(posDB(ctx), tenantString(ctx), ctx.Param("id"))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "Sales Invoice tidak ditemukan"})
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil Sales Invoice"})
+		}
+		return
+	}
+	ctx.JSON(http.StatusOK, invoice)
+}
+
+func (ctrl *SalesInvoiceController) Create(ctx *gin.Context) {
+	var input sellingmodel.SalesInvoice
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Sales Invoice tidak valid"})
+		return
+	}
+	if input.IsReturn || input.ReturnAgainstID != "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Credit Note harus dibuat dari Sales Invoice asal"})
+		return
+	}
+	db, tenant := posDB(ctx), tenantString(ctx)
+	if input.DeliveryNoteID != "" {
+		var delivery stockmodel.DeliveryNote
+		if err := db.Preload("Items").Where("tenant_id = ? AND id = ? AND status = ? AND is_return = ?", tenant, input.DeliveryNoteID, stockmodel.DeliveryNoteStatusSubmitted, false).First(&delivery).Error; err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Delivery Note harus Submitted sebelum dibuatkan Sales Invoice"})
+			return
+		}
+		var count int64
+		db.Model(&sellingmodel.SalesInvoice{}).Where("tenant_id = ? AND delivery_note_id = ? AND is_return = ? AND status <> ?", tenant, delivery.ID, false, sellingmodel.SalesInvoiceStatusCancelled).Count(&count)
+		if count > 0 {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "Delivery Note ini sudah memiliki Sales Invoice"})
+			return
+		}
+		input.Customer, input.Company, input.SalesOrderID = delivery.Customer, delivery.Company, delivery.SalesOrderID
+		if input.TaxRate == 0 && delivery.Total != 0 {
+			input.TaxRate = math.Abs(delivery.TotalTaxesAndCharges / delivery.Total * 100)
+		}
+		if len(input.Items) == 0 {
+			for _, item := range delivery.Items {
+				input.Items = append(input.Items, sellingmodel.SalesInvoiceItem{
+					ItemCode: item.ItemCode, ItemName: item.ItemName, Quantity: item.Quantity,
+					UOM: item.UOM, Rate: item.Rate,
+				})
+			}
+		}
+	}
+	if strings.TrimSpace(input.Customer) == "" || len(input.Items) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Customer dan item wajib diisi"})
+		return
+	}
+	prepareSalesInvoice(&input, tenant)
+	if err := db.Create(&input).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat Sales Invoice"})
+		return
+	}
+	ctx.JSON(http.StatusCreated, input)
+}
+
+func (ctrl *SalesInvoiceController) Update(ctx *gin.Context) {
+	db, tenant := posDB(ctx), tenantString(ctx)
+	existing, err := loadSalesInvoice(db, tenant, ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Sales Invoice tidak ditemukan"})
+		return
+	}
+	if existing.Status != sellingmodel.SalesInvoiceStatusDraft {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Hanya Sales Invoice Draft yang dapat diubah"})
+		return
+	}
+	if existing.IsReturn {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Item Credit Note ditetapkan saat return dibuat; hapus draft dan buat ulang untuk mengubahnya"})
+		return
+	}
+	var input sellingmodel.SalesInvoice
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Sales Invoice tidak valid"})
+		return
+	}
+	existing.Customer, existing.Company = input.Customer, input.Company
+	existing.PostingDate, existing.DueDate = input.PostingDate, input.DueDate
+	existing.TaxRate, existing.Items, existing.UpdatedAt = input.TaxRate, input.Items, time.Now()
+	calculateSalesInvoice(&existing)
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("sales_invoice_id = ?", existing.ID).Delete(&sellingmodel.SalesInvoiceItem{}).Error; err != nil {
+			return err
+		}
+		for i := range existing.Items {
+			existing.Items[i].ID = "sii-" + uuid.NewString()[:8]
+			existing.Items[i].SalesInvoiceID = existing.ID
+			if err := tx.Create(&existing.Items[i]).Error; err != nil {
+				return err
+			}
+		}
+		return tx.Omit("Items").Save(&existing).Error
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui Sales Invoice"})
+		return
+	}
+	ctx.JSON(http.StatusOK, existing)
+}
+
+func (ctrl *SalesInvoiceController) CreateReturn(ctx *gin.Context) {
+	var input salesInvoiceReturnInput
+	if err := ctx.ShouldBindJSON(&input); err != nil || len(input.Items) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Pilih minimal satu item untuk Credit Note"})
+		return
+	}
+	db, tenant := posDB(ctx), tenantString(ctx)
+	source, err := loadSalesInvoice(db, tenant, ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Sales Invoice asal tidak ditemukan"})
+		return
+	}
+	if source.IsReturn || source.Status != sellingmodel.SalesInvoiceStatusSubmitted {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Credit Note hanya dapat dibuat dari Sales Invoice Submitted"})
+		return
+	}
+	var prior []sellingmodel.SalesInvoice
+	if err := db.Preload("Items").Where("tenant_id = ? AND return_against_id = ? AND status <> ?", tenant, source.ID, sellingmodel.SalesInvoiceStatusCancelled).Find(&prior).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memeriksa histori Credit Note"})
+		return
+	}
+	returnedQty := map[string]float64{}
+	for _, credit := range prior {
+		for _, item := range credit.Items {
+			returnedQty[item.AgainstItemID] += math.Abs(item.Quantity)
+		}
+	}
+	sourceItems := map[string]sellingmodel.SalesInvoiceItem{}
+	for _, item := range source.Items {
+		sourceItems[item.ID] = item
+	}
+	result := sellingmodel.SalesInvoice{
+		TenantID: tenant, Customer: source.Customer, Company: source.Company, PostingDate: time.Now(),
+		SalesOrderID: source.SalesOrderID, DeliveryNoteID: source.DeliveryNoteID,
+		IsReturn: true, ReturnAgainstID: source.ID, ReturnReason: strings.TrimSpace(input.Reason),
+		Currency: source.Currency, TaxRate: source.TaxRate, IsPaid: false,
+	}
+	if source.IsPaid {
+		result.RefundStatus = "Pending Refund"
+	} else {
+		result.RefundStatus = "Credit Available"
+	}
+	for _, requested := range input.Items {
+		sourceItem, exists := sourceItems[requested.AgainstItemID]
+		remaining := math.Abs(sourceItem.Quantity) - returnedQty[requested.AgainstItemID]
+		if !exists || requested.Quantity <= 0 || requested.Quantity > remaining+0.000001 {
+			ctx.JSON(http.StatusConflict, gin.H{"error": "Kuantitas Credit Note melebihi sisa invoice"})
+			return
+		}
+		returnedQty[requested.AgainstItemID] += requested.Quantity
+		result.Items = append(result.Items, sellingmodel.SalesInvoiceItem{
+			AgainstItemID: sourceItem.ID, ItemCode: sourceItem.ItemCode, ItemName: sourceItem.ItemName,
+			Quantity: requested.Quantity, UOM: sourceItem.UOM, Rate: sourceItem.Rate,
+		})
+	}
+	prepareSalesInvoice(&result, tenant)
+	if err := db.Create(&result).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat Credit Note"})
+		return
+	}
+	ctx.JSON(http.StatusCreated, result)
+}
+
+func createSalesLedger(tx *gorm.DB, invoice *sellingmodel.SalesInvoice, entryType, account string, debit, credit float64) error {
+	return tx.Create(&sellingmodel.SalesLedgerEntry{
+		ID: "sle-" + uuid.NewString()[:8], TenantID: invoice.TenantID, PostingDate: invoice.PostingDate,
+		VoucherID: invoice.ID, VoucherNumber: invoice.Number, EntryType: entryType,
+		Account: account, Debit: debit, Credit: credit, CreatedAt: time.Now(),
+	}).Error
+}
+
+func (ctrl *SalesInvoiceController) Submit(ctx *gin.Context) {
+	db, tenant := posDB(ctx), tenantString(ctx)
+	invoice, err := loadSalesInvoice(db, tenant, ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Sales Invoice tidak ditemukan"})
+		return
+	}
+	if invoice.Status == sellingmodel.SalesInvoiceStatusSubmitted {
+		ctx.JSON(http.StatusOK, invoice)
+		return
+	}
+	if invoice.Status != sellingmodel.SalesInvoiceStatusDraft || len(invoice.Items) == 0 {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Sales Invoice tidak dapat disubmit"})
+		return
+	}
+	err = db.Transaction(func(tx *gorm.DB) error {
+		invoice.Status, invoice.UpdatedAt = sellingmodel.SalesInvoiceStatusSubmitted, time.Now()
+		if err := tx.Omit("Items").Save(&invoice).Error; err != nil {
+			return err
+		}
+		amount := math.Abs(invoice.GrandTotal)
+		netAmount := math.Abs(invoice.NetTotal)
+		taxAmount := math.Abs(invoice.TaxAmount)
+		if invoice.IsReturn {
+			if err := createSalesLedger(tx, &invoice, "Credit Note", "Sales Returns", netAmount, 0); err != nil {
+				return err
+			}
+			if taxAmount > 0 {
+				if err := createSalesLedger(tx, &invoice, "Credit Note", "Output Tax Payable", taxAmount, 0); err != nil {
+					return err
+				}
+			}
+			if err := createSalesLedger(tx, &invoice, "Credit Note", "Accounts Receivable / Customer Credit", 0, amount); err != nil {
+				return err
+			}
+			if invoice.RefundStatus == "Credit Available" && invoice.ReturnAgainstID != "" {
+				return tx.Model(&sellingmodel.SalesInvoice{}).Where("tenant_id = ? AND id = ?", tenant, invoice.ReturnAgainstID).
+					Update("outstanding_amount", gorm.Expr("CASE WHEN outstanding_amount > ? THEN outstanding_amount - ? ELSE 0 END", amount, amount)).Error
+			}
+			return nil
+		}
+		if err := createSalesLedger(tx, &invoice, "Sales Invoice", "Accounts Receivable", amount, 0); err != nil {
+			return err
+		}
+		if err := createSalesLedger(tx, &invoice, "Sales Invoice", "Sales Revenue", 0, netAmount); err != nil {
+			return err
+		}
+		if taxAmount > 0 {
+			return createSalesLedger(tx, &invoice, "Sales Invoice", "Output Tax Payable", 0, taxAmount)
+		}
+		return nil
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal submit Sales Invoice"})
+		return
+	}
+	ctx.JSON(http.StatusOK, invoice)
+}
+
+func (ctrl *SalesInvoiceController) MarkPaid(ctx *gin.Context) {
+	db, tenant := posDB(ctx), tenantString(ctx)
+	invoice, err := loadSalesInvoice(db, tenant, ctx.Param("id"))
+	if err != nil || invoice.IsReturn || invoice.Status != sellingmodel.SalesInvoiceStatusSubmitted {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Sales Invoice belum dapat ditandai lunas"})
+		return
+	}
+	if err := db.Model(&invoice).Updates(map[string]interface{}{"is_paid": true, "outstanding_amount": 0}).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mencatat pembayaran"})
+		return
+	}
+	invoice.IsPaid, invoice.OutstandingAmount = true, 0
+	ctx.JSON(http.StatusOK, invoice)
+}
+
+func (ctrl *SalesInvoiceController) Refund(ctx *gin.Context) {
+	var input refundInput
+	_ = ctx.ShouldBindJSON(&input)
+	db, tenant := posDB(ctx), tenantString(ctx)
+	invoice, err := loadSalesInvoice(db, tenant, ctx.Param("id"))
+	if err != nil || !invoice.IsReturn || invoice.Status != sellingmodel.SalesInvoiceStatusSubmitted || invoice.RefundStatus != "Pending Refund" {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Dokumen ini bukan Credit Note Submitted"})
+		return
+	}
+	if invoice.RefundStatus == "Refunded" {
+		ctx.JSON(http.StatusOK, invoice)
+		return
+	}
+	now, amount := time.Now(), math.Abs(invoice.GrandTotal)
+	err = db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&invoice).Updates(map[string]interface{}{
+			"refund_status": "Refunded", "refund_reference": strings.TrimSpace(input.Reference), "refunded_at": &now,
+		}).Error; err != nil {
+			return err
+		}
+		if err := createSalesLedger(tx, &invoice, "Refund", "Customer Credit / Refund Payable", amount, 0); err != nil {
+			return err
+		}
+		return createSalesLedger(tx, &invoice, "Refund", "Cash / Bank", 0, amount)
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mencatat refund"})
+		return
+	}
+	invoice.RefundStatus, invoice.RefundReference, invoice.RefundedAt = "Refunded", strings.TrimSpace(input.Reference), &now
+	ctx.JSON(http.StatusOK, invoice)
+}
+
+func (ctrl *SalesInvoiceController) Delete(ctx *gin.Context) {
+	db, tenant := posDB(ctx), tenantString(ctx)
+	result := db.Where("tenant_id = ? AND id = ? AND status = ?", tenant, ctx.Param("id"), sellingmodel.SalesInvoiceStatusDraft).Delete(&sellingmodel.SalesInvoice{})
+	if result.Error != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menghapus Sales Invoice"})
+		return
+	}
+	if result.RowsAffected == 0 {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Hanya Sales Invoice Draft yang dapat dihapus"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "Sales Invoice terhapus"})
+}

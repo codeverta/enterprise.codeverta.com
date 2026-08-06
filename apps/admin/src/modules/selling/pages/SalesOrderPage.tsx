@@ -12,7 +12,7 @@ import api from "@/lib/api";
 
 type Item = { item_code: string; item_name?: string; delivery_date?: string; quantity: number; rate: number; amount: number };
 type Tax = { charge_type: string; account_head: string; rate: number; net_amount: number; amount: number };
-type Order = { id?: string; order_number?: string; store_order_id?: string; status: string; payment_status?: string; payment_reference?: string; subtotal?: number; shipping_amount?: number; total_amount?: number; naming_series: string; company: string; customer: string; customer_email?: string; order_type: string; transaction_date: string; delivery_date: string; is_subcontracted: boolean; cost_center: string; project: string; currency: string; selling_price_list: string; ignore_pricing_rule: boolean; set_warehouse: string; tax_category: string; taxes_and_charges: string; shipping_rule: string; incoterm: string; total_qty: number; total: number; base_total_taxes_and_charges: number; total_taxes_and_charges: number; grand_total: number; rounding_adjustment: number; rounded_total: number; advance_paid: number; apply_discount_on: string; coupon_code: string; additional_discount_percentage: number; additional_discount_amount: number; items: Item[]; taxes: Tax[] };
+type Order = { id?: string; order_number?: string; store_order_id?: string; status: string; payment_status?: string; payment_method?: string; payment_provider?: string; payment_reference?: string; shipping_address?: string; subtotal?: number; shipping_amount?: number; total_amount?: number; naming_series: string; company: string; customer: string; customer_email?: string; order_type: string; transaction_date: string; delivery_date: string; is_subcontracted: boolean; cost_center: string; project: string; currency: string; selling_price_list: string; ignore_pricing_rule: boolean; set_warehouse: string; tax_category: string; taxes_and_charges: string; shipping_rule: string; incoterm: string; total_qty: number; total: number; base_total_taxes_and_charges: number; total_taxes_and_charges: number; grand_total: number; rounding_adjustment: number; rounded_total: number; advance_paid: number; apply_discount_on: string; coupon_code: string; additional_discount_percentage: number; additional_discount_amount: number; items: Item[]; taxes: Tax[] };
 type Tab = "details" | "terms" | "more";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -26,6 +26,7 @@ const saveCache = (id: string, value: Order) => localStorage.setItem(key, JSON.s
 const removeCache = (id: string) => { const cache = readCache(); delete cache[id]; localStorage.setItem(key, JSON.stringify(cache)); };
 function calculate(o: Order): Order { const items = o.items.map(i => ({ ...i, amount: round(i.quantity * i.rate) })); const total = round(items.reduce((s, i) => s + i.amount, 0)); const taxes = o.taxes.map(t => ({ ...t, net_amount: total, amount: round(t.charge_type === "Actual" ? t.amount : total * t.rate / 100) })); const taxTotal = round(taxes.reduce((s, t) => s + t.amount, 0)); const discount = o.additional_discount_percentage ? round((total + taxTotal) * o.additional_discount_percentage / 100) : round(o.additional_discount_amount); const grand = round(Math.max(0, total + taxTotal - discount)); const rounded = Math.round(grand); return { ...o, items, taxes, total_qty: items.reduce((s, i) => s + (Number(i.quantity) || 0), 0), total, base_total_taxes_and_charges: taxTotal, total_taxes_and_charges: taxTotal, additional_discount_amount: discount, grand_total: grand, rounded_total: rounded, rounding_adjustment: round(rounded - grand) }; }
 function hydrate(o: Order): Order { const calculated = calculate(o); if (o.total_amount == null) return calculated; const total = Number(o.total_amount) || 0; return { ...calculated, total: o.subtotal ?? calculated.total, grand_total: total, rounded_total: Math.round(total), rounding_adjustment: round(Math.round(total) - total) }; }
+function mergeServerOrder(server: Order, cached?: Order): Order { return hydrate({ ...empty(), ...(cached || {}), ...server, items: server.items?.length ? server.items : cached?.items || [], taxes: cached?.taxes || server.taxes || [] }); }
 function Field({ label, name, children }: { label: string; name?: string; children: React.ReactNode }) { return <div className="space-y-1.5">
 <Label>{label}</Label>{children}{name && <p className="text-[11px] text-slate-400">{name}</p>}</div>; }
 function Combo({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) { const id = useMemo(() => `sales-${Math.random().toString(36).slice(2)}`, []); return <>
@@ -84,7 +85,7 @@ export function SalesOrderListPage() { const nav = useNavigate(); const [rows, s
 </div>; }
 
 export default function SalesOrderFormPage() { const { id } = useParams(); const nav = useNavigate(); const isNew = !id || id === "new"; const [tab, setTab] = useState<Tab>("details"); const [order, setOrder] = useState<Order>(empty); const [saving, setSaving] = useState(false); const update = <K extends keyof Order>(k: K, v: Order[K]) => setOrder(o => calculate({ ...o, [k]: v })); const updateItem = (i: number, p: Partial<Item>) => setOrder(o => calculate({ ...o, items: o.items.map((x, n) => n === i ? { ...x, ...p } : x) })); const updateTax = (i: number, p: Partial<Tax>) => setOrder(o => calculate({ ...o, taxes: o.taxes.map((x, n) => n === i ? { ...x, ...p } : x) }));
- useEffect(() => { if (!isNew && id) { const cached = readCache()[id]; api.get<Order>(`/crm/sales-orders/${id}`).then(r => setOrder(hydrate({ ...empty(), ...(cached || {}), ...r.data, ...(cached || {}), order_number: r.data.order_number || cached?.order_number }))).catch(() => { if (cached) setOrder(calculate(cached)); else { toast.error("Sales Order tidak ditemukan"); nav("/desk/sales-order"); } }); } }, [id, isNew, nav]);
+ useEffect(() => { if (!isNew && id) { const cached = readCache()[id]; api.get<Order>(`/crm/sales-orders/${id}`).then(r => setOrder(mergeServerOrder(r.data, cached))).catch(() => { if (cached) setOrder(calculate(cached)); else { toast.error("Sales Order tidak ditemukan"); nav("/desk/sales-order"); } }); } }, [id, isNew, nav]);
  const save = async () => { if (!order.company.trim() || !order.customer.trim()) return toast.error("Company dan Customer wajib diisi"); if (order.items.some(i => !i.item_code.trim() || i.quantity <= 0)) return toast.error("Lengkapi Item Code dan Quantity"); setSaving(true); const payload = calculate(order); try { const res = isNew ? await api.post<Order>("/crm/sales-orders", { order_number: `${order.naming_series.replace(".YYYY.", new Date().getFullYear().toString())}${Date.now().toString().slice(-5)}`, total_amount: payload.grand_total, status: "processing" }) : await api.patch<Order>(`/crm/sales-orders/${id}`, { total_amount: payload.grand_total, status: payload.status }); const savedId = id || res.data.id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: res.data.order_number || payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order berhasil disimpan"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } catch (e: any) { const savedId = id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order disimpan di browser"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } finally { setSaving(false); } };
  const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["PT ZENIT TECHNOLOGY SOLUTION", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (!isNew && !order.id && !order.customer) return <div className="p-12 text-center text-slate-500">Memuat Sales Order...</div>;
  return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
@@ -108,7 +109,7 @@ export default function SalesOrderFormPage() { const { id } = useParams(); const
   {!isNew && (
     <Button
       variant="outline"
-      onClick={() => nav(`/desk/delivery-note/new?customer=${encodeURIComponent(order.customer)}&sales_order_id=${encodeURIComponent(order.id || "")}`)}
+      onClick={() => nav(`/desk/delivery-note/new?sales_order_id=${encodeURIComponent(order.id || "")}`)}
       className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-900"
     >
       <Truck className="mr-1 size-4" /> Create Delivery Note
@@ -152,6 +153,13 @@ export default function SalesOrderFormPage() { const { id } = useParams(); const
 <Input type="date" value={order.delivery_date} onChange={e => update("delivery_date", e.target.value)} />
 </Field>
 </div>
+{order.store_order_id && <div className="grid gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 md:grid-cols-4">
+<Field label="Payment Method"><Input readOnly value={order.payment_method || "—"} /></Field>
+<Field label="Payment Provider"><Input readOnly value={order.payment_provider || "—"} /></Field>
+<Field label="Payment Status"><Input readOnly value={order.payment_status || "—"} /></Field>
+<Field label="Payment Reference"><Input readOnly value={order.payment_reference || "—"} /></Field>
+{order.shipping_address && <div className="md:col-span-4"><Field label="Shipping Address"><Input readOnly value={order.shipping_address} /></Field></div>}
+</div>}
 <label className="flex items-center gap-2 text-sm">
 <Checkbox checked={order.is_subcontracted} onCheckedChange={v => update("is_subcontracted", Boolean(v))} /> Is Subcontracted</label>
 </section>
@@ -204,6 +212,7 @@ export default function SalesOrderFormPage() { const { id } = useParams(); const
 <td className="p-3">{i + 1}</td>
 <td className="p-3">
 <Input value={item.item_code} onChange={e => updateItem(i, { item_code: e.target.value })} placeholder="Item code" />
+{item.item_name && <p className="mt-1 text-xs text-slate-500">{item.item_name}</p>}
 </td>
 <td className="p-3">
 <Input type="date" value={item.delivery_date || ""} onChange={e => updateItem(i, { delivery_date: e.target.value })} />
@@ -220,7 +229,7 @@ export default function SalesOrderFormPage() { const { id } = useParams(); const
 <Trash2 className="size-4 text-red-500" />
 </Button>
 </td>
-</tr>)}</tbody>
+</tr>)}{order.items.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-slate-500">Item Sales Order belum tersedia.</td></tr>}</tbody>
 </table>
 </div>
 <div className="grid gap-3 text-sm sm:grid-cols-2">

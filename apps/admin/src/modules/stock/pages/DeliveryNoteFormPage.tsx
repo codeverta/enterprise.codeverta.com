@@ -13,6 +13,8 @@ import {
   Building2,
   User,
   Percent,
+  RotateCcw,
+  Repeat2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,8 +22,10 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { stockApi, type DeliveryNote, type DeliveryNoteItem, type DeliveryNoteTax, type DeliveryNoteOptions } from "../api";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 type Tab = "details" | "items" | "taxes" | "totals" | "address" | "more";
+type SalesOrderSource = { id: string; customer: string; items?: Array<{ item_code: string; item_name?: string; quantity: number; rate: number; amount: number }> };
 
 const formatRp = (val: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val || 0);
@@ -83,19 +87,75 @@ export default function DeliveryNoteFormPage() {
   const [barcodeQuery, setBarcodeQuery] = useState("");
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+	const returnAgainst = searchParams.get("return_against") || "";
+	const replacementFor = searchParams.get("replacement_for") || "";
 
   useEffect(() => {
     stockApi.deliveryNoteOptions().then(setOptions).catch(() => {});
 
     if (isNew) {
+      if (returnAgainst || replacementFor) {
+        setLoading(true);
+        stockApi.deliveryNoteGet(returnAgainst || replacementFor).then((source) => {
+          const isReturn = Boolean(returnAgainst);
+          setRow(calculateTotals({
+            ...emptyNote(),
+            customer: source.customer,
+            company: source.company,
+            sales_order_id: source.sales_order_id,
+            set_warehouse: source.set_warehouse,
+            is_return: isReturn,
+            return_against_id: returnAgainst || undefined,
+            replacement_for_id: replacementFor || undefined,
+            naming_series: isReturn ? "MAT-DN-RET-.YYYY.-" : "MAT-DN-.YYYY.-",
+            items: (source.items || []).map((item) => ({
+              item_code: item.item_code,
+              item_name: item.item_name,
+              quantity: Math.min(1, Math.abs(item.quantity)),
+              uom: item.uom,
+              rate: item.rate,
+              amount: item.rate,
+              warehouse: item.warehouse || source.set_warehouse,
+              against_item_id: isReturn ? item.id : undefined,
+            })),
+            taxes: isReturn ? source.taxes || [] : [],
+          }));
+        }).catch(() => {
+          toast.error("Dokumen asal return tidak ditemukan");
+          navigate("/desk/delivery-note");
+        }).finally(() => setLoading(false));
+        return;
+      }
       // Check if coming from Sales Order
       const customerParam = searchParams.get("customer");
       const soParam = searchParams.get("sales_order_id");
-      if (customerParam || soParam) {
+      if (soParam) {
+        setLoading(true);
+        api.get<SalesOrderSource>(`/crm/sales-orders/${soParam}`).then(({ data: source }) => {
+          setRow((previous) => calculateTotals({
+            ...previous,
+            customer: source.customer || customerParam || previous.customer,
+            sales_order_id: source.id,
+            items: (source.items || []).map((item) => ({
+              item_code: item.item_code,
+              item_name: item.item_name,
+              quantity: item.quantity,
+              uom: "Nos",
+              rate: item.rate,
+              amount: item.amount,
+              warehouse: previous.set_warehouse,
+            })),
+          }));
+        }).catch(() => {
+          toast.error("Detail item Sales Order tidak dapat dimuat");
+          setRow((previous) => ({ ...previous, customer: customerParam || previous.customer, sales_order_id: soParam }));
+        }).finally(() => setLoading(false));
+        return;
+      }
+      if (customerParam) {
         setRow((prev) => ({
           ...prev,
-          customer: customerParam || prev.customer,
-          sales_order_id: soParam || prev.sales_order_id,
+          customer: customerParam,
         }));
       }
     } else if (id) {
@@ -114,7 +174,7 @@ export default function DeliveryNoteFormPage() {
         })
         .finally(() => setLoading(false));
     }
-  }, [id, isNew, navigate, searchParams]);
+  }, [id, isNew, navigate, searchParams, returnAgainst, replacementFor]);
 
   // Recalculate totals
   const calculateTotals = (updated: DeliveryNote): DeliveryNote => {
@@ -170,7 +230,12 @@ export default function DeliveryNoteFormPage() {
     }
     setSaving(true);
     try {
-      const saved = isNew ? await stockApi.deliveryNoteCreate(row) : await stockApi.deliveryNoteUpdate(id!, row);
+      const saved = isNew && returnAgainst
+        ? await stockApi.deliveryNoteCreateReturn(returnAgainst, {
+            reason: row.return_reason || "",
+            items: row.items.map((item) => ({ against_item_id: item.against_item_id || "", quantity: item.quantity })),
+          })
+        : isNew ? await stockApi.deliveryNoteCreate(row) : await stockApi.deliveryNoteUpdate(id!, row);
       toast.success("Delivery Note berhasil disimpan");
       setRow(saved);
       if (isNew && saved.id) {
@@ -202,8 +267,7 @@ export default function DeliveryNoteFormPage() {
 
   // Flow Integration: Create Sales Invoice
   const handleCreateSalesInvoice = () => {
-    toast.info("Navigasi ke pembuatan Sales Invoice dari Surat Jalan ini...");
-    navigate(`/desk/sales-order?delivery_note=${encodeURIComponent(row.number || "")}`);
+    navigate(`/desk/sales-invoice/new?delivery_note_id=${encodeURIComponent(row.id || "")}`);
   };
 
   // Item Table handlers
@@ -297,12 +361,18 @@ export default function DeliveryNoteFormPage() {
         <div className="flex flex-wrap items-center gap-2">
           {!isNew && (
             <>
-              <Button variant="outline" onClick={handleCreateShipment} className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-900">
+              {row.status === "Submitted" && !row.is_return && <Button variant="outline" onClick={() => navigate(`/desk/delivery-note/new?return_against=${encodeURIComponent(row.id || "")}`)} className="border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-slate-900">
+                <RotateCcw className="mr-1 size-4" /> Create Return
+              </Button>}
+              {row.status === "Submitted" && row.is_return && <Button variant="outline" onClick={() => navigate(`/desk/delivery-note/new?replacement_for=${encodeURIComponent(row.id || "")}`)} className="border-cyan-200 bg-cyan-50 text-cyan-700 hover:bg-cyan-100 dark:bg-slate-900">
+                <Repeat2 className="mr-1 size-4" /> Create Replacement
+              </Button>}
+              {!row.is_return && <Button variant="outline" onClick={handleCreateShipment} className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-900">
                 <Truck className="mr-1 size-4" /> Create Shipment
-              </Button>
-              <Button variant="outline" onClick={handleCreateSalesInvoice} className="border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-slate-900">
+              </Button>}
+              {row.status === "Submitted" && !row.is_return && <Button variant="outline" onClick={handleCreateSalesInvoice} className="border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-slate-900">
                 <Receipt className="mr-1 size-4" /> Create Sales Invoice
-              </Button>
+              </Button>}
             </>
           )}
 
@@ -311,10 +381,10 @@ export default function DeliveryNoteFormPage() {
               <CheckCircle2 className="mr-2 size-4 text-emerald-600" /> Submit
             </Button>
           )}
-          <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSave} disabled={saving}>
+          {(isNew || (row.status === "Draft" && !row.is_return)) && <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSave} disabled={saving}>
             <Save className="mr-2 size-4" />
             {saving ? "Saving..." : "Save"}
-          </Button>
+          </Button>}
         </div>
       </header>
 
@@ -350,6 +420,17 @@ export default function DeliveryNoteFormPage() {
                   ))}
                 </select>
               </div>
+
+              {row.is_return && <div className="md:col-span-2 lg:col-span-3">
+                <label className="mb-1 block text-xs font-medium text-slate-500">Return Against</label>
+                <Input value={row.return_against_id || ""} readOnly />
+                <label className="mb-1 mt-4 block text-xs font-medium text-slate-500">Alasan Return</label>
+                <Input value={row.return_reason || ""} onChange={(e) => update("return_reason", e.target.value)} placeholder="Rusak, bocor, salah barang, dll." />
+              </div>}
+
+              {row.replacement_for_id && <div className="md:col-span-2 lg:col-span-3 rounded-lg border border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-800">
+                Delivery barang pengganti untuk return: <strong>{row.replacement_for_id}</strong>
+              </div>}
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">
@@ -761,6 +842,7 @@ export default function DeliveryNoteFormPage() {
               <Input
                 value={row.sales_order_id || ""}
                 onChange={(e) => update("sales_order_id", e.target.value)}
+                readOnly={Boolean(row.sales_order_id)}
                 placeholder="ID / Nomor Sales Order"
               />
             </div>

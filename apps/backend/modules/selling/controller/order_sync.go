@@ -28,27 +28,17 @@ func MarkStoreOrderPaid(db *gorm.DB, order *sellingmodel.StoreOrder, paidAt time
 		order.Status = "Diproses"
 		order.PaymentStatus = "PAID"
 		order.PaidAt = &paidAt
-		return ensureERPSalesOrder(tx, order, paidAt)
+		return EnsureERPSalesOrder(tx, order, paidAt)
 	})
 }
 
-func ensureERPSalesOrder(db *gorm.DB, order *sellingmodel.StoreOrder, paidAt time.Time) error {
+// EnsureERPSalesOrder creates or repairs the ERP projection of a paid store
+// order. It also backfills item rows for orders created before item syncing was
+// introduced.
+func EnsureERPSalesOrder(db *gorm.DB, order *sellingmodel.StoreOrder, paidAt time.Time) error {
 	tenantID, err := uuid.Parse(strings.TrimSpace(order.TenantID))
 	if err != nil || tenantID == uuid.Nil {
 		return errors.New("store order has an invalid tenant_id")
-	}
-
-	var existing crmmodel.SalesOrder
-	err = db.Where("tenant_id = ? AND store_order_id = ?", tenantID, order.ID).First(&existing).Error
-	if err == nil {
-		return db.Model(&existing).Updates(map[string]interface{}{
-			"payment_status":    "PAID",
-			"payment_reference": order.PaymentReference,
-			"paid_at":           &paidAt,
-		}).Error
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
 	}
 
 	if len(order.Items) == 0 {
@@ -83,7 +73,15 @@ func ensureERPSalesOrder(db *gorm.DB, order *sellingmodel.StoreOrder, paidAt tim
 		skuByProduct[product.ID] = product.SKU
 	}
 
-	salesOrderID := uuid.New()
+	var existing crmmodel.SalesOrder
+	err = db.Where("tenant_id = ? AND store_order_id = ?", tenantID, order.ID).First(&existing).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	}
+	salesOrderID := existing.ID
+	if salesOrderID == uuid.Nil {
+		salesOrderID = uuid.New()
+	}
 	storeOrderID := order.ID
 	transactionDate := order.CreatedAt
 	if transactionDate.IsZero() {
@@ -102,25 +100,56 @@ func ensureERPSalesOrder(db *gorm.DB, order *sellingmodel.StoreOrder, paidAt tim
 		ShippingAmount:   order.Shipping,
 		TotalAmount:      order.Total,
 		PaymentStatus:    "PAID",
+		PaymentMethod:    order.PaymentMethod,
+		PaymentProvider:  order.PaymentProvider,
 		PaymentReference: order.PaymentReference,
 		PaidAt:           &paidAt,
 		Status:           "confirmed",
 	}
-	for _, item := range order.Items {
-		itemCode := strings.TrimSpace(skuByProduct[item.ProductID])
-		if itemCode == "" {
-			itemCode = item.ProductID
+	buildItems := func() []crmmodel.SalesOrderItem {
+		items := make([]crmmodel.SalesOrderItem, 0, len(order.Items))
+		for _, item := range order.Items {
+			itemCode := strings.TrimSpace(skuByProduct[item.ProductID])
+			if itemCode == "" {
+				itemCode = item.ProductID
+			}
+			items = append(items, crmmodel.SalesOrderItem{
+				Base:         crmmodel.Base{TenantID: tenantID},
+				SalesOrderID: salesOrderID,
+				ProductID:    item.ProductID,
+				ItemCode:     itemCode,
+				ItemName:     item.Name,
+				Quantity:     item.Quantity,
+				Rate:         item.Price,
+				Amount:       item.Subtotal,
+			})
 		}
-		salesOrder.Items = append(salesOrder.Items, crmmodel.SalesOrderItem{
-			Base:         crmmodel.Base{TenantID: tenantID},
-			SalesOrderID: salesOrderID,
-			ProductID:    item.ProductID,
-			ItemCode:     itemCode,
-			ItemName:     item.Name,
-			Quantity:     item.Quantity,
-			Rate:         item.Price,
-			Amount:       item.Subtotal,
-		})
+		return items
 	}
-	return db.Create(&salesOrder).Error
+	if existing.ID == uuid.Nil {
+		salesOrder.Items = buildItems()
+		return db.Create(&salesOrder).Error
+	}
+
+	if err := db.Model(&existing).Updates(map[string]interface{}{
+		"order_number": order.OrderNumber, "customer": customer, "customer_email": customerEmail,
+		"shipping_address": order.Address, "transaction_date": transactionDate, "currency": "IDR",
+		"subtotal": order.Subtotal, "shipping_amount": order.Shipping, "total_amount": order.Total,
+		"payment_status": "PAID", "payment_method": order.PaymentMethod,
+		"payment_provider": order.PaymentProvider, "payment_reference": order.PaymentReference,
+		"paid_at": &paidAt,
+	}).Error; err != nil {
+		return err
+	}
+	var itemCount int64
+	if err := db.Model(&crmmodel.SalesOrderItem{}).Where("sales_order_id = ?", existing.ID).Count(&itemCount).Error; err != nil {
+		return err
+	}
+	if itemCount == 0 && len(order.Items) > 0 {
+		items := buildItems()
+		if err := db.Create(&items).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }
