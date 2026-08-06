@@ -41,14 +41,39 @@ func (QuotationItem) TableName() string { return "crm_quotation_items" }
 
 type SalesOrder struct {
 	Base
-	OpportunityID *uuid.UUID `json:"opportunity_id" gorm:"type:char(36);index"`
-	QuotationID   *uuid.UUID `json:"quotation_id" gorm:"type:char(36);index"`
-	OrderNumber   string     `json:"order_number" gorm:"type:varchar(50);not null;index" binding:"required,max=50"`
-	TotalAmount   float64    `json:"total_amount" gorm:"type:decimal(18,2);not null;default:0" binding:"min=0"`
-	Status        string     `json:"status" gorm:"type:varchar(20);not null;default:'processing';index" binding:"omitempty,oneof=processing confirmed completed cancelled"`
+	OpportunityID    *uuid.UUID       `json:"opportunity_id" gorm:"type:char(36);index"`
+	QuotationID      *uuid.UUID       `json:"quotation_id" gorm:"type:char(36);index"`
+	StoreOrderID     *string          `json:"store_order_id,omitempty" gorm:"type:varchar(64);index"`
+	OrderNumber      string           `json:"order_number" gorm:"type:varchar(50);not null;index" binding:"required,max=50"`
+	Customer         string           `json:"customer" gorm:"type:varchar(255);index"`
+	CustomerEmail    string           `json:"customer_email" gorm:"type:varchar(255);index"`
+	ShippingAddress  string           `json:"shipping_address" gorm:"type:text"`
+	TransactionDate  time.Time        `json:"transaction_date" gorm:"type:date;index"`
+	Currency         string           `json:"currency" gorm:"type:varchar(3);not null;default:'IDR'"`
+	Subtotal         float64          `json:"subtotal" gorm:"type:decimal(18,2);not null;default:0" binding:"min=0"`
+	ShippingAmount   float64          `json:"shipping_amount" gorm:"type:decimal(18,2);not null;default:0" binding:"min=0"`
+	TotalAmount      float64          `json:"total_amount" gorm:"type:decimal(18,2);not null;default:0" binding:"min=0"`
+	PaymentStatus    string           `json:"payment_status" gorm:"type:varchar(20);index"`
+	PaymentReference string           `json:"payment_reference" gorm:"type:varchar(128);index"`
+	PaidAt           *time.Time       `json:"paid_at"`
+	Status           string           `json:"status" gorm:"type:varchar(20);not null;default:'processing';index" binding:"omitempty,oneof=processing confirmed completed cancelled"`
+	Items            []SalesOrderItem `json:"items" gorm:"foreignKey:SalesOrderID;constraint:OnDelete:CASCADE"`
 }
 
 func (SalesOrder) TableName() string { return "crm_sales_orders" }
+
+type SalesOrderItem struct {
+	Base
+	SalesOrderID uuid.UUID `json:"sales_order_id" gorm:"type:char(36);not null;index"`
+	ProductID    string    `json:"product_id" gorm:"type:varchar(64);index"`
+	ItemCode     string    `json:"item_code" gorm:"type:varchar(100);not null;index"`
+	ItemName     string    `json:"item_name" gorm:"type:varchar(255);not null"`
+	Quantity     int       `json:"quantity" gorm:"not null"`
+	Rate         float64   `json:"rate" gorm:"type:decimal(18,2);not null"`
+	Amount       float64   `json:"amount" gorm:"type:decimal(18,2);not null"`
+}
+
+func (SalesOrderItem) TableName() string { return "crm_sales_order_items" }
 
 type Invoice struct {
 	Base

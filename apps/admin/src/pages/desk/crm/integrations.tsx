@@ -41,7 +41,7 @@ const providers: ProviderMeta[] = [
     color: "bg-emerald-50 text-emerald-600",
     docs: "https://developers.facebook.com/docs/messenger-platform/",
     configFields: [
-      { key: "api_version", label: "Graph API version", placeholder: "v24.0" },
+      { key: "api_version", label: "Graph API version", placeholder: "v26.0" },
       {
         key: "whatsapp_phone_number_id",
         label: "WhatsApp Phone Number ID",

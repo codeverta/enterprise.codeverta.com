@@ -6,7 +6,7 @@ import { BASE_API_URL } from "@/lib/utils";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : "/account",
+    redirect: typeof search.redirect === "string" ? search.redirect : "/",
     googleError: typeof search.google_error === "string" ? search.google_error : "",
   }),
   head: () => ({ meta: [{ title: "Masuk — LUMÉA" }] }),
@@ -33,12 +33,12 @@ function BuyerLoginPage() {
         : await signUp(form.email, form.password, form.fullName);
     setLoading(false);
     if (result.error) return setError(result.error);
-    navigate({ to: mode === "register" ? "/" : redirect || "/account" });
+    navigate({ to: mode === "register" ? "/" : redirect || "/" });
   };
 
   const continueWithGoogle = () => {
     const startURL = new URL(`${BASE_API_URL}/api/auth/google/start`);
-    startURL.searchParams.set("redirect", redirect || "/account");
+    startURL.searchParams.set("redirect", redirect || "/");
     startURL.searchParams.set("tenant_id", import.meta.env.VITE_X_TENANT_ID || "belum-di-set");
     window.location.assign(startURL.toString());
   };

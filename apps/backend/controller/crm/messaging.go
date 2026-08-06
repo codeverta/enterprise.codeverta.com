@@ -125,7 +125,7 @@ func sendMetaChatMessage(c *gin.Context, integration crmmodel.Integration, secre
 	if err := json.Unmarshal(integration.Config, &config); err != nil {
 		return "", fmt.Errorf("konfigurasi Meta Messaging tidak valid")
 	}
-	version := firstNonEmpty(strings.TrimSpace(fmt.Sprint(config["api_version"])), "v24.0")
+	version := firstNonEmpty(strings.TrimSpace(fmt.Sprint(config["api_version"])), "v26.0")
 	accessToken := strings.TrimSpace(secrets[conversation.Channel+"_access_token"])
 	if conversation.Channel == "facebook" {
 		accessToken = firstNonEmpty(accessToken, strings.TrimSpace(secrets["facebook_page_access_token"]))
@@ -156,7 +156,14 @@ func sendMetaChatMessage(c *gin.Context, integration crmmodel.Integration, secre
 		if accountID == "" {
 			return "", fmt.Errorf("account ID %s belum dikonfigurasi", conversation.Channel)
 		}
-		endpoint = fmt.Sprintf("https://graph.facebook.com/%s/%s/messages", url.PathEscape(version), url.PathEscape(accountID))
+		graphHost := "graph.facebook.com"
+		if conversation.Channel == "instagram" {
+			graphHost = "graph.instagram.com"
+			if len([]byte(text)) > 1000 {
+				return "", fmt.Errorf("pesan Instagram maksimal 1000 byte")
+			}
+		}
+		endpoint = fmt.Sprintf("https://%s/%s/%s/messages", graphHost, url.PathEscape(version), url.PathEscape(accountID))
 		payload = map[string]interface{}{"recipient": map[string]string{"id": conversation.ExternalParticipantID}, "message": map[string]string{"text": text}}
 	default:
 		return "", fmt.Errorf("channel tidak didukung")

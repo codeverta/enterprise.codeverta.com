@@ -139,7 +139,7 @@ func (h *Controller) UpdateIntegration(c *gin.Context) {
 
 func metaMessagingEnvConfig() map[string]interface{} {
 	return map[string]interface{}{
-		"api_version":              firstNonEmpty(os.Getenv("META_GRAPH_API_VERSION"), "v24.0"),
+		"api_version":              firstNonEmpty(os.Getenv("META_GRAPH_API_VERSION"), "v26.0"),
 		"whatsapp_phone_number_id": strings.TrimSpace(os.Getenv("META_WHATSAPP_PHONE_NUMBER_ID")),
 		"facebook_page_id":         strings.TrimSpace(os.Getenv("META_FACEBOOK_PAGE_ID")),
 		"instagram_account_id":     strings.TrimSpace(os.Getenv("META_INSTAGRAM_ACCOUNT_ID")),

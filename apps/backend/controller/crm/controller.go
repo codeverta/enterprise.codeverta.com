@@ -40,7 +40,7 @@ func NewController() *Controller {
 		"products":         resourceOf[crmmodel.Product]("name", "sku", "description"),
 		"quotations":       resourceOf[crmmodel.Quotation]("quote_number"),
 		"quotation-items":  resourceOf[crmmodel.QuotationItem](),
-		"sales-orders":     resourceOf[crmmodel.SalesOrder]("order_number"),
+		"sales-orders":     resourceOf[crmmodel.SalesOrder]("order_number", "customer", "customer_email"),
 		"invoices":         resourceOf[crmmodel.Invoice]("invoice_number"),
 		"tickets":          resourceOf[crmmodel.Ticket]("subject", "description"),
 		"ticket-comments":  resourceOf[crmmodel.TicketComment]("comment"),
@@ -155,6 +155,9 @@ func (h *Controller) List(c *gin.Context) {
 		pageSize = 100
 	}
 	db := model.GetDB(c).WithContext(c.Request.Context()).Model(res.newModel())
+	if c.Param("resource") == "sales-orders" {
+		db = db.Preload("Items")
+	}
 	for _, filter := range []string{"status", "owner_id", "assigned_to", "account_id", "contact_id", "stage_id", "campaign_id", "opportunity_id", "quotation_id", "ticket_id", "related_to_type", "related_to_id", "is_active"} {
 		if value := strings.TrimSpace(c.Query(filter)); value != "" {
 			db = db.Where(filter+" = ?", value)
@@ -192,7 +195,11 @@ func (h *Controller) Get(c *gin.Context) {
 		return
 	}
 	record := res.newModel()
-	if err := model.GetDB(c).WithContext(c.Request.Context()).First(record, "id = ?", id).Error; err != nil {
+	db := model.GetDB(c).WithContext(c.Request.Context())
+	if c.Param("resource") == "sales-orders" {
+		db = db.Preload("Items")
+	}
+	if err := db.First(record, "id = ?", id).Error; err != nil {
 		writeLookupError(c, err)
 		return
 	}

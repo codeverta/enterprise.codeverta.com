@@ -534,14 +534,9 @@ func (ctrl *StoreController) OrderPaymentStatus(ctx *gin.Context) {
 			switch strings.ToUpper(remote.Status) {
 			case "PAID", "SETTLED":
 				now := time.Now()
-				if err := storeDB(ctx).Model(&order).Updates(map[string]interface{}{
-					"status":         "Diproses",
-					"payment_status": "PAID",
-					"paid_at":        &now,
-				}).Error; err == nil {
-					order.Status = "Diproses"
-					order.PaymentStatus = "PAID"
-					order.PaidAt = &now
+				if err := MarkStoreOrderPaid(storeDB(ctx), &order, now); err != nil {
+					storeError(ctx, http.StatusInternalServerError, "Pembayaran berhasil, tetapi Sales Order ERP belum dapat dibuat")
+					return
 				}
 			case "EXPIRED":
 				if err := storeDB(ctx).Model(&order).Updates(map[string]interface{}{
@@ -551,6 +546,16 @@ func (ctrl *StoreController) OrderPaymentStatus(ctx *gin.Context) {
 					order.PaymentStatus = "EXPIRED"
 				}
 			}
+		}
+	}
+	if strings.EqualFold(order.PaymentStatus, "PAID") {
+		paidAt := time.Now()
+		if order.PaidAt != nil {
+			paidAt = *order.PaidAt
+		}
+		if err := MarkStoreOrderPaid(storeDB(ctx), &order, paidAt); err != nil {
+			storeError(ctx, http.StatusInternalServerError, "Pembayaran berhasil, tetapi Sales Order ERP belum dapat dibuat")
+			return
 		}
 	}
 	storeSuccess(ctx, gin.H{

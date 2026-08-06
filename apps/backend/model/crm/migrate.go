@@ -10,7 +10,7 @@ import (
 func Migrate(db *gorm.DB) error {
 	models := []interface{}{
 		&Account{}, &Contact{}, &PipelineStage{}, &Opportunity{}, &Lead{},
-		&Activity{}, &Product{}, &Quotation{}, &QuotationItem{}, &SalesOrder{},
+		&Activity{}, &Product{}, &Quotation{}, &QuotationItem{}, &SalesOrder{}, &SalesOrderItem{},
 		&Invoice{}, &Ticket{}, &TicketComment{}, &Campaign{}, &CampaignMember{},
 		&Note{}, &Attachment{}, &Tag{}, &Taggable{},
 		&LeadAutomationConfig{}, &Integration{}, &Conversation{}, &Message{},
@@ -27,6 +27,7 @@ func Migrate(db *gorm.DB) error {
 		{&Product{}, "idx_crm_product_tenant_sku", "tenant_id, sku"},
 		{&Quotation{}, "idx_crm_quote_tenant_number", "tenant_id, quote_number"},
 		{&SalesOrder{}, "idx_crm_order_tenant_number", "tenant_id, order_number"},
+		{&SalesOrder{}, "idx_crm_order_tenant_store", "tenant_id, store_order_id"},
 		{&Invoice{}, "idx_crm_invoice_tenant_number", "tenant_id, invoice_number"},
 		{&Tag{}, "idx_crm_tag_tenant_name", "tenant_id, name"},
 		{&Taggable{}, "idx_crm_taggable_unique", "tenant_id, tag_id, related_to_type, related_to_id"},

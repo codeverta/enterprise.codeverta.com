@@ -390,7 +390,12 @@ const Sidebar = ({
                           }`}
                         />
                         {isOpen && (
-                          <span className={clsx("text-sm font-semibold")}>
+                          <span
+                            className={clsx(
+                              "min-w-0 flex-1 truncate text-sm font-semibold",
+                            )}
+                            title={item.name}
+                          >
                             {item.name}
                           </span>
                         )}
@@ -457,7 +462,14 @@ const Sidebar = ({
                                   }`}
                                 />
                               )}
-                              {isOpen && subItem.name}
+                              {isOpen && (
+                                <span
+                                  className="min-w-0 flex-1 truncate"
+                                  title={subItem.name}
+                                >
+                                  {subItem.name}
+                                </span>
+                              )}
                               {subItem.locked && (
                                 <Lock
                                   className={clsx(
@@ -523,9 +535,10 @@ const Sidebar = ({
                         {isOpen && (
                           <span
                             className={clsx(
-                              "font-semibold text-gray-700",
+                              "min-w-0 flex-1 truncate font-semibold text-gray-700",
                               item.style || "",
                             )}
+                            title={item.name}
                           >
                             {item.name}
                           </span>

@@ -11,6 +11,7 @@ import (
 
 	"gin-template/common"
 	"gin-template/model"
+	sellingcontroller "gin-template/modules/selling/controller"
 	sellingmodel "gin-template/modules/selling/model"
 	"gin-template/repository"
 
@@ -82,7 +83,13 @@ func (pc *PaymentXenditController) XenditWebhook(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"status": "ok", "source": "lms_payment", "payment_status": payload.Status})
 			return
 		}
-		if handleStorePaymentWebhook(c, payload.ExternalID, payload.Status) {
+		handled, err := handleStorePaymentWebhook(c, payload.ExternalID, payload.Status)
+		if err != nil {
+			log.Error("Failed to synchronize paid store order", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{"status": "error", "message": "store order synchronization failed"})
+			return
+		}
+		if handled {
 			c.JSON(http.StatusOK, gin.H{"status": "ok", "source": "store_order", "payment_status": payload.Status})
 			return
 		}
@@ -97,33 +104,33 @@ func (pc *PaymentXenditController) XenditWebhook(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ignored", "message": "Not an LMS payment"})
 }
 
-func handleStorePaymentWebhook(c *gin.Context, orderID, status string) bool {
+func handleStorePaymentWebhook(c *gin.Context, orderID, status string) (bool, error) {
 	db := model.GetDB(c).Set("skip_tenant_scope", true)
 	var order sellingmodel.StoreOrder
 	if err := db.Where("id = ? AND payment_provider = ?", orderID, "xendit").First(&order).Error; err != nil {
-		return false
+		return false, nil
 	}
 
 	switch strings.ToUpper(strings.TrimSpace(status)) {
 	case "PAID", "SETTLED", "SUCCEEDED":
-		if strings.EqualFold(order.PaymentStatus, "PAID") {
-			return true
-		}
 		now := time.Now()
-		db.Model(&order).Updates(map[string]interface{}{
-			"status":         "Diproses",
-			"payment_status": "PAID",
-			"paid_at":        &now,
-		})
+		if order.PaidAt != nil {
+			now = *order.PaidAt
+		}
+		if err := sellingcontroller.MarkStoreOrderPaid(db, &order, now); err != nil {
+			return true, err
+		}
 	case "EXPIRED", "FAILED", "VOIDED":
-		db.Model(&order).Updates(map[string]interface{}{
+		if err := db.Model(&order).Updates(map[string]interface{}{
 			"status":         "Menunggu Pembayaran",
 			"payment_status": "EXPIRED",
-		})
+		}).Error; err != nil {
+			return true, err
+		}
 	default:
 		// PENDING and unknown intermediary statuses are safe to acknowledge.
 	}
-	return true
+	return true, nil
 }
 
 func handleLMSPaymentWebhook(c *gin.Context, externalID string, status string) bool {
