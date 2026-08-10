@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import {
   posApi,
   type POSCartItem,
@@ -290,15 +291,15 @@ export default function PointOfSalePage() {
                 />
               </div>
               <div className="relative min-w-52">
-                <select
+                <ERPSelect
                   value={group}
                   onChange={(e) => setGroup(e.target.value)}
                   className="h-10 w-full appearance-none rounded-lg border-0 bg-slate-100 px-3 pr-8 text-sm outline-none"
                 >
                   {groups.map((name) => (
-                    <option key={name}>{name}</option>
+                    <ERPSelectOption key={name}>{name}</ERPSelectOption>
                   ))}
-                </select>
+                </ERPSelect>
                 <ChevronDown className="pointer-events-none absolute right-3 top-3 size-4 text-slate-400" />
               </div>
             </div>
@@ -510,16 +511,16 @@ export default function PointOfSalePage() {
             </div>
             <label className="text-sm font-medium">
               Mode of Payment
-              <select
+              <ERPSelect
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
                 className="mt-2 h-11 w-full rounded-lg border bg-white px-3"
               >
-                <option>Cash</option>
-                <option>QRIS</option>
-                <option>Bank Transfer</option>
-                <option>Credit Card</option>
-              </select>
+                <ERPSelectOption>Cash</ERPSelectOption>
+                <ERPSelectOption>QRIS</ERPSelectOption>
+                <ERPSelectOption>Bank Transfer</ERPSelectOption>
+                <ERPSelectOption>Credit Card</ERPSelectOption>
+              </ERPSelect>
             </label>
             <Button
               className="mt-6 h-11 w-full"

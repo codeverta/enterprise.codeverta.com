@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog"; // Pastikan path import shadcn dialog sesuai
 import { cn } from "@/lib/utils";
 import {
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
   scheduleApi,
   type ScheduleItem,
   type ScheduleItemPayload,
@@ -343,17 +344,17 @@ export default function ScheduleItemForm({
               <>
                 <div className="space-y-2">
                   <Label>Resource</Label>
-                  <select
+                  <ERPSelect
                     value={form.resource_type}
                     onChange={(e) => update("resource_type", e.target.value)}
                     className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm"
                   >
-                    <option value="">Tanpa link</option>
-                    <option value="course">Course</option>
-                    <option value="module">Module</option>
-                    <option value="lesson">Lesson</option>
-                    <option value="quiz">Quiz</option>
-                  </select>
+                    <ERPSelectOption value="">Tanpa link</ERPSelectOption>
+                    <ERPSelectOption value="course">Course</ERPSelectOption>
+                    <ERPSelectOption value="module">Module</ERPSelectOption>
+                    <ERPSelectOption value="lesson">Lesson</ERPSelectOption>
+                    <ERPSelectOption value="quiz">Quiz</ERPSelectOption>
+                  </ERPSelect>
                 </div>
                 <div className="space-y-2">
                   <Label>Pilih Resource</Label>

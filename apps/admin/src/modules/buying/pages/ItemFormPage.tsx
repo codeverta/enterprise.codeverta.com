@@ -19,6 +19,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getStorageUrl } from "@/lib/utils";
 import { buyingApi, type Item, type MasterOptions } from "../api";
 import { Check, Combo, Field, Section } from "../components/MasterUI";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 type Tab =
   | "details"
   | "inventory"
@@ -533,16 +534,16 @@ export default function ItemFormPage(
               <Section title="Inventory Valuation">
                 <div className="grid gap-5 md:grid-cols-2">
                   <Field label="Valuation Method" name="valuation_method">
-                    <select
+                    <ERPSelect
                       className="h-9 w-full rounded-md border bg-transparent px-3"
                       value={row.valuation_method}
                       onChange={(e) =>
                         update("valuation_method", e.target.value)}
                     >
-                      <option>FIFO</option>
-                      <option>Moving Average</option>
-                      <option>LIFO</option>
-                    </select>
+                      <ERPSelectOption>FIFO</ERPSelectOption>
+                      <ERPSelectOption>Moving Average</ERPSelectOption>
+                      <ERPSelectOption>LIFO</ERPSelectOption>
+                    </ERPSelect>
                   </Field>
                   <Field label="Valuation Rate" name="valuation_rate">
                     <NumberInput
@@ -571,16 +572,16 @@ export default function ItemFormPage(
                     label="Default Material Request Type"
                     name="default_material_request_type"
                   >
-                    <select
+                    <ERPSelect
                       className="h-9 w-full rounded-md border bg-transparent px-3"
                       value={row.default_material_request_type}
                       onChange={(e) =>
                         update("default_material_request_type", e.target.value)}
                     >
-                      <option>Purchase</option>
-                      <option>Material Transfer</option>
-                      <option>Manufacture</option>
-                    </select>
+                      <ERPSelectOption>Purchase</ERPSelectOption>
+                      <ERPSelectOption>Material Transfer</ERPSelectOption>
+                      <ERPSelectOption>Manufacture</ERPSelectOption>
+                    </ERPSelect>
                   </Field>
                   <Field
                     label="Warranty Period (in days)"

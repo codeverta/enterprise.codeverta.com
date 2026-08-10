@@ -45,6 +45,7 @@ import { Textarea } from "@/components/ui/textarea";
 import CategoryPanel from "./CategoryPanel";
 import StatCard from "./StatCard";
 import CourseFormDialog from "./CourseFormDialog";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 /* ─── constants ─────────────────────────────────────────────── */
 
@@ -751,7 +752,7 @@ function StudentCourseList({ user }) {
             {/* Category Filter Dropdown */}
             <div className="flex items-center gap-1.5 text-xs text-[#5B5A72]">
               <span className="font-semibold text-[#1E1B3A]">Kategori:</span>
-              <select
+              <ERPSelect
                 value={categoryFilter}
                 onChange={(e) => {
                   setCategoryFilter(e.target.value);
@@ -759,58 +760,58 @@ function StudentCourseList({ user }) {
                 }}
                 className="h-8 rounded-lg border border-[#E7E7F5] bg-[#FAFAFE] px-2.5 py-1 text-xs font-medium text-[#1E1B3A] focus:outline-none focus:ring-1 focus:ring-[#5B5FEF]"
               >
-                <option value="ALL">Semua Kategori</option>
+                <ERPSelectOption value="ALL">Semua Kategori</ERPSelectOption>
                 {(Array.isArray(categories) ? categories : []).map((cat: any) => (
-                  <option key={cat.id} value={cat.id}>
+                  <ERPSelectOption key={cat.id} value={cat.id}>
                     {cat.name}
-                  </option>
+                  </ERPSelectOption>
                 ))}
-              </select>
+              </ERPSelect>
             </div>
 
             {/* Level Filter Dropdown */}
             <div className="flex items-center gap-1.5 text-xs text-[#5B5A72]">
               <span className="font-semibold text-[#1E1B3A]">Jenjang:</span>
-              <select
+              <ERPSelect
                 value={levelFilter}
                 onChange={(e) => setLevelFilter(e.target.value)}
                 className="h-8 rounded-lg border border-[#E7E7F5] bg-[#FAFAFE] px-2.5 py-1 text-xs font-medium text-[#1E1B3A] focus:outline-none focus:ring-1 focus:ring-[#5B5FEF]"
               >
-                <option value="ALL">Semua Jenjang</option>
-                <option value="Early Years">Early Years (PAUD/TK)</option>
-                <option value="SD / Elementary">SD / Elementary</option>
-                <option value="SMP / Middle School">SMP / Middle School</option>
-                <option value="SMA / High School">SMA / High School</option>
-              </select>
+                <ERPSelectOption value="ALL">Semua Jenjang</ERPSelectOption>
+                <ERPSelectOption value="Early Years">Early Years (PAUD/TK)</ERPSelectOption>
+                <ERPSelectOption value="SD / Elementary">SD / Elementary</ERPSelectOption>
+                <ERPSelectOption value="SMP / Middle School">SMP / Middle School</ERPSelectOption>
+                <ERPSelectOption value="SMA / High School">SMA / High School</ERPSelectOption>
+              </ERPSelect>
             </div>
 
             {/* Access Filter Dropdown */}
             <div className="flex items-center gap-1.5 text-xs text-[#5B5A72]">
               <span className="font-semibold text-[#1E1B3A]">Akses:</span>
-              <select
+              <ERPSelect
                 value={accessFilter}
                 onChange={(e) => setAccessFilter(e.target.value)}
                 className="h-8 rounded-lg border border-[#E7E7F5] bg-[#FAFAFE] px-2.5 py-1 text-xs font-medium text-[#1E1B3A] focus:outline-none focus:ring-1 focus:ring-[#5B5FEF]"
               >
-                <option value="ALL">Semua Akses</option>
-                <option value="unlocked">Terbuka / Dapat Diakses</option>
-                <option value="locked">Tergembok / Terkunci</option>
-              </select>
+                <ERPSelectOption value="ALL">Semua Akses</ERPSelectOption>
+                <ERPSelectOption value="unlocked">Terbuka / Dapat Diakses</ERPSelectOption>
+                <ERPSelectOption value="locked">Tergembok / Terkunci</ERPSelectOption>
+              </ERPSelect>
             </div>
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-1.5 text-xs text-[#5B5A72] ml-auto">
               <span className="font-semibold text-[#1E1B3A]">Urutkan:</span>
-              <select
+              <ERPSelect
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="h-8 rounded-lg border border-[#E7E7F5] bg-[#FAFAFE] px-2.5 py-1 text-xs font-medium text-[#1E1B3A] focus:outline-none focus:ring-1 focus:ring-[#5B5FEF]"
               >
-                <option value="newest">Terbaru</option>
-                <option value="oldest">Terlama</option>
-                <option value="name_asc">Nama (A - Z)</option>
-                <option value="name_desc">Nama (Z - A)</option>
-              </select>
+                <ERPSelectOption value="newest">Terbaru</ERPSelectOption>
+                <ERPSelectOption value="oldest">Terlama</ERPSelectOption>
+                <ERPSelectOption value="name_asc">Nama (A - Z)</ERPSelectOption>
+                <ERPSelectOption value="name_desc">Nama (Z - A)</ERPSelectOption>
+              </ERPSelect>
             </div>
           </div>
         </div>

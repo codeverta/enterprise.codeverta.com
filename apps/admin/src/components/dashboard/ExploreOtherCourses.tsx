@@ -16,6 +16,7 @@ import CourseCard from "./CourseCard";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
   Select,
   SelectContent,
   SelectItem,
@@ -206,16 +207,16 @@ const ExploreOtherCourses = ({
 
           <div className="flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium shadow-sm dark:bg-slate-950">
             <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-            <select
+            <ERPSelect
               value={order}
               onChange={(e) => setOrder(e.target.value)}
               className="bg-transparent font-semibold text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
             >
-              <option value="newest">Terbaru</option>
-              <option value="popular">Terpopuler</option>
-              <option value="price_asc">Harga Terendah</option>
-              <option value="price_desc">Harga Tertinggi</option>
-            </select>
+              <ERPSelectOption value="newest">Terbaru</ERPSelectOption>
+              <ERPSelectOption value="popular">Terpopuler</ERPSelectOption>
+              <ERPSelectOption value="price_asc">Harga Terendah</ERPSelectOption>
+              <ERPSelectOption value="price_desc">Harga Tertinggi</ERPSelectOption>
+            </ERPSelect>
           </div>
 
           {(search ||

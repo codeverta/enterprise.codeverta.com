@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import {
   loyaltyApi,
   type CollectionRule,
@@ -95,7 +96,7 @@ function Combo({
       />
       <datalist id={id}>
         {values.map((option) => (
-          <option key={option} value={option} />
+          <ERPSelectOption key={option} value={option} />
         ))}
       </datalist>
     </>
@@ -298,16 +299,16 @@ export default function LoyaltyProgramFormPage() {
             </Field>
 
             <Field label="Loyalty Program Type" name="loyalty_program_type">
-              <select
+              <ERPSelect
                 className="flex h-9 w-full rounded-md border border-slate-200 bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-600 dark:border-slate-800 dark:text-slate-100"
                 value={program.loyalty_program_type}
                 onChange={(e) =>
                   update("loyalty_program_type", e.target.value as LoyaltyProgramType)
                 }
               >
-                <option value="Single Tier Program">Single Tier Program</option>
-                <option value="Multiple Tier Program">Multiple Tier Program</option>
-              </select>
+                <ERPSelectOption value="Single Tier Program">Single Tier Program</ERPSelectOption>
+                <ERPSelectOption value="Multiple Tier Program">Multiple Tier Program</ERPSelectOption>
+              </ERPSelect>
             </Field>
 
             <Field label="From Date" name="from_date">

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ScheduleItem, ScheduleItemPayload } from "@/lib/schedule-api";
 import { useLanguage } from "@/context/LanguageContext";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 export type ScheduleView = "month" | "week" | "day" | "list";
 
@@ -385,9 +386,9 @@ function PrintPreviewModal({
               value={printView}
               onChange={(v) => setPrintView(v as PrintView)}
             >
-              <option value="week">Week</option>
-              <option value="day">Day</option>
-              <option value="month">Month</option>
+              <ERPSelectOption value="week">Week</ERPSelectOption>
+              <ERPSelectOption value="day">Day</ERPSelectOption>
+              <ERPSelectOption value="month">Month</ERPSelectOption>
             </Select>
           </Field>
 
@@ -396,9 +397,9 @@ function PrintPreviewModal({
               value={fontSize}
               onChange={(v) => setFontSize(v as PrintFontSize)}
             >
-              <option value="small">Small</option>
-              <option value="normal">Normal</option>
-              <option value="large">Large</option>
+              <ERPSelectOption value="small">Small</ERPSelectOption>
+              <ERPSelectOption value="normal">Normal</ERPSelectOption>
+              <ERPSelectOption value="large">Large</ERPSelectOption>
             </Select>
           </Field>
 
@@ -407,8 +408,8 @@ function PrintPreviewModal({
               value={orientation}
               onChange={(v) => setOrientation(v as PrintOrientation)}
             >
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
+              <ERPSelectOption value="portrait">Portrait</ERPSelectOption>
+              <ERPSelectOption value="landscape">Landscape</ERPSelectOption>
             </Select>
           </Field>
 
@@ -417,9 +418,9 @@ function PrintPreviewModal({
               value={colorStyle}
               onChange={(v) => setColorStyle(v as PrintColorStyle)}
             >
-              <option value="outline">Outline</option>
-              <option value="color">Color</option>
-              <option value="bw">Black & white</option>
+              <ERPSelectOption value="outline">Outline</ERPSelectOption>
+              <ERPSelectOption value="color">Color</ERPSelectOption>
+              <ERPSelectOption value="bw">Black & white</ERPSelectOption>
             </Select>
           </Field>
 
@@ -500,7 +501,7 @@ function Select({
   children: React.ReactNode;
 }) {
   return (
-    <select
+    <ERPSelect
       value={value}
       onChange={(e) => onChange(e.target.value)}
       style={{
@@ -519,7 +520,7 @@ function Select({
       }}
     >
       {children}
-    </select>
+    </ERPSelect>
   );
 }
 

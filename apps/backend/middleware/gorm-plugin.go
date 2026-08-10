@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"fmt"
+	"gin-template/common"
+	"gin-template/model"
 
 	"gorm.io/gorm"
 )
@@ -21,6 +23,10 @@ func RegisterTenantPlugin(db *gorm.DB) {
 		} else if d.Statement.Context != nil {
 			if ctxVal := d.Statement.Context.Value("tenant_id"); ctxVal != nil {
 				tenantID = ctxVal
+			} else if ctxTenant := d.Statement.Context.Value(common.CtxTenantKey); ctxTenant != nil {
+				if tObj, ok := ctxTenant.(model.Tenant); ok {
+					tenantID = tObj.ID.String()
+				}
 			}
 		}
 

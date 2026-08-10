@@ -17,12 +17,22 @@ func NewOrganizationController(db *gorm.DB) *OrganizationController {
 	return &OrganizationController{DB: db}
 }
 
+func (oc *OrganizationController) getDB(c *gin.Context) *gorm.DB {
+	if dbVal, exists := c.Get("db"); exists {
+		if db, ok := dbVal.(*gorm.DB); ok {
+			return db
+		}
+	}
+	return oc.DB.WithContext(c.Request.Context())
+}
+
 // Seed trigger endpoint
 func (oc *OrganizationController) Seed(c *gin.Context) {
 	tenant, _ := c.Get(common.CtxTenantKey)
 	tenantObj, _ := tenant.(model.Tenant)
+	db := oc.getDB(c)
 
-	if err := model.SeedOrganizationData(oc.DB, tenantObj.ID); err != nil {
+	if err := model.SeedOrganizationData(db, tenantObj.ID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -33,8 +43,9 @@ func (oc *OrganizationController) Seed(c *gin.Context) {
 // ========== COMPANY HANDLERS ==========
 
 func (oc *OrganizationController) ListCompanies(c *gin.Context) {
+	db := oc.getDB(c)
 	var companies []model.Company
-	if err := oc.DB.Order("created_at desc").Find(&companies).Error; err != nil {
+	if err := db.Order("created_at desc").Find(&companies).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -42,12 +53,13 @@ func (oc *OrganizationController) ListCompanies(c *gin.Context) {
 }
 
 func (oc *OrganizationController) CreateCompany(c *gin.Context) {
+	db := oc.getDB(c)
 	var req model.Company
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := oc.DB.Create(&req).Error; err != nil {
+	if err := db.Create(&req).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -55,9 +67,10 @@ func (oc *OrganizationController) CreateCompany(c *gin.Context) {
 }
 
 func (oc *OrganizationController) GetCompany(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var comp model.Company
-	if err := oc.DB.First(&comp, "id = ?", id).Error; err != nil {
+	if err := db.First(&comp, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Company not found"})
 		return
 	}
@@ -65,9 +78,10 @@ func (oc *OrganizationController) GetCompany(c *gin.Context) {
 }
 
 func (oc *OrganizationController) UpdateCompany(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var comp model.Company
-	if err := oc.DB.First(&comp, "id = ?", id).Error; err != nil {
+	if err := db.First(&comp, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Company not found"})
 		return
 	}
@@ -75,7 +89,7 @@ func (oc *OrganizationController) UpdateCompany(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := oc.DB.Save(&comp).Error; err != nil {
+	if err := db.Save(&comp).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -83,8 +97,9 @@ func (oc *OrganizationController) UpdateCompany(c *gin.Context) {
 }
 
 func (oc *OrganizationController) DeleteCompany(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
-	if err := oc.DB.Delete(&model.Company{}, "id = ?", id).Error; err != nil {
+	if err := db.Delete(&model.Company{}, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -94,8 +109,9 @@ func (oc *OrganizationController) DeleteCompany(c *gin.Context) {
 // ========== BRANCH HANDLERS ==========
 
 func (oc *OrganizationController) ListBranches(c *gin.Context) {
+	db := oc.getDB(c)
 	var branches []model.Branch
-	query := oc.DB.Preload("Company")
+	query := db.Preload("Company")
 	if companyID := c.Query("company_id"); companyID != "" {
 		query = query.Where("company_id = ?", companyID)
 	}
@@ -107,12 +123,13 @@ func (oc *OrganizationController) ListBranches(c *gin.Context) {
 }
 
 func (oc *OrganizationController) CreateBranch(c *gin.Context) {
+	db := oc.getDB(c)
 	var req model.Branch
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := oc.DB.Create(&req).Error; err != nil {
+	if err := db.Create(&req).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -120,9 +137,10 @@ func (oc *OrganizationController) CreateBranch(c *gin.Context) {
 }
 
 func (oc *OrganizationController) GetBranch(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var branch model.Branch
-	if err := oc.DB.Preload("Company").First(&branch, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Company").First(&branch, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Branch not found"})
 		return
 	}
@@ -130,9 +148,10 @@ func (oc *OrganizationController) GetBranch(c *gin.Context) {
 }
 
 func (oc *OrganizationController) UpdateBranch(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var branch model.Branch
-	if err := oc.DB.First(&branch, "id = ?", id).Error; err != nil {
+	if err := db.First(&branch, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Branch not found"})
 		return
 	}
@@ -140,7 +159,7 @@ func (oc *OrganizationController) UpdateBranch(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := oc.DB.Save(&branch).Error; err != nil {
+	if err := db.Save(&branch).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -148,8 +167,9 @@ func (oc *OrganizationController) UpdateBranch(c *gin.Context) {
 }
 
 func (oc *OrganizationController) DeleteBranch(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
-	if err := oc.DB.Delete(&model.Branch{}, "id = ?", id).Error; err != nil {
+	if err := db.Delete(&model.Branch{}, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -159,8 +179,9 @@ func (oc *OrganizationController) DeleteBranch(c *gin.Context) {
 // ========== DEPARTMENT HANDLERS ==========
 
 func (oc *OrganizationController) ListDepartments(c *gin.Context) {
+	db := oc.getDB(c)
 	var depts []model.Department
-	query := oc.DB.Preload("Company").Preload("Branch").Preload("ParentDepartment")
+	query := db.Preload("Company").Preload("Branch").Preload("ParentDepartment")
 
 	if companyID := c.Query("company_id"); companyID != "" {
 		query = query.Where("company_id = ?", companyID)
@@ -174,12 +195,13 @@ func (oc *OrganizationController) ListDepartments(c *gin.Context) {
 }
 
 func (oc *OrganizationController) CreateDepartment(c *gin.Context) {
+	db := oc.getDB(c)
 	var req model.Department
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := oc.DB.Create(&req).Error; err != nil {
+	if err := db.Create(&req).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -187,9 +209,10 @@ func (oc *OrganizationController) CreateDepartment(c *gin.Context) {
 }
 
 func (oc *OrganizationController) GetDepartment(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var dept model.Department
-	if err := oc.DB.Preload("Company").Preload("Branch").Preload("ParentDepartment").First(&dept, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Company").Preload("Branch").Preload("ParentDepartment").First(&dept, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Department not found"})
 		return
 	}
@@ -197,9 +220,10 @@ func (oc *OrganizationController) GetDepartment(c *gin.Context) {
 }
 
 func (oc *OrganizationController) UpdateDepartment(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var dept model.Department
-	if err := oc.DB.First(&dept, "id = ?", id).Error; err != nil {
+	if err := db.First(&dept, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Department not found"})
 		return
 	}
@@ -207,7 +231,7 @@ func (oc *OrganizationController) UpdateDepartment(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := oc.DB.Save(&dept).Error; err != nil {
+	if err := db.Save(&dept).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -215,8 +239,9 @@ func (oc *OrganizationController) UpdateDepartment(c *gin.Context) {
 }
 
 func (oc *OrganizationController) DeleteDepartment(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
-	if err := oc.DB.Delete(&model.Department{}, "id = ?", id).Error; err != nil {
+	if err := db.Delete(&model.Department{}, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -226,8 +251,9 @@ func (oc *OrganizationController) DeleteDepartment(c *gin.Context) {
 // ========== LETTER HEAD HANDLERS ==========
 
 func (oc *OrganizationController) ListLetterHeads(c *gin.Context) {
+	db := oc.getDB(c)
 	var letterHeads []model.LetterHead
-	query := oc.DB.Preload("Company")
+	query := db.Preload("Company")
 	if companyID := c.Query("company_id"); companyID != "" {
 		query = query.Where("company_id = ?", companyID)
 	}
@@ -239,15 +265,16 @@ func (oc *OrganizationController) ListLetterHeads(c *gin.Context) {
 }
 
 func (oc *OrganizationController) CreateLetterHead(c *gin.Context) {
+	db := oc.getDB(c)
 	var req model.LetterHead
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	if req.IsDefault && req.CompanyID != nil {
-		oc.DB.Model(&model.LetterHead{}).Where("company_id = ?", req.CompanyID).Update("is_default", false)
+		db.Model(&model.LetterHead{}).Where("company_id = ?", req.CompanyID).Update("is_default", false)
 	}
-	if err := oc.DB.Create(&req).Error; err != nil {
+	if err := db.Create(&req).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -255,9 +282,10 @@ func (oc *OrganizationController) CreateLetterHead(c *gin.Context) {
 }
 
 func (oc *OrganizationController) GetLetterHead(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var lh model.LetterHead
-	if err := oc.DB.Preload("Company").First(&lh, "id = ?", id).Error; err != nil {
+	if err := db.Preload("Company").First(&lh, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "LetterHead not found"})
 		return
 	}
@@ -265,9 +293,10 @@ func (oc *OrganizationController) GetLetterHead(c *gin.Context) {
 }
 
 func (oc *OrganizationController) UpdateLetterHead(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
 	var lh model.LetterHead
-	if err := oc.DB.First(&lh, "id = ?", id).Error; err != nil {
+	if err := db.First(&lh, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "LetterHead not found"})
 		return
 	}
@@ -276,9 +305,9 @@ func (oc *OrganizationController) UpdateLetterHead(c *gin.Context) {
 		return
 	}
 	if lh.IsDefault && lh.CompanyID != nil {
-		oc.DB.Model(&model.LetterHead{}).Where("company_id = ? AND id != ?", lh.CompanyID, lh.ID).Update("is_default", false)
+		db.Model(&model.LetterHead{}).Where("company_id = ? AND id != ?", lh.CompanyID, lh.ID).Update("is_default", false)
 	}
-	if err := oc.DB.Save(&lh).Error; err != nil {
+	if err := db.Save(&lh).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -286,8 +315,9 @@ func (oc *OrganizationController) UpdateLetterHead(c *gin.Context) {
 }
 
 func (oc *OrganizationController) DeleteLetterHead(c *gin.Context) {
+	db := oc.getDB(c)
 	id := c.Param("id")
-	if err := oc.DB.Delete(&model.LetterHead{}, "id = ?", id).Error; err != nil {
+	if err := db.Delete(&model.LetterHead{}, "id = ?", id).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

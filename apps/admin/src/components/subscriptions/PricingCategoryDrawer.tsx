@@ -71,6 +71,7 @@ import { toast } from "sonner";
 import dayjs from "dayjs";
 import { CHECKOUT_TYPE_OPTIONS, PricingCategory, PricingPlan } from "./types";
 import StatusBadge from "./StatusBadge";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 const fmt = (amount: number, currency = "IDR") =>
   new Intl.NumberFormat("id-ID", {
@@ -325,7 +326,7 @@ function PricingCategoryDrawer({
 
               <div className="space-y-1.5">
                 <Label>Checkout Type</Label>
-                <select
+                <ERPSelect
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={form.checkout_type || "student"}
                   onChange={(e) =>
@@ -333,11 +334,11 @@ function PricingCategoryDrawer({
                   }
                 >
                   {CHECKOUT_TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
+                    <ERPSelectOption key={option.value} value={option.value}>
                       {option.label}
-                    </option>
+                    </ERPSelectOption>
                   ))}
-                </select>
+                </ERPSelect>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

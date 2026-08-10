@@ -36,6 +36,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { renderBody } from "../../../lib/utils";
 import { tableComponents } from "@/components/course-editor/MarkdownView";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 // Registrasikan plugin Day.js
 dayjs.extend(relativeTime);
@@ -1135,7 +1136,7 @@ function ChatPage({ setIsSidebarOpen }) {
               <label className="block text-[11px] font-medium text-slate-500 mb-1">
                 {t("chat.chat_with")}
               </label>
-              <select
+              <ERPSelect
                 value={selectedChildId}
                 onChange={(e) => {
                   setSelectedChildId(e.target.value);
@@ -1145,14 +1146,14 @@ function ChatPage({ setIsSidebarOpen }) {
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-800 focus:border-blue-500 focus:outline-none shadow-sm cursor-pointer"
               >
                 {parentChildren.map((child) => (
-                  <option key={child.id} value={child.id}>
+                  <ERPSelectOption key={child.id} value={child.id}>
                     {child.display_name ||
                       child.username ||
                       child.email ||
                       "Anak"}
-                  </option>
+                  </ERPSelectOption>
                 ))}
-              </select>
+              </ERPSelect>
             </div>
           )}
 
@@ -1162,7 +1163,7 @@ function ChatPage({ setIsSidebarOpen }) {
               Mentor tujuan
             </label>
             <div className="flex gap-2">
-              <select
+              <ERPSelect
                 value={selectedMentorId}
                 disabled={mentorsLoading || mentors.length === 0}
                 onChange={(event) => {
@@ -1183,17 +1184,17 @@ function ChatPage({ setIsSidebarOpen }) {
                 className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {mentorsLoading ? (
-                  <option value="">Memuat mentor...</option>
+                  <ERPSelectOption value="">Memuat mentor...</ERPSelectOption>
                 ) : mentors.length === 0 ? (
-                  <option value="">Belum ada mentor tersedia</option>
+                  <ERPSelectOption value="">Belum ada mentor tersedia</ERPSelectOption>
                 ) : (
                   mentors.map((mentor) => (
-                    <option key={mentor.id} value={mentor.id}>
+                    <ERPSelectOption key={mentor.id} value={mentor.id}>
                       {mentor.display_name || mentor.username || "Mentor"}
-                    </option>
+                    </ERPSelectOption>
                   ))
                 )}
-              </select>
+              </ERPSelect>
               <Button
                 type="button"
                 variant="outline"

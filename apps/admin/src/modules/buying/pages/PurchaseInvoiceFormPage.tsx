@@ -9,9 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import {
-  buyingApi,
-  dateForApi,
+buyingApi,
+dateForApi,
   dateForInput,
   type PurchaseInvoice,
   type PurchaseInvoiceItem,
@@ -240,7 +241,7 @@ function Combo({
       />
       <datalist id={id}>
         {values.map((option) => (
-          <option key={option} value={option} />
+          <ERPSelectOption key={option} value={option} />
         ))}
       </datalist>
     </>
@@ -795,7 +796,7 @@ export default function PurchaseInvoiceFormPage() {
                             <tr key={index} className="border-t">
                               <td className="p-2 text-center">{index + 1}</td>
                               <td className="p-2">
-                                <select
+                                <ERPSelect
                                   className="h-9 rounded-md border bg-transparent px-2"
                                   value={tax.add_deduct}
                                   onChange={(e) =>
@@ -804,12 +805,12 @@ export default function PurchaseInvoiceFormPage() {
                                     })
                                   }
                                 >
-                                  <option value="add">Add</option>
-                                  <option value="deduct">Deduct</option>
-                                </select>
+                                  <ERPSelectOption value="add">Add</ERPSelectOption>
+                                  <ERPSelectOption value="deduct">Deduct</ERPSelectOption>
+                                </ERPSelect>
                               </td>
                               <td className="p-2">
-                                <select
+                                <ERPSelect
                                   className="h-9 rounded-md border bg-transparent px-2"
                                   value={tax.charge_type}
                                   onChange={(e) =>
@@ -818,10 +819,10 @@ export default function PurchaseInvoiceFormPage() {
                                     })
                                   }
                                 >
-                                  <option value="actual">Actual</option>
-                                  <option value="on_net_total">On Net Total</option>
-                                  <option value="on_previous_row_total">On Previous Row Total</option>
-                                </select>
+                                  <ERPSelectOption value="actual">Actual</ERPSelectOption>
+                                  <ERPSelectOption value="on_net_total">On Net Total</ERPSelectOption>
+                                  <ERPSelectOption value="on_previous_row_total">On Previous Row Total</ERPSelectOption>
+                                </ERPSelect>
                               </td>
                               <td className="p-2">
                                 <Input
@@ -946,7 +947,7 @@ export default function PurchaseInvoiceFormPage() {
                   <h3 className="text-sm font-semibold">Additional Discount</h3>
                   <div className="grid gap-5 md:grid-cols-3">
                     <Field label="Apply Additional Discount On" name="apply_discount_on">
-                      <select
+                      <ERPSelect
                         className="h-9 w-full rounded-md border bg-transparent px-3"
                         value={invoice.apply_discount_on}
                         onChange={(e) =>
@@ -956,9 +957,9 @@ export default function PurchaseInvoiceFormPage() {
                           )
                         }
                       >
-                        <option value="grand_total">Grand Total</option>
-                        <option value="net_total">Net Total</option>
-                      </select>
+                        <ERPSelectOption value="grand_total">Grand Total</ERPSelectOption>
+                        <ERPSelectOption value="net_total">Net Total</ERPSelectOption>
+                      </ERPSelect>
                     </Field>
                     <Field label="Additional Discount Percentage" name="additional_discount_percentage">
                       <Input

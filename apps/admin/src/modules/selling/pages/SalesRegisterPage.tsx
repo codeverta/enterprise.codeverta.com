@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { posApi, type POSInvoice } from "../posApi";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 type SaleRow = {
   id: string;
@@ -81,18 +82,18 @@ function SelectFilter({
   return (
     <label className="space-y-1">
       <span className="text-xs font-medium text-slate-500">{label}</span>
-      <select
+      <ERPSelect
         className="h-10 w-full rounded-lg border bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
-        <option value="">All {label}</option>
+        <ERPSelectOption value="">All {label}</ERPSelectOption>
         {values.map((value) => (
-          <option key={value} value={value}>
+          <ERPSelectOption key={value} value={value}>
             {value}
-          </option>
+          </ERPSelectOption>
         ))}
-      </select>
+      </ERPSelect>
     </label>
   );
 }

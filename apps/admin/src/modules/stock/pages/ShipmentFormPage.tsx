@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { stockApi, type Shipment, type ShipmentParcel, type ShipmentDeliveryNote, type StockMasterOptions } from "../api";
 import { toast } from "sonner";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 const emptyShipment = (): Shipment => ({
   status: "Draft",
@@ -212,15 +213,15 @@ export default function ShipmentFormPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Pickup From Type</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.pickup_from_type}
                 onChange={(e) => update("pickup_from_type", e.target.value as any)}
               >
-                <option value="Company">Company</option>
-                <option value="Customer">Customer</option>
-                <option value="Supplier">Supplier</option>
-              </select>
+                <ERPSelectOption value="Company">Company</ERPSelectOption>
+                <ERPSelectOption value="Customer">Customer</ERPSelectOption>
+                <ERPSelectOption value="Supplier">Supplier</ERPSelectOption>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Pickup Company / Sender</label>
@@ -279,15 +280,15 @@ export default function ShipmentFormPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Delivery To Type</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.delivery_to_type}
                 onChange={(e) => update("delivery_to_type", e.target.value as any)}
               >
-                <option value="Customer">Customer</option>
-                <option value="Company">Company</option>
-                <option value="Supplier">Supplier</option>
-              </select>
+                <ERPSelectOption value="Customer">Customer</ERPSelectOption>
+                <ERPSelectOption value="Company">Company</ERPSelectOption>
+                <ERPSelectOption value="Supplier">Supplier</ERPSelectOption>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Delivery Customer / Receiver</label>
@@ -499,14 +500,14 @@ export default function ShipmentFormPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Pallets</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.pallets ? "Yes" : "No"}
                 onChange={(e) => update("pallets", e.target.value === "Yes")}
               >
-                <option value="No">No</option>
-                <option value="Yes">Yes</option>
-              </select>
+                <ERPSelectOption value="No">No</ERPSelectOption>
+                <ERPSelectOption value="Yes">Yes</ERPSelectOption>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Value of Goods (Rp)</label>
@@ -548,39 +549,39 @@ export default function ShipmentFormPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Shipment Type</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.shipment_type}
                 onChange={(e) => update("shipment_type", e.target.value as any)}
               >
-                <option value="Goods">Goods</option>
-                <option value="Documents">Documents</option>
-              </select>
+                <ERPSelectOption value="Goods">Goods</ERPSelectOption>
+                <ERPSelectOption value="Documents">Documents</ERPSelectOption>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Pickup Type</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.pickup_type}
                 onChange={(e) => update("pickup_type", e.target.value as any)}
               >
-                <option value="Pickup">Pickup</option>
-                <option value="Self delivery">Self delivery</option>
-              </select>
+                <ERPSelectOption value="Pickup">Pickup</ERPSelectOption>
+                <ERPSelectOption value="Self delivery">Self delivery</ERPSelectOption>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Incoterm</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.incoterm}
                 onChange={(e) => update("incoterm", e.target.value)}
               >
                 {options.incoterms.map((inc) => (
-                  <option key={inc} value={inc}>
+                  <ERPSelectOption key={inc} value={inc}>
                     {inc}
-                  </option>
+                  </ERPSelectOption>
                 ))}
-              </select>
+              </ERPSelect>
             </div>
           </div>
 
@@ -603,17 +604,17 @@ export default function ShipmentFormPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Service Provider</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.service_provider}
                 onChange={(e) => update("service_provider", e.target.value)}
               >
                 {options.service_providers.map((sp) => (
-                  <option key={sp} value={sp}>
+                  <ERPSelectOption key={sp} value={sp}>
                     {sp}
-                  </option>
+                  </ERPSelectOption>
                 ))}
-              </select>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Shipment ID</label>
@@ -666,17 +667,17 @@ export default function ShipmentFormPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Status</label>
-              <select
+              <ERPSelect
                 className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                 value={row.status}
                 onChange={(e) => update("status", e.target.value as any)}
               >
-                <option value="Draft">Draft</option>
-                <option value="Submitted">Submitted</option>
-                <option value="In Transit">In Transit</option>
-                <option value="Delivered">Delivered</option>
-                <option value="Cancelled">Cancelled</option>
-              </select>
+                <ERPSelectOption value="Draft">Draft</ERPSelectOption>
+                <ERPSelectOption value="Submitted">Submitted</ERPSelectOption>
+                <ERPSelectOption value="In Transit">In Transit</ERPSelectOption>
+                <ERPSelectOption value="Delivered">Delivered</ERPSelectOption>
+                <ERPSelectOption value="Cancelled">Cancelled</ERPSelectOption>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Tracking Status</label>

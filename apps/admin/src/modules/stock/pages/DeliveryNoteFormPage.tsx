@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { stockApi, type DeliveryNote, type DeliveryNoteItem, type DeliveryNoteTax, type DeliveryNoteOptions } from "../api";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 type Tab = "details" | "address" | "terms" | "more";
 type SalesOrderSource = { id: string; customer: string; currency?: string; items?: Array<{ item_code: string; item_name?: string; quantity: number; rate: number; amount: number }> };
@@ -34,7 +35,7 @@ function OptionInput({ value, values, onChange, placeholder = "Begin typing for 
   const listID = `delivery-note-${React.useId().replace(/:/g, "")}`;
   return <>
     <Input list={listID} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
-    <datalist id={listID}>{values.map((option) => <option key={option} value={option} />)}</datalist>
+    <datalist id={listID}>{values.map((option) => <ERPSelectOption key={option} value={option} />)}</datalist>
   </>;
 }
 
@@ -437,17 +438,17 @@ export default function DeliveryNoteFormPage() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Series</label>
-                <select
+                <ERPSelect
                   className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                   value={row.naming_series}
                   onChange={(e) => update("naming_series", e.target.value)}
                 >
                   {options.naming_series.map((ns) => (
-                    <option key={ns} value={ns}>
+                    <ERPSelectOption key={ns} value={ns}>
                       {ns}
-                    </option>
+                    </ERPSelectOption>
                   ))}
-                </select>
+                </ERPSelect>
                 <SystemName>naming_series</SystemName>
               </div>
 
@@ -774,14 +775,14 @@ export default function DeliveryNoteFormPage() {
                 <h3 className="font-semibold text-slate-900 dark:text-white">Additional Discount</h3>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-500">Apply Additional Discount On</label>
-                  <select
+                  <ERPSelect
                     className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
                     value={row.apply_discount_on}
                     onChange={(e) => update("apply_discount_on", e.target.value as any)}
                   >
-                    <option value="grand_total">Grand Total</option>
-                    <option value="net_total">Net Total</option>
-                  </select>
+                    <ERPSelectOption value="grand_total">Grand Total</ERPSelectOption>
+                    <ERPSelectOption value="net_total">Net Total</ERPSelectOption>
+                  </ERPSelect>
                   <SystemName>apply_discount_on</SystemName>
                 </div>
 

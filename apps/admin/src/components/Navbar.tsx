@@ -26,7 +26,7 @@ import { version } from "../../package.json";
 import RightSidebar from "./RightSidebar";
 import NotificationBell from "./dashboard/NotificationBell";
 import { ROLES } from "../lib/constants";
-import { BASE_STORAGE_URL, DEFAULT_APP_LOGO, getStorageUrl } from "../lib/utils";
+import { DEFAULT_APP_LOGO, getStorageUrl } from "../lib/utils";
 import SystemSettings from "./dashboard/SystemSettings";
 import { toast } from "sonner";
 import AppSwitcherMenu from "./AppSwitcherMenu";
@@ -115,16 +115,16 @@ const Navbar = ({
         {/* Left Side: Brand Logo */}
         <div className="flex items-center gap-4 z-10">
           <AppSwitcherMenu onLogout={onLogout} side="bottom" align="start">
-          <button type="button" data-onboarding-href="/" className="flex items-center space-x-2 rounded-xl px-2 py-1.5 text-left outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500">
+          <button type="button" data-onboarding-href="/" className="flex min-w-0 items-center gap-3 rounded-xl px-2 py-1.5 text-left outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500">
             <img
               src={settings?.app_logo ? getStorageUrl(settings.app_logo) : DEFAULT_APP_LOGO}
               alt={settings?.app_name || "Codeverta ERP"}
-              className="h-8 w-8 rounded-lg object-contain"
+              className="size-9 shrink-0 rounded-[10px] object-contain shadow-sm"
             />
-            <span className="font-bold text-lg text-slate-800">
+            <span className="hidden max-w-56 truncate text-sm font-semibold text-slate-800 sm:block">
               {settings?.app_name || "Codeverta Enterprise System"}
             </span>
-            <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">
+            <span className="hidden rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-medium text-slate-600 md:inline">
               v{version}
             </span>
           </button>

@@ -113,6 +113,7 @@ func (m *TenantMiddleware) TenantResolver() gin.HandlerFunc {
 		// Gunakan .Session agar thread-safe. Request context juga harus membawa
 		// tenant karena model hooks dan audit plugin membacanya dari sana.
 		requestContext := context.WithValue(c.Request.Context(), common.CtxTenantKey, tenant)
+		requestContext = context.WithValue(requestContext, "tenant_id", tenantID)
 		c.Request = c.Request.WithContext(requestContext)
 		scopedDB := m.DB.Session(&gorm.Session{}).
 			Set("tenant_id", tenantID).

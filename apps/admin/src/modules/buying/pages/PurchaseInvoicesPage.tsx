@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { buyingApi, dateForInput, type PurchaseInvoice } from "../api";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 const money = (value: number, currency = "IDR") => new Intl.NumberFormat("id-ID", {
   style: "currency", currency, maximumFractionDigits: currency === "IDR" ? 0 : 2,
@@ -40,7 +41,7 @@ export default function PurchaseInvoicesPage() {
     <section className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-950">
       <div className="flex flex-col gap-3 border-b p-4 sm:flex-row">
         <div className="relative flex-1"><Search className="absolute left-3 top-2.5 size-4 text-slate-400" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Cari nomor, supplier, atau invoice supplier..." className="pl-9" /></div>
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 rounded-md border bg-transparent px-3 text-sm"><option value="">Semua status</option><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="cancelled">Cancelled</option></select>
+        <ERPSelect value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 rounded-md border bg-transparent px-3 text-sm"><ERPSelectOption value="">Semua status</ERPSelectOption><ERPSelectOption value="draft">Draft</ERPSelectOption><ERPSelectOption value="submitted">Submitted</ERPSelectOption><ERPSelectOption value="cancelled">Cancelled</ERPSelectOption></ERPSelect>
       </div>
       {loading ? <div className="p-12 text-center text-sm text-slate-500">Memuat Purchase Invoice...</div> : invoices.length === 0 ?
         <div className="flex flex-col items-center px-6 py-16 text-center"><span className="mb-4 flex size-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600"><ReceiptText className="size-7" /></span><h2 className="font-semibold">Belum ada Purchase Invoice</h2><p className="mt-1 text-sm text-slate-500">Buat tagihan supplier pertama untuk memulai pencatatan.</p></div> :

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import api from "@/lib/api";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 type Item = { item_code: string; item_name?: string; delivery_date?: string; quantity: number; rate: number; amount: number };
 type Tax = { charge_type: string; account_head: string; rate: number; net_amount: number; amount: number };
@@ -86,7 +87,7 @@ function Field({ label, name, children }: { label: string; name?: string; childr
 <div className="flex items-center gap-1.5"><Label>{label}</Label><Tooltip><TooltipTrigger asChild><button type="button" className="inline-flex rounded-full text-slate-400 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label={`Info ${label}`}><Info className="size-3.5" /></button></TooltipTrigger><TooltipContent side="top" sideOffset={6} className="max-w-xs"><p>{help}</p>{name && <p className="mt-1 text-[11px] opacity-75"></p>}</TooltipContent></Tooltip></div>{children}</div>; }
 function Combo({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) { const id = useMemo(() => `sales-${Math.random().toString(36).slice(2)}`, []); return <>
 <Input list={id} value={value} onChange={e => onChange(e.target.value)} placeholder="Begin typing for results." />
-<datalist id={id}>{options.map(v => <option key={v} value={v} />)}</datalist>
+<datalist id={id}>{options.map(v => <ERPSelectOption key={v} value={v} />)}</datalist>
 </>; }
 
 export function SalesOrderListPage() { const nav = useNavigate(); const [rows, setRows] = useState<Order[]>([]); const [q, setQ] = useState(""); const load = async () => { try { const response = await api.get<{ data: Order[] }>("/crm/sales-orders", { params: { page_size: 100, q } }); setRows(response.data.data || []); } catch { setRows(Object.values(readCache())); } }; useEffect(() => { load(); }, []); const remove = async (id?: string) => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch { /* cache still makes local CRUD usable when API is unavailable */ } removeCache(id); toast.success("Sales Order dihapus"); load(); }; return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
@@ -224,10 +225,10 @@ export default function SalesOrderFormPage() { const params = useParams(); const
 <Combo value={order.customer} onChange={v => update("customer", v)} options={options} />
 </Field>
 <Field label="Order Type" name="order_type">
-<select className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={order.order_type} onChange={e => update("order_type", e.target.value)}>
-<option>Sales</option>
-<option>Shopping</option>
-</select>
+<ERPSelect className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={order.order_type} onChange={e => update("order_type", e.target.value)}>
+<ERPSelectOption>Sales</ERPSelectOption>
+<ERPSelectOption>Shopping</ERPSelectOption>
+</ERPSelect>
 </Field>
 <Field label="Date" name="transaction_date">
 <Input type="date" value={order.transaction_date} onChange={e => update("transaction_date", e.target.value)} />
@@ -368,10 +369,10 @@ export default function SalesOrderFormPage() { const params = useParams(); const
 <div className="mt-4 space-y-4">
 <div className="grid gap-4 md:grid-cols-3">
 <Field label="Apply Additional Discount On">
-<select className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={order.apply_discount_on} onChange={e => update("apply_discount_on", e.target.value)}>
-<option value="grand_total">Grand Total</option>
-<option value="net_total">Net Total</option>
-</select>
+<ERPSelect className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={order.apply_discount_on} onChange={e => update("apply_discount_on", e.target.value)}>
+<ERPSelectOption value="grand_total">Grand Total</ERPSelectOption>
+<ERPSelectOption value="net_total">Net Total</ERPSelectOption>
+</ERPSelect>
 </Field>
 <Field label="Coupon Code" name="coupon_code">
 <Input value={order.coupon_code} onChange={e => update("coupon_code", e.target.value)} />

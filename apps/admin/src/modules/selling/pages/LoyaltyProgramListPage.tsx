@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loyaltyApi, type LoyaltyProgram } from "../loyaltyApi";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 export default function LoyaltyProgramListPage() {
   const navigate = useNavigate();
@@ -97,15 +98,15 @@ export default function LoyaltyProgramListPage() {
 
         <div className="flex items-center gap-2">
           <Filter className="size-4 text-slate-400" />
-          <select
+          <ERPSelect
             className="h-9 rounded-md border border-slate-200 bg-transparent px-3 text-xs shadow-sm focus:outline-none dark:border-slate-800 dark:text-slate-200"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
           >
-            <option value="all">Semua Tipe Program</option>
-            <option value="Single Tier Program">Single Tier Program</option>
-            <option value="Multiple Tier Program">Multiple Tier Program</option>
-          </select>
+            <ERPSelectOption value="all">Semua Tipe Program</ERPSelectOption>
+            <ERPSelectOption value="Single Tier Program">Single Tier Program</ERPSelectOption>
+            <ERPSelectOption value="Multiple Tier Program">Multiple Tier Program</ERPSelectOption>
+          </ERPSelect>
         </div>
       </div>
 

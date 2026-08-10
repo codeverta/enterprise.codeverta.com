@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import {
   buyingApi,
   dateForApi,
@@ -99,7 +100,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Combo({ value, onChange, values, placeholder = "Begin typing for results." }: { value: string; onChange: (value: string) => void; values: string[]; placeholder?: string }) {
   const listId = useMemo(() => `list-${Math.random().toString(36).slice(2)}`, []);
-  return <><Input list={listId} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} /><datalist id={listId}>{values.map((option) => <option key={option} value={option} />)}</datalist></>;
+  return <><Input list={listId} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} /><datalist id={listId}>{values.map((option) => <ERPSelectOption key={option} value={option} />)}</datalist></>;
 }
 
 export default function PurchaseOrderFormPage() {
@@ -618,7 +619,7 @@ export default function PurchaseOrderFormPage() {
                         <tr key={tax.id || index}>
                           <td className="p-3">{index + 1}</td>
                           <td className="p-2">
-                            <select
+                            <ERPSelect
                               value={tax.charge_type}
                               onChange={(e) =>
                                 updateTax(index, {
@@ -629,12 +630,12 @@ export default function PurchaseOrderFormPage() {
                               className="h-9 rounded-md border bg-transparent px-2"
                               disabled={!editable}
                             >
-                              <option value="on_net_total">On Net Total</option>
-                              <option value="on_previous_row_total">
+                              <ERPSelectOption value="on_net_total">On Net Total</ERPSelectOption>
+                              <ERPSelectOption value="on_previous_row_total">
                                 On Previous Row Total
-                              </option>
-                              <option value="actual">Actual</option>
-                            </select>
+                              </ERPSelectOption>
+                              <ERPSelectOption value="actual">Actual</ERPSelectOption>
+                            </ERPSelect>
                           </td>
                           <td className="p-2">
                             <Input
@@ -770,7 +771,7 @@ export default function PurchaseOrderFormPage() {
                     label="Apply Additional Discount On"
                     name="apply_discount_on"
                   >
-                    <select
+                    <ERPSelect
                       value={order.apply_discount_on}
                       onChange={(e) =>
                         update(
@@ -781,9 +782,9 @@ export default function PurchaseOrderFormPage() {
                       className="h-9 w-full rounded-md border bg-transparent px-3 text-sm"
                       disabled={!editable}
                     >
-                      <option value="grand_total">Grand Total</option>
-                      <option value="net_total">Net Total</option>
-                    </select>
+                      <ERPSelectOption value="grand_total">Grand Total</ERPSelectOption>
+                      <ERPSelectOption value="net_total">Net Total</ERPSelectOption>
+                    </ERPSelect>
                   </Field>
                   <Field
                     label="Additional Discount Percentage"

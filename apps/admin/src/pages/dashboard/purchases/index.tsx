@@ -21,6 +21,7 @@ import api from "@/lib/api";
 import DashboardLayout from "@/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 interface CoursePurchase {
   id: string;
@@ -175,16 +176,16 @@ function PurchasesPage() {
 
           <div className="flex items-center gap-1.5 rounded-lg border bg-white px-3 py-1.5 text-xs font-medium shadow-sm dark:bg-slate-950">
             <ArrowUpDown className="h-3.5 w-3.5 text-slate-400" />
-            <select
+            <ERPSelect
               value={order}
               onChange={(e) => setOrder(e.target.value)}
               className="bg-transparent font-semibold text-slate-700 dark:text-slate-300 outline-none cursor-pointer"
             >
-              <option value="newest">Pembelian Terbaru</option>
-              <option value="oldest">Pembelian Terlama</option>
-              <option value="price_asc">Harga Terendah</option>
-              <option value="price_desc">Harga Tertinggi</option>
-            </select>
+              <ERPSelectOption value="newest">Pembelian Terbaru</ERPSelectOption>
+              <ERPSelectOption value="oldest">Pembelian Terlama</ERPSelectOption>
+              <ERPSelectOption value="price_asc">Harga Terendah</ERPSelectOption>
+              <ERPSelectOption value="price_desc">Harga Tertinggi</ERPSelectOption>
+            </ERPSelect>
           </div>
 
           {(search || selectedCategory || selectedLevel || minPrice || maxPrice) && (
@@ -224,18 +225,18 @@ function PurchasesPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500">Kategori</label>
               <div className="relative">
-                <select
+                <ERPSelect
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-violet-600 cursor-pointer appearance-none"
                 >
-                  <option value="">Semua Kategori</option>
+                  <ERPSelectOption value="">Semua Kategori</ERPSelectOption>
                   {categories.map((cat: any) => (
-                    <option key={cat.id} value={cat.id}>
+                    <ERPSelectOption key={cat.id} value={cat.id}>
                       {cat.name}
-                    </option>
+                    </ERPSelectOption>
                   ))}
-                </select>
+                </ERPSelect>
                 <ChevronDown className="absolute right-3 top-3 h-4 w-4 pointer-events-none text-slate-400" />
               </div>
             </div>
@@ -244,18 +245,18 @@ function PurchasesPage() {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-500">Level</label>
               <div className="relative">
-                <select
+                <ERPSelect
                   value={selectedLevel}
                   onChange={(e) => setSelectedLevel(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 text-sm bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-violet-600 cursor-pointer appearance-none"
                 >
-                  <option value="">Semua Level</option>
+                  <ERPSelectOption value="">Semua Level</ERPSelectOption>
                   {levels.map((lvl) => (
-                    <option key={lvl} value={lvl}>
+                    <ERPSelectOption key={lvl} value={lvl}>
                       {lvl}
-                    </option>
+                    </ERPSelectOption>
                   ))}
-                </select>
+                </ERPSelect>
                 <ChevronDown className="absolute right-3 top-3 h-4 w-4 pointer-events-none text-slate-400" />
               </div>
             </div>

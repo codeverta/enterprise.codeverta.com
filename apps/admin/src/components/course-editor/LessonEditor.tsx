@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import SafeHTMLRenderer from "@/components/SafeHtmlRenderer";
 import { MarkdownView } from "@/components/course-editor/MarkdownView";
 import { RefObject } from "react";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 export interface AssetType {
   value: string;
@@ -391,7 +392,7 @@ export const LessonEditor = ({
                 <Label className="text-[11px] font-semibold text-zinc-600">
                   Tipe
                 </Label>
-                <select
+                <ERPSelect
                   className="h-8 w-full rounded-md border border-zinc-200 bg-white px-2.5 text-xs text-zinc-800 focus:outline-none focus:ring-1 focus:ring-indigo-400"
                   value={assetForm.type}
                   onChange={(e) =>
@@ -405,11 +406,11 @@ export const LessonEditor = ({
                   {assetTypes
                     .filter((t) => canManageCourses || t.value === "youtube")
                     .map((t) => (
-                      <option key={t.value} value={t.value}>
+                      <ERPSelectOption key={t.value} value={t.value}>
                         {t.label}
-                      </option>
+                      </ERPSelectOption>
                     ))}
-                </select>
+                </ERPSelect>
               </div>
 
               <div className="space-y-1">

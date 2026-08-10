@@ -53,6 +53,7 @@ import CourseFormDialog from "./CourseFormDialog";
 import CategoryPanel from "./CategoryPanel";
 import StatCard from "./StatCard";
 import { ROLES } from "../../lib/constants";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 /* ─── constants ─────────────────────────────────────────────── */
 
@@ -1765,7 +1766,7 @@ function AdminCourseList({ user }) {
                                 </p>
                                 <div className="space-y-1">
                                   <Label className="text-xs">Tipe Media</Label>
-                                  <select
+                                  <ERPSelect
                                     className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                                     value={selectedAssetForm.type}
                                     onChange={(e) =>
@@ -1780,11 +1781,11 @@ function AdminCourseList({ user }) {
                                     }
                                   >
                                     {assetTypes.map((t) => (
-                                      <option key={t.value} value={t.value}>
+                                      <ERPSelectOption key={t.value} value={t.value}>
                                         {t.label}
-                                      </option>
+                                      </ERPSelectOption>
                                     ))}
-                                  </select>
+                                  </ERPSelect>
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs">Judul Media</Label>

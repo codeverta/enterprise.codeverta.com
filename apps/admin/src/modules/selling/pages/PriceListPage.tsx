@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 export type PriceList = {
   id?: string;
@@ -414,21 +415,21 @@ export default function PriceListPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Price List</label>
-              <select
+              <ERPSelect
                 className="w-full rounded-md border p-2 text-sm dark:bg-slate-900"
                 value={ipForm.price_list}
                 onChange={(e) => setIpForm({ ...ipForm, price_list: e.target.value })}
               >
                 {priceLists.length > 0 ? (
                   priceLists.map((pl) => (
-                    <option key={pl.id || pl.price_list_name} value={pl.price_list_name}>
+                    <ERPSelectOption key={pl.id || pl.price_list_name} value={pl.price_list_name}>
                       {pl.price_list_name}
-                    </option>
+                    </ERPSelectOption>
                   ))
                 ) : (
-                  <option value="Standard Selling">Standard Selling</option>
+                  <ERPSelectOption value="Standard Selling">Standard Selling</ERPSelectOption>
                 )}
-              </select>
+              </ERPSelect>
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Rate / Harga</label>

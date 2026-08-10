@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { buyingApi, dateForInput, type PurchaseOrder } from "../api";
+import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 
 const money = (value: number, currency = "IDR") => new Intl.NumberFormat("id-ID", {
   style: "currency",
@@ -70,12 +71,12 @@ export default function PurchaseOrdersPage() {
             <Search className="absolute left-3 top-2.5 size-4 text-slate-400" />
             <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nomor, supplier, atau company..." className="pl-9" />
           </div>
-          <select value={status} onChange={(event) => setStatus(event.target.value)} className="h-9 rounded-md border bg-transparent px-3 text-sm">
-            <option value="">Semua status</option>
-            <option value="draft">Draft</option>
-            <option value="submitted">Submitted</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+          <ERPSelect value={status} onChange={(event) => setStatus(event.target.value)} className="h-9 rounded-md border bg-transparent px-3 text-sm">
+            <ERPSelectOption value="">Semua status</ERPSelectOption>
+            <ERPSelectOption value="draft">Draft</ERPSelectOption>
+            <ERPSelectOption value="submitted">Submitted</ERPSelectOption>
+            <ERPSelectOption value="cancelled">Cancelled</ERPSelectOption>
+          </ERPSelect>
         </div>
 
         {loading ? (
