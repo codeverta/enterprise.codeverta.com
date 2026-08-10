@@ -29,7 +29,7 @@ type DeskHeaderProps = {
 
 function BrandMark() {
   return (
-    <Link to="/desk" aria-label="Codeverta ERP home" className="flex items-center gap-0.5">
+    <Link to="/desk" aria-label="Codeverta Enterprise System home" className="flex items-center gap-0.5">
       <span className="h-3 w-2 skew-x-[-24deg] rounded-sm bg-sky-600" />
       <span className="h-4 w-2 skew-x-[24deg] rounded-sm bg-blue-400" />
       <span className="h-2.5 w-2 skew-x-[-24deg] rounded-sm bg-sky-300" />

@@ -2,7 +2,7 @@ import React from 'react'
 
   const PaymentFooter = () => (
     <div className="mt-12 text-center text-xs text-gray-400">
-      &copy;  Codeverta ERP {new Date().getFullYear()}. 
+      &copy; Codeverta Enterprise System {new Date().getFullYear()}.
       {" "} | Custom website by{" "}
             <a
         target="_blank"

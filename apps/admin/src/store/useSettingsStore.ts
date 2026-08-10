@@ -2,6 +2,9 @@
 import { create } from 'zustand';
 import api from '../lib/api';
 
+const DEFAULT_APP_NAME = "Codeverta Enterprise System";
+const LEGACY_DEFAULT_APP_NAME = "Codeverta ERP";
+
 export const useSettingsStore = create((set) => ({
   settings: null,
   isLoading: false,
@@ -30,6 +33,10 @@ export const useSettingsStore = create((set) => ({
       
       const formattedSettings = {
         ...response.data,
+        app_name:
+          response.data.app_name === LEGACY_DEFAULT_APP_NAME
+            ? DEFAULT_APP_NAME
+            : response.data.app_name,
         event_start_time: formatDT(response.data.event_start_time),
       };
       
@@ -41,7 +48,7 @@ export const useSettingsStore = create((set) => ({
       
       return formattedSettings;
     } catch (error) {
-      const fallbackSettings = { app_name: "Codeverta ERP", app_logo: "" };
+      const fallbackSettings = { app_name: DEFAULT_APP_NAME, app_logo: "" };
       set({ settings: fallbackSettings, isLoading: false });
       if (!isPublic) throw error;
       return fallbackSettings;

@@ -26,7 +26,7 @@ import { version } from "../../package.json";
 import RightSidebar from "./RightSidebar";
 import NotificationBell from "./dashboard/NotificationBell";
 import { ROLES } from "../lib/constants";
-import { BASE_STORAGE_URL, getStorageUrl } from "../lib/utils";
+import { BASE_STORAGE_URL, DEFAULT_APP_LOGO, getStorageUrl } from "../lib/utils";
 import SystemSettings from "./dashboard/SystemSettings";
 import { toast } from "sonner";
 import AppSwitcherMenu from "./AppSwitcherMenu";
@@ -116,15 +116,13 @@ const Navbar = ({
         <div className="flex items-center gap-4 z-10">
           <AppSwitcherMenu onLogout={onLogout} side="bottom" align="start">
           <button type="button" data-onboarding-href="/" className="flex items-center space-x-2 rounded-xl px-2 py-1.5 text-left outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-500">
-            {settings?.app_logo && (
-              <img
-                src={getStorageUrl(settings.app_logo)}
-                alt={settings?.app_name || "LMS"}
-                className="h-8 w-auto rounded object-contain max-w-[120px]"
-              />
-            )}
+            <img
+              src={settings?.app_logo ? getStorageUrl(settings.app_logo) : DEFAULT_APP_LOGO}
+              alt={settings?.app_name || "Codeverta ERP"}
+              className="h-8 w-8 rounded-lg object-contain"
+            />
             <span className="font-bold text-lg text-slate-800">
-              {settings?.app_name || "Codeverta ERP"}
+              {settings?.app_name || "Codeverta Enterprise System"}
             </span>
             <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono font-medium">
               v{version}

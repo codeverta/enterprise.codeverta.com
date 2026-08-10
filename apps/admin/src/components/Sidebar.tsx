@@ -47,7 +47,7 @@ import { toast } from "sonner";
 import dayjs from "dayjs";
 import { useSettingsStore } from "../store/useSettingsStore";
 import RightSidebar from "./RightSidebar";
-import { BASE_STORAGE_URL, getStorageUrl } from "@/lib/utils";
+import { BASE_STORAGE_URL, DEFAULT_APP_LOGO, getStorageUrl } from "@/lib/utils";
 import NotificationBell from "./dashboard/NotificationBell";
 import SystemSettings from "./dashboard/SystemSettings";
 import AppSwitcherMenu from "./AppSwitcherMenu";
@@ -263,6 +263,7 @@ const Sidebar = ({
   return (
     <TooltipProvider>
       <Helmet>
+        <title>{settings?.app_name || "Codeverta Enterprise System"}</title>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
 
@@ -304,11 +305,11 @@ const Sidebar = ({
                     className="w-9 h-9 rounded-lg object-cover shadow-sm flex-shrink-0"
                   />
                 ) : (
-                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm flex-shrink-0">
-                    <span className="text-white font-semibold text-base">
-                      {settings.app_name?.charAt(0).toUpperCase() || "M"}
-                    </span>
-                  </div>
+                  <img
+                    src={DEFAULT_APP_LOGO}
+                    alt="Codeverta ERP"
+                    className="w-9 h-9 rounded-[10px] object-contain shadow-sm flex-shrink-0"
+                  />
                 )}
 
                 {isOpen && (

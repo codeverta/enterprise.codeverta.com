@@ -59,6 +59,7 @@
     "@sentry/react": "^10.28.0",
     "@simplewebauthn/browser": "^13.2.2",
     "@tanstack/react-table": "^8.21.3",
+    "@tauri-apps/api": "^2.11.1",
     "autoprefixer": "^10.4.22",
     "axios": "^1.13.2",
     "class-variance-authority": "^0.7.1",

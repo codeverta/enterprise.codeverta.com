@@ -21,6 +21,8 @@ import CommunicationModule from "./modules/communication";
 import AdministrationModule from "./modules/administration";
 import SettingsModule from "./modules/settings";
 import { isAdminRole } from "./lib/erp-desk";
+import { isTauri } from "@tauri-apps/api/core";
+import DesktopTitleBar from "./components/DesktopTitleBar";
 
 const LegacyDashboardHome = () => {
   let user = null;
@@ -79,6 +81,10 @@ const router = createBrowserRouter([
           { path: "desk/organization/users/*", element: <OrganizationModule /> },
           { path: "desk/organization/tenants/*", element: <OrganizationModule /> },
           { path: "desk/organization/permissions/*", element: <OrganizationModule /> },
+          { path: "desk/company/*", element: <OrganizationModule /> },
+          { path: "desk/branch/*", element: <OrganizationModule /> },
+          { path: "desk/department/*", element: <OrganizationModule /> },
+          { path: "desk/letter-head/*", element: <OrganizationModule /> },
           { path: "desk/selling/orders/*", element: <SellingModule /> },
           { path: "desk/selling/subscriptions/*", element: <SellingModule /> },
           { path: "desk/selling/promotions/*", element: <SellingModule /> },
@@ -118,5 +124,14 @@ const router = createBrowserRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  if (!isTauri()) return <RouterProvider router={router} />;
+
+  return (
+    <div className="tauri-shell h-screen overflow-hidden bg-background">
+      <DesktopTitleBar />
+      <main className="tauri-app-content">
+        <RouterProvider router={router} />
+      </main>
+    </div>
+  );
 }

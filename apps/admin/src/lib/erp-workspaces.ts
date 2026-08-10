@@ -715,8 +715,13 @@ const subcontracting = workspace("Subcontracting", "subcontracting", ["Subcontra
 
 const organizationHome = "/desk/organization";
 const organization = workspace("Organization", "organization", [
-  ["Users", "/desk/organization/users"], ["Tenants", "/desk/organization/tenants"], ["Role & Permissions", "/desk/organization/permissions"],
-  "Company", "Branch", "Department", "Cost Center",
+  ["Department", "/desk/department"],
+  ["Company", "/desk/company"],
+  ["Branch", "/desk/branch"],
+  ["Letter Head", "/desk/letter-head"],
+  ["Users", "/desk/organization/users"],
+  ["Tenants", "/desk/organization/tenants"],
+  ["Role & Permissions", "/desk/organization/permissions"],
 ], [
   group("People", organizationHome, documentLinks(["Employee", "Designation", "Employment Type"]), Users),
   group("Setup", organizationHome, documentLinks(["Fiscal Year", "Holiday List", "Global Defaults", "System Settings"]), Building2),

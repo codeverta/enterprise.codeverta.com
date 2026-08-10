@@ -17,7 +17,7 @@ import { AuthCarousel } from "@/components/AuthCarousel";
 import { Helmet } from "react-helmet";
 import { Eye, EyeOff, Fingerprint, Handshake, Loader2, Store } from "lucide-react";
 import { useSettingsStore } from "@/store/useSettingsStore";
-import { BASE_STORAGE_URL, getStorageUrl } from "@/lib/utils";
+import { BASE_STORAGE_URL, DEFAULT_APP_LOGO, getStorageUrl } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { ROLES } from "@/lib/constants";
 import { clearImpersonationStorage } from "@/lib/impersonation";
@@ -44,11 +44,11 @@ export default function LoginPage() {
         if (settings?.app_logo) {
             return getStorageUrl(settings.app_logo);
         }
-        if (!settings?.app_name) return "";
+        if (!settings?.app_name) return DEFAULT_APP_LOGO;
         const appName = settings.app_name.toLowerCase();
         if (appName.includes("malabar")) return "/assets/logo.jpg";
         if (appName.includes("manglayang")) return "/manglayang/logo-long.png";
-        return "";
+        return DEFAULT_APP_LOGO;
     }, [settings?.app_logo, settings?.app_name]);
 
     useEffect(() => {
@@ -244,6 +244,7 @@ export default function LoginPage() {
     return (
         <>
             <Helmet>
+                <title>{settings?.app_name || "Codeverta Enterprise System"}</title>
                 <meta name="robots" content="noindex, nofollow" />
             </Helmet>
             <div className="relative grid min-h-screen w-full overflow-hidden bg-slate-950 lg:h-screen lg:grid-cols-2 lg:bg-background">
@@ -267,7 +268,7 @@ export default function LoginPage() {
                                 />
                             )}
                             <h1 className="text-3xl font-bold tracking-tight text-white lg:text-foreground">
-                                {settings?.app_name || "Codeverta ERP"}
+                                {settings?.app_name || "Codeverta Enterprise System"}
                             </h1>
                             <p className="mt-2 text-white/75 lg:text-muted-foreground">
                                 {loginType === "merchant"

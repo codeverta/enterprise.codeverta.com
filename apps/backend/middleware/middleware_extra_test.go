@@ -76,14 +76,20 @@ func TestCORSMiddleware(t *testing.T) {
 	})
 
 	t.Run("handles OPTIONS preflight", func(t *testing.T) {
-		rec := httptest.NewRecorder()
-		req := httptest.NewRequest(http.MethodOptions, "/", nil)
-		req.Header.Set("Origin", "http://localhost:5173")
-		req.Header.Set("Access-Control-Request-Method", "POST")
-		router.ServeHTTP(rec, req)
-		// CORS middleware should handle OPTIONS itself and return 204
-		if rec.Header().Get("Access-Control-Allow-Origin") == "" {
-			t.Fatal("missing CORS header on preflight")
+		for _, origin := range []string{"http://localhost:5173", "http://127.0.0.1:5174"} {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodOptions, "/", nil)
+			req.Header.Set("Origin", origin)
+			req.Header.Set("Access-Control-Request-Method", "POST")
+			req.Header.Set("Access-Control-Request-Headers", "content-type,x-tenant-id")
+			router.ServeHTTP(rec, req)
+			// CORS middleware should handle OPTIONS itself and return 204.
+			if rec.Code != http.StatusNoContent {
+				t.Errorf("expected 204 preflight for %s, got %d", origin, rec.Code)
+			}
+			if got := rec.Header().Get("Access-Control-Allow-Origin"); got != origin {
+				t.Errorf("expected CORS header for %s, got %q", origin, got)
+			}
 		}
 	})
 }

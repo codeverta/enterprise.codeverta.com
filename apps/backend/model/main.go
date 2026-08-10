@@ -60,7 +60,7 @@ func InitDB() error {
 		&UserActivation{}, &AuthHandoff{}, &OAuthIdentity{}, &PasswordResetToken{},
 		&SubscriptionPlan{}, &SubscriptionPlanBundle{}, &SubscriptionFeature{}, &Subscription{}, &LMSPayment{},
 		&PricingCategory{}, &Withdrawal{}, &Order{},
-		&Wallet{}, &WalletLedger{}, &Organization{}, &PlatformFeeConfig{},
+		&Wallet{}, &WalletLedger{}, &Organization{}, &Company{}, &Branch{}, &Department{}, &LetterHead{}, &PlatformFeeConfig{},
 		&Guide{}, &GuideCategory{}, &Notification{},
 		&RoleDefinition{}, &RolePermission{}, &RoleProfile{}, &UserRoleAssignment{}, &UserRoleProfileAssignment{},
 	}

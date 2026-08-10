@@ -101,6 +101,7 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		buyingmodule.RegisterRoutes(tenantGroup)
 		sellingmodule.RegisterRoutes(tenantGroup)
 		stockmodule.RegisterRoutes(tenantGroup)
+		registerOrganizationRoutes(tenantGroup, db)
 
 		// Finance & Payout Settings
 		financeRoute := tenantGroup.Group("/finance")
@@ -141,4 +142,37 @@ type controllerList struct {
 	balance     *controller.BalanceWithdrawalController
 	walletAdmin *controller.WalletAdminController
 	ws          *controller.WebSocketController
+}
+
+func registerOrganizationRoutes(rg *gin.RouterGroup, db *gorm.DB) {
+	oc := controller.NewOrganizationController(db)
+	org := rg.Group("/organization")
+	org.Use(middleware.AdminAuth())
+	{
+		org.POST("/seed", oc.Seed)
+
+		org.GET("/companies", oc.ListCompanies)
+		org.POST("/companies", oc.CreateCompany)
+		org.GET("/companies/:id", oc.GetCompany)
+		org.PUT("/companies/:id", oc.UpdateCompany)
+		org.DELETE("/companies/:id", oc.DeleteCompany)
+
+		org.GET("/branches", oc.ListBranches)
+		org.POST("/branches", oc.CreateBranch)
+		org.GET("/branches/:id", oc.GetBranch)
+		org.PUT("/branches/:id", oc.UpdateBranch)
+		org.DELETE("/branches/:id", oc.DeleteBranch)
+
+		org.GET("/departments", oc.ListDepartments)
+		org.POST("/departments", oc.CreateDepartment)
+		org.GET("/departments/:id", oc.GetDepartment)
+		org.PUT("/departments/:id", oc.UpdateDepartment)
+		org.DELETE("/departments/:id", oc.DeleteDepartment)
+
+		org.GET("/letter-heads", oc.ListLetterHeads)
+		org.POST("/letter-heads", oc.CreateLetterHead)
+		org.GET("/letter-heads/:id", oc.GetLetterHead)
+		org.PUT("/letter-heads/:id", oc.UpdateLetterHead)
+		org.DELETE("/letter-heads/:id", oc.DeleteLetterHead)
+	}
 }

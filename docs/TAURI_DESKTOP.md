@@ -364,6 +364,7 @@ chmod +x apps/admin/src-tauri/target/release/bundle/appimage/*.AppImage
 Frontend desktop memiliki origin berbeda dari website biasa. Backend saat ini mengizinkan:
 
 ```text
+http://127.0.0.1:5174  (Tauri development)
 tauri://localhost
 http://tauri.localhost
 https://tauri.localhost

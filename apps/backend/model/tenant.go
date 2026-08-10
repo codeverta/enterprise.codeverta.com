@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	DefaultTenantIDString = "7c3f1a5e-9b2e-4f6a-8d1e-2a4c6b8f9e21"
-	DefaultTenantName     = "Codeverta ERP"
-	DefaultTenantDomain   = "erp.codeverta.com"
+	DefaultTenantIDString   = "7c3f1a5e-9b2e-4f6a-8d1e-2a4c6b8f9e21"
+	DefaultTenantName       = "Codeverta Enterprise System"
+	LegacyDefaultTenantName = "Codeverta ERP"
+	DefaultTenantDomain     = "erp.codeverta.com"
 )
 
 var DefaultTenantID = uuid.MustParse(DefaultTenantIDString)
@@ -53,6 +54,20 @@ func EnsureDefaultTenant(db *gorm.DB) error {
 		}
 	} else if err != nil {
 		return err
+	}
+
+	// Preserve custom branding, but migrate installations that still use the
+	// former default product name.
+	if tenant.Name == LegacyDefaultTenantName {
+		if err := db.Set("skip_tenant_scope", true).Model(&tenant).Update("name", DefaultTenantName).Error; err != nil {
+			return err
+		}
+		if err := db.Set("skip_tenant_scope", true).
+			Model(&SystemSetting{}).
+			Where("tenant_id = ? AND app_name = ?", DefaultTenantID, LegacyDefaultTenantName).
+			Update("app_name", DefaultTenantName).Error; err != nil {
+			return err
+		}
 	}
 
 	return nil

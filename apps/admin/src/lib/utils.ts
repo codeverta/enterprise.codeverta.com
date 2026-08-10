@@ -5,6 +5,8 @@ export const BASE_API_URL = import.meta.env.VITE_BASE_API_URL || "http://localho
 
 export const BASE_STORAGE_URL = import.meta.env.VITE_COS_CDN_BASE_URL || "https://cdn.codeverta.com";
 
+export const DEFAULT_APP_LOGO = "/brand/codeverta-erp-icon-256.png";
+
 export function getStorageUrl(path?: string | null): string {
   if (!path) return "";
   if (path.startsWith("http://") || path.startsWith("https://")) {
