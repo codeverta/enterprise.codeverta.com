@@ -4,9 +4,13 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+	"time"
 
 	coremodel "gin-template/model"
+	crmmodel "gin-template/model/crm"
 	stockmodel "gin-template/modules/stock/model"
+
+	"github.com/google/uuid"
 )
 
 func TestDeliveryNoteCRUDAndSubmit(t *testing.T) {
@@ -151,5 +155,60 @@ func TestDeliveryNoteCRUDAndSubmit(t *testing.T) {
 	}
 	if response := stockRequest(t, router, http.MethodPost, "/stock/delivery-notes/"+replacement.ID+"/submit", nil); response.Code != http.StatusOK {
 		t.Fatalf("submit replacement status = %d, body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestCreateDeliveryNoteFromSalesOrderReference(t *testing.T) {
+	router := setupStockTestRouter(t)
+	dnCtrl := NewDeliveryNoteController()
+	router.POST("/stock/delivery-notes", dnCtrl.Create)
+
+	tenantID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
+	salesOrderID := uuid.MustParse("982704fd-635f-423a-a507-17b0234a9235")
+	salesOrder := crmmodel.SalesOrder{
+		Base:            crmmodel.Base{ID: salesOrderID, TenantID: tenantID},
+		OrderNumber:     "SAL-ORD-2026-00001",
+		Customer:        "PT Pelanggan Indonesia",
+		TransactionDate: time.Date(2026, 8, 7, 0, 0, 0, 0, time.UTC),
+		Currency:        "IDR",
+		Status:          "confirmed",
+	}
+	if err := coremodel.DB.Create(&salesOrder).Error; err != nil {
+		t.Fatalf("seed sales order reference: %v", err)
+	}
+
+	payload := map[string]interface{}{
+		"naming_series":       "MAT-DN-.YYYY.-",
+		"sales_order_id":      salesOrderID.String(),
+		"posting_date":        "2026-08-07T00:00:00Z",
+		"posting_time":        "10:20:18",
+		"company":             "PT ZENIT TECHNOLOGY SOLUTION",
+		"cost_center":         "Main - ZENIT",
+		"project":             "Project A",
+		"currency":            "IDR",
+		"selling_price_list":  "Standard Selling",
+		"ignore_pricing_rule": true,
+		"items": []map[string]interface{}{{
+			"item_code": "ITEM-001", "item_name": "Produk Satu", "quantity": 2,
+			"rate": 100000, "uom": "Nos", "warehouse": "Stores - PT ZENIT",
+		}},
+	}
+
+	response := stockRequest(t, router, http.MethodPost, "/stock/delivery-notes", payload)
+	if response.Code != http.StatusCreated {
+		t.Fatalf("create referenced delivery note status = %d, body = %s", response.Code, response.Body.String())
+	}
+	var created stockmodel.DeliveryNote
+	if err := json.Unmarshal(response.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode referenced delivery note: %v", err)
+	}
+	if created.SalesOrderID != salesOrderID.String() || created.Customer != salesOrder.Customer {
+		t.Fatalf("sales order reference was not applied: %+v", created)
+	}
+	if created.CostCenter != "Main - ZENIT" || created.Project != "Project A" || created.Currency != "IDR" || created.SellingPriceList != "Standard Selling" || !created.IgnorePricingRule {
+		t.Fatalf("delivery note dimensions were not persisted: %+v", created)
+	}
+	if len(created.Items) != 1 || created.TotalQty != 2 || created.Total != 200000 {
+		t.Fatalf("delivery note items were not persisted: %+v", created.Items)
 	}
 }

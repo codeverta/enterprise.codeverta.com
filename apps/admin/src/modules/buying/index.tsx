@@ -19,7 +19,7 @@ export default function BuyingModule() {
   }
   if (pathname.startsWith("/desk/item")) {
     const isItemForm = pathname === "/desk/item/new" || /^\/desk\/item\/[^/]+$/.test(pathname);
-    return <BuyingLayout>{isItemForm ? <ItemFormPage /> : <MasterListPage type="item" />}</BuyingLayout>;
+    return <BuyingLayout>{isItemForm ? <ItemFormPage workspace="buying" /> : <MasterListPage type="item" workspace="buying" />}</BuyingLayout>;
   }
   if (pathname.startsWith("/desk/purchase-invoice")) {
     const isInvoiceForm = pathname === "/desk/purchase-invoice/new" || /^\/desk\/purchase-invoice\/[^/]+$/.test(pathname);

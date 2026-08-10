@@ -29,12 +29,17 @@ type DeliveryNote struct {
 	ReturnReason     string    `gorm:"type:text" json:"return_reason"`
 	ReplacementForID string    `gorm:"size:64;index" json:"replacement_for_id"`
 
-	SalesOrderID    string `gorm:"size:64;index" json:"sales_order_id"`
-	SetWarehouse    string `gorm:"size:180" json:"set_warehouse"`
-	TaxCategory     string `gorm:"size:120" json:"tax_category"`
-	TaxesAndCharges string `gorm:"size:180" json:"taxes_and_charges"`
-	ShippingRule    string `gorm:"size:120" json:"shipping_rule"`
-	Incoterm        string `gorm:"size:32" json:"incoterm"`
+	SalesOrderID      string `gorm:"size:64;index" json:"sales_order_id"`
+	CostCenter        string `gorm:"size:180" json:"cost_center"`
+	Project           string `gorm:"size:180" json:"project"`
+	Currency          string `gorm:"size:8;default:'IDR'" json:"currency"`
+	SellingPriceList  string `gorm:"size:180;default:'Standard Selling'" json:"selling_price_list"`
+	IgnorePricingRule bool   `gorm:"default:false" json:"ignore_pricing_rule"`
+	SetWarehouse      string `gorm:"size:180" json:"set_warehouse"`
+	TaxCategory       string `gorm:"size:120" json:"tax_category"`
+	TaxesAndCharges   string `gorm:"size:180" json:"taxes_and_charges"`
+	ShippingRule      string `gorm:"size:120" json:"shipping_rule"`
+	Incoterm          string `gorm:"size:32" json:"incoterm"`
 
 	TotalQty                 float64 `gorm:"type:decimal(18,2);default:0" json:"total_qty"`
 	Total                    float64 `gorm:"type:decimal(18,2);default:0" json:"total"`

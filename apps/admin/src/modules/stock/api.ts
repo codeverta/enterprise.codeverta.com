@@ -123,6 +123,11 @@ export type DeliveryNote = {
   replacement_for_id?: string;
 
   sales_order_id?: string;
+  cost_center: string;
+  project: string;
+  currency: string;
+  selling_price_list: string;
+  ignore_pricing_rule: boolean;
   set_warehouse: string;
   tax_category: string;
   taxes_and_charges: string;
@@ -151,12 +156,21 @@ export type DeliveryNote = {
 export type DeliveryNoteOptions = {
   naming_series: string[];
   companies: string[];
+  currencies: string[];
+  price_lists: string[];
   warehouses: string[];
   tax_categories: string[];
   taxes_templates: string[];
   shipping_rules: string[];
   incoterms: string[];
 };
+
+export const deliveryNotePayload = (input: DeliveryNote): DeliveryNote => ({
+  ...input,
+  posting_date: input.posting_date?.length === 10
+    ? `${input.posting_date}T00:00:00Z`
+    : input.posting_date,
+});
 
 export const stockApi = {
   async shipmentList(params?: { q?: string; status?: string }): Promise<Shipment[]> {
@@ -205,12 +219,12 @@ export const stockApi = {
   },
 
   async deliveryNoteCreate(input: DeliveryNote): Promise<DeliveryNote> {
-    const res = await api.post<DeliveryNote>("/stock/delivery-notes", input);
+    const res = await api.post<DeliveryNote>("/stock/delivery-notes", deliveryNotePayload(input));
     return res.data;
   },
 
   async deliveryNoteUpdate(id: string, input: DeliveryNote): Promise<DeliveryNote> {
-    const res = await api.put<DeliveryNote>(`/stock/delivery-notes/${id}`, input);
+    const res = await api.put<DeliveryNote>(`/stock/delivery-notes/${id}`, deliveryNotePayload(input));
     return res.data;
   },
 

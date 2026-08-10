@@ -42,6 +42,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.DELETE("/supplier-groups/:id", masterHandler.GroupDelete)
 		group.GET("/items", masterHandler.ItemList)
 		group.POST("/items", masterHandler.ItemCreate)
+		group.POST("/items/upload-image", masterHandler.ItemImageUpload)
 		group.GET("/items/:id", masterHandler.ItemGet)
 		group.PUT("/items/:id", masterHandler.ItemUpdate)
 		group.DELETE("/items/:id", masterHandler.ItemDelete)

@@ -80,6 +80,7 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		"/api/my-profile/avatar",
 		"/api/crm/leads/import",
 		"/api/crm/webhooks/",
+		"/api/buying/items/upload-image",
 	))
 
 	// Register Sub-Modules Router

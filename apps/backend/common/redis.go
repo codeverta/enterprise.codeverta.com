@@ -83,6 +83,7 @@ func InitRedisClient() (err error) {
 	_, err = RDB.Ping(ctx).Result()
 	if err == nil {
 		RedisEnabled = true
+		_ = RDB.ConfigSet(ctx, "stop-writes-on-bgsave-error", "no").Err()
 		SysLog(fmt.Sprintf("Redis connected with DB: %d, Prefix: %s", config.DB, config.Prefix))
 	} else {
 		RedisEnabled = false

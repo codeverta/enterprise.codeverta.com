@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { createBrowserRouter, Navigate, Outlet, RouterProvider, useNavigate } from "react-router";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation, useNavigate } from "react-router";
 import { LanguageProvider } from "./context/LanguageContext";
 import { setNavigate } from "./lib/navigation";
 import { useNotificationStore } from "./store/useNotificationStore";
@@ -26,6 +26,12 @@ const LegacyDashboardHome = () => {
   let user = null;
   try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch { user = null; }
   return isAdminRole(user?.role) ? <Navigate to="/desk" replace /> : <Dashboard />;
+};
+
+const SharedItemRoute = () => {
+  const location = useLocation();
+  const workspace = new URLSearchParams(location.search).get("workspace") || location.state?.workspace;
+  return workspace === "buying" ? <BuyingModule /> : <SellingModule />;
 };
 
 const ProtectedRoute = () => {
@@ -69,7 +75,7 @@ const router = createBrowserRouter([
           { path: "desk/purchase-invoice/*", element: <BuyingModule /> },
           { path: "desk/supplier/*", element: <BuyingModule /> },
           { path: "desk/supplier-group/*", element: <BuyingModule /> },
-          { path: "desk/item/*", element: <BuyingModule /> },
+          { path: "desk/item/*", element: <SharedItemRoute /> },
           { path: "desk/organization/users/*", element: <OrganizationModule /> },
           { path: "desk/organization/tenants/*", element: <OrganizationModule /> },
           { path: "desk/organization/permissions/*", element: <OrganizationModule /> },

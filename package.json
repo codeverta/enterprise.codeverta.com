@@ -5,8 +5,13 @@
   "scripts": {
     "dev": "pnpm -r --parallel dev",
     "dev:admin": "pnpm --filter admin-page dev",
+    "dev:desktop": "pnpm --filter admin-page tauri:dev",
     "dev:backend": "pnpm --filter backend dev",
     "build": "pnpm --filter admin-page build",
+    "build:desktop": "pnpm --filter admin-page tauri:build",
+    "build:desktop:macos": "pnpm --filter admin-page tauri:build:macos",
+    "build:desktop:windows": "pnpm --filter admin-page tauri:build:windows",
+    "build:desktop:linux": "pnpm --filter admin-page tauri:build:linux",
     "test": "pnpm -r test"
   }
 }

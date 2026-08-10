@@ -601,7 +601,7 @@ const selling = workspace(
       "POS Invoice Merge Log", "POS Settings", "Loyalty Program", "Loyalty Point Entry",
     ]), Store),
     group("Item & Harga", sellingHome, documentLinks([
-      "Item", "Item Group", "Price List", "Item Price", "Pricing Rule", "Promotional Scheme",
+      ["Item", "/desk/item?workspace=selling"], "Item Group", "Price List", "Item Price", "Pricing Rule", "Promotional Scheme",
       "Coupon Code", "Blanket Order",
     ]), Tags),
     group("Pengaturan & Master Data", sellingHome, documentLinks([
@@ -623,7 +623,7 @@ const buying = workspace(
   ["Material Request", "Request for Quotation", "Supplier Quotation", "Purchase Order", "Purchase Invoice"],
   [
     group("Pengaturan & Master Data", buyingHome, documentLinks([
-      "Supplier", "Supplier Group", "Item", "Price List", "Address", ["Contacts", "/desk/contact"],
+      "Supplier", "Supplier Group", ["Item", "/desk/item?workspace=buying"], "Price List", "Address", ["Contacts", "/desk/contact"],
       "Supplier Scorecard", "Supplier Scorecard Criteria", "Supplier Scorecard Variable", "Supplier Scorecard Standing",
     ]), Building2),
     group("Laporan & Analisis", buyingHome, reportLinks([

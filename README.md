@@ -47,6 +47,28 @@ JWT_SECRET=<64-plus-characters> go test ./...
 go build ./...
 ```
 
+## Desktop app (Tauri)
+
+Tauri membungkus dashboard React yang sama dengan WebView bawaan sistem, sehingga installer jauh lebih ringan daripada desktop shell yang membawa Chromium sendiri.
+
+Panduan lengkap tersedia di [`docs/TAURI_DESKTOP.md`](docs/TAURI_DESKTOP.md), termasuk prasyarat macOS/Windows/Linux, konfigurasi environment, build installer, signing, keamanan, dan troubleshooting.
+
+```bash
+# Development (jalankan backend secara terpisah)
+pnpm dev:backend
+pnpm dev:desktop
+
+# Binary release untuk platform yang sedang digunakan
+pnpm build:desktop
+
+# Paket distribusi native (jalankan pada OS target)
+pnpm build:desktop:macos
+pnpm build:desktop:windows
+pnpm build:desktop:linux
+```
+
+Build desktop memakai konfigurasi API Vite yang sama. Salin `apps/admin/.env.example` ke `apps/admin/.env` dan atur `VITE_BASE_API_URL` sebelum build. Paket Windows, macOS, dan Linux harus dibuat pada OS target masing-masing. Lihat panduan desktop untuk penjelasan dan checklist rilis.
+
 Some inherited integration tests open local sockets and therefore require a runner that permits loopback listeners.
 
 ## Core API groups

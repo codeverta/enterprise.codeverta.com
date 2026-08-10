@@ -13,7 +13,9 @@ export default defineConfig({
   ],
   server: {
     allowedHosts: ["c98bb2e63fb3.ngrok-free.app"],
-    port: 5174
+    host: "127.0.0.1",
+    port: 5174,
+    strictPort: true,
   },
   test: {
     globals: true, // Membuat API Vitest/Jest global

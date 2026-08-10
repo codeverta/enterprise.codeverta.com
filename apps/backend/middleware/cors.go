@@ -15,6 +15,8 @@ func CORS() gin.HandlerFunc {
 			"http://localhost:5174",
 			"http://localhost:5175",
 			"http://localhost:8080",
+			"http://tauri.localhost",
+			"https://tauri.localhost",
 			"https://app.kitafuture.com",
 			"https://kitafuture.com",
 			"https://guru2digit.id",
@@ -23,6 +25,11 @@ func CORS() gin.HandlerFunc {
 
 		// FUNGSI DINAMIS: Izinkan vercel.app dan codeverta.com beserta subdomainnya
 		AllowOriginFunc: func(origin string) bool {
+			// macOS/Linux Tauri builds use this custom-protocol origin.
+			if origin == "tauri://localhost" {
+				return true
+			}
+
 			// 1. Izinkan domain vercel.app
 			if strings.HasSuffix(origin, ".vercel.app") {
 				return true

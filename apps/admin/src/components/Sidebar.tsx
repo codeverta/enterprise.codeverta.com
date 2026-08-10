@@ -392,7 +392,7 @@ const Sidebar = ({
                         {isOpen && (
                           <span
                             className={clsx(
-                              "min-w-0 flex-1 truncate text-sm font-semibold",
+                              "min-w-0 flex-1 truncate text-sm font-semibold text-left",
                             )}
                             title={item.name}
                           >

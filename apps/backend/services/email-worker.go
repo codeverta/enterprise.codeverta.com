@@ -65,8 +65,8 @@ func StartEmailWorker() {
 			if errStr == "redis: nil" || errStr == "context deadline exceeded" {
 				continue
 			}
-			log.Error("Redis Queue Error (BRPop failed)", zap.Error(err))
-			time.Sleep(2 * time.Second)
+			log.Warn("⚠️ Redis Queue Warning (BRPop retrying in 5s)", zap.Error(err))
+			time.Sleep(5 * time.Second)
 			continue
 		}
 

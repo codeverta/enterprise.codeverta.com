@@ -33,6 +33,18 @@ func TestCORSMiddleware(t *testing.T) {
 		}
 	})
 
+	t.Run("sets CORS headers for Tauri desktop origins", func(t *testing.T) {
+		for _, origin := range []string{"tauri://localhost", "http://tauri.localhost", "https://tauri.localhost"} {
+			rec := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			req.Header.Set("Origin", origin)
+			router.ServeHTTP(rec, req)
+			if got := rec.Header().Get("Access-Control-Allow-Origin"); got != origin {
+				t.Errorf("expected CORS header for %s, got %q", origin, got)
+			}
+		}
+	})
+
 	t.Run("sets CORS headers for vercel subdomain", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)

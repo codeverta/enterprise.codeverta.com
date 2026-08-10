@@ -24,11 +24,23 @@ import { stockApi, type DeliveryNote, type DeliveryNoteItem, type DeliveryNoteTa
 import { toast } from "sonner";
 import api from "@/lib/api";
 
-type Tab = "details" | "items" | "taxes" | "totals" | "address" | "more";
-type SalesOrderSource = { id: string; customer: string; items?: Array<{ item_code: string; item_name?: string; quantity: number; rate: number; amount: number }> };
+type Tab = "details" | "address" | "terms" | "more";
+type SalesOrderSource = { id: string; customer: string; currency?: string; items?: Array<{ item_code: string; item_name?: string; quantity: number; rate: number; amount: number }> };
 
 const formatRp = (val: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(val || 0);
+
+function OptionInput({ value, values, onChange, placeholder = "Begin typing for results." }: { value: string; values: string[]; onChange: (value: string) => void; placeholder?: string }) {
+  const listID = `delivery-note-${React.useId().replace(/:/g, "")}`;
+  return <>
+    <Input list={listID} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+    <datalist id={listID}>{values.map((option) => <option key={option} value={option} />)}</datalist>
+  </>;
+}
+
+function SystemName({ children }: { children: React.ReactNode }) {
+  return <p className="mt-1 text-[11px] text-slate-400">{children}</p>;
+}
 
 const emptyNote = (): DeliveryNote => {
   const now = new Date();
@@ -41,6 +53,12 @@ const emptyNote = (): DeliveryNote => {
     set_posting_time: false,
     company: "PT ZENIT TECHNOLOGY SOLUTION",
     is_return: false,
+
+    cost_center: "",
+    project: "",
+    currency: "IDR",
+    selling_price_list: "Standard Selling",
+    ignore_pricing_rule: false,
 
     set_warehouse: "Stores - PT ZENIT",
     tax_category: "In State",
@@ -60,15 +78,14 @@ const emptyNote = (): DeliveryNote => {
     additional_discount_percentage: 0,
     additional_discount_amount: 0,
 
-    items: [
-      { item_code: "ITEM-001", item_name: "Item Sample A", quantity: 1, uom: "Nos", rate: 0, amount: 0, warehouse: "Stores - PT ZENIT" },
-    ],
+    items: [{ item_code: "", item_name: "", quantity: 1, uom: "Nos", rate: 0, amount: 0, warehouse: "Stores - PT ZENIT" }],
     taxes: [],
   };
 };
 
 export default function DeliveryNoteFormPage() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params.id || params["*"]?.split("/").filter(Boolean)[0];
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isNew = !id || id === "new";
@@ -78,6 +95,8 @@ export default function DeliveryNoteFormPage() {
   const [options, setOptions] = useState<DeliveryNoteOptions>({
     naming_series: ["MAT-DN-.YYYY.-", "MAT-DN-RET-.YYYY.-"],
     companies: ["PT ZENIT TECHNOLOGY SOLUTION"],
+    currencies: ["IDR", "USD", "SGD", "EUR"],
+    price_lists: ["Standard Selling"],
     warehouses: ["Stores - PT ZENIT", "Finished Goods - PT ZENIT"],
     tax_categories: ["In State", "Out of State", "Export"],
     taxes_templates: ["PPN 11%", "PPN 12%", "Exempt Tax"],
@@ -91,7 +110,12 @@ export default function DeliveryNoteFormPage() {
 	const replacementFor = searchParams.get("replacement_for") || "";
 
   useEffect(() => {
-    stockApi.deliveryNoteOptions().then(setOptions).catch(() => {});
+    stockApi.deliveryNoteOptions().then((next) => setOptions((previous) => ({
+      ...previous,
+      ...next,
+      currencies: next.currencies || previous.currencies,
+      price_lists: next.price_lists || previous.price_lists,
+    }))).catch(() => {});
 
     if (isNew) {
       if (returnAgainst || replacementFor) {
@@ -136,6 +160,7 @@ export default function DeliveryNoteFormPage() {
             ...previous,
             customer: source.customer || customerParam || previous.customer,
             sales_order_id: source.id,
+            currency: source.currency || previous.currency,
             items: (source.items || []).map((item) => ({
               item_code: item.item_code,
               item_name: item.item_name,
@@ -227,6 +252,12 @@ export default function DeliveryNoteFormPage() {
   const handleSave = async () => {
     if (!row.customer.trim()) {
       return toast.error("Customer wajib diisi");
+    }
+    if (!row.company.trim()) {
+      return toast.error("Company wajib diisi");
+    }
+    if (!row.items.length || row.items.some((item) => !item.item_code.trim() || item.quantity <= 0)) {
+      return toast.error("Lengkapi Item Code dan Quantity");
     }
     setSaving(true);
     try {
@@ -331,10 +362,8 @@ export default function DeliveryNoteFormPage() {
 
   const tabs: Array<[Tab, string]> = [
     ["details", "Details"],
-    ["items", "Items"],
-    ["taxes", "Taxes & Charges"],
-    ["totals", "Totals & Discount"],
     ["address", "Address & Contact"],
+    ["terms", "Terms"],
     ["more", "More Info"],
   ];
 
@@ -419,6 +448,7 @@ export default function DeliveryNoteFormPage() {
                     </option>
                   ))}
                 </select>
+                <SystemName>naming_series</SystemName>
               </div>
 
               {row.is_return && <div className="md:col-span-2 lg:col-span-3">
@@ -439,23 +469,15 @@ export default function DeliveryNoteFormPage() {
                 <Input
                   value={row.customer}
                   onChange={(e) => update("customer", e.target.value)}
-                  placeholder="Nama Customer"
+                  placeholder="Begin typing for results."
                 />
+                <SystemName>customer</SystemName>
               </div>
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Company</label>
-                <select
-                  className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
-                  value={row.company}
-                  onChange={(e) => update("company", e.target.value)}
-                >
-                  {options.companies.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                <OptionInput value={row.company} values={options.companies} onChange={(value) => update("company", value)} />
+                <SystemName>company</SystemName>
               </div>
 
               <div>
@@ -465,6 +487,7 @@ export default function DeliveryNoteFormPage() {
                   value={row.posting_date ? row.posting_date.slice(0, 10) : ""}
                   onChange={(e) => update("posting_date", e.target.value)}
                 />
+                <SystemName>posting_date</SystemName>
               </div>
 
               <div>
@@ -474,6 +497,7 @@ export default function DeliveryNoteFormPage() {
                   value={row.posting_time}
                   onChange={(e) => update("posting_time", e.target.value)}
                 />
+                <SystemName>posting_time</SystemName>
               </div>
 
               <div className="flex flex-col justify-end space-y-2">
@@ -485,6 +509,7 @@ export default function DeliveryNoteFormPage() {
                   />
                   Edit Posting Date and Time
                 </label>
+                <SystemName>set_posting_time</SystemName>
                 <label className="flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-400">
                   <input
                     type="checkbox"
@@ -493,12 +518,35 @@ export default function DeliveryNoteFormPage() {
                   />
                   Is Return (Surat Jalan Retur)
                 </label>
+                <SystemName>is_return</SystemName>
               </div>
             </div>
+
+            {row.sales_order_id && <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+              Dibuat dari Sales Order <strong>{row.sales_order_id}</strong>. Customer dan item telah diisi otomatis.
+            </div>}
+
+            <details open className="group border-t pt-6">
+              <summary className="cursor-pointer text-sm font-bold">Accounting Dimensions</summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div><label className="mb-1 block text-xs font-medium text-slate-500">Cost Center</label><Input value={row.cost_center} onChange={(event) => update("cost_center", event.target.value)} placeholder="Begin typing for results." /><SystemName>cost_center</SystemName></div>
+                <div><label className="mb-1 block text-xs font-medium text-slate-500">Project</label><Input value={row.project} onChange={(event) => update("project", event.target.value)} placeholder="Begin typing for results." /><SystemName>project</SystemName></div>
+              </div>
+            </details>
+
+            <details open className="group border-t pt-6">
+              <summary className="cursor-pointer text-sm font-bold">Currency and Price List</summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div><label className="mb-1 block text-xs font-medium text-slate-500">Currency</label><OptionInput value={row.currency} values={options.currencies} onChange={(value) => update("currency", value)} /><SystemName>currency</SystemName></div>
+                <div><label className="mb-1 block text-xs font-medium text-slate-500">Price List</label><OptionInput value={row.selling_price_list} values={options.price_lists} onChange={(value) => update("selling_price_list", value)} /><SystemName>selling_price_list</SystemName></div>
+                <label className="flex items-center gap-2 text-sm font-medium md:col-span-2"><input type="checkbox" checked={row.ignore_pricing_rule} onChange={(event) => update("ignore_pricing_rule", event.target.checked)} /> Ignore Pricing Rule <span className="text-[11px] font-normal text-slate-400">ignore_pricing_rule</span></label>
+              </div>
+            </details>
           </TabsContent>
 
-          {/* TAB 2: ITEMS */}
-          <TabsContent value="items" className="space-y-6 p-5 lg:p-7">
+          {/* DETAILS: ITEMS */}
+          <section className={tab === "details" ? "space-y-6 border-t p-5 lg:p-7" : "hidden"}>
+            <div><h2 className="font-semibold">Items</h2><SystemName>items · Delivery Note Item</SystemName></div>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <form onSubmit={handleScanBarcode} className="flex items-center gap-2 max-w-md">
                 <ScanBarcode className="size-5 text-slate-400" />
@@ -507,6 +555,7 @@ export default function DeliveryNoteFormPage() {
                   value={barcodeQuery}
                   onChange={(e) => setBarcodeQuery(e.target.value)}
                 />
+                <SystemName>scan_barcode</SystemName>
                 <Button type="submit" variant="secondary" size="sm">
                   Add
                 </Button>
@@ -514,17 +563,8 @@ export default function DeliveryNoteFormPage() {
 
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-slate-500">Set Source Warehouse:</span>
-                <select
-                  className="h-9 rounded-md border px-2 text-xs dark:bg-slate-900"
-                  value={row.set_warehouse}
-                  onChange={(e) => update("set_warehouse", e.target.value)}
-                >
-                  {options.warehouses.map((w) => (
-                    <option key={w} value={w}>
-                      {w}
-                    </option>
-                  ))}
-                </select>
+                <div className="min-w-64"><OptionInput value={row.set_warehouse} values={options.warehouses} onChange={(value) => update("set_warehouse", value)} /></div>
+                <SystemName>set_warehouse</SystemName>
               </div>
             </div>
 
@@ -559,6 +599,7 @@ export default function DeliveryNoteFormPage() {
                             onChange={(e) => updateItemRow(i, "item_code", e.target.value)}
                             placeholder="ITEM-001"
                           />
+                          {it.item_name && <p className="mt-1 text-xs text-slate-500">{it.item_name}</p>}
                         </td>
                         <td className="p-2 w-28">
                           <Input
@@ -610,75 +651,42 @@ export default function DeliveryNoteFormPage() {
               <div className="space-y-1 text-right text-sm">
                 <div>
                   Total Quantity: <span className="font-bold">{row.total_qty || 0}</span>
+                  <SystemName>total_qty</SystemName>
                 </div>
                 <div>
                   Total (IDR): <span className="font-bold text-blue-600">{formatRp(row.total)}</span>
+                  <SystemName>total</SystemName>
                 </div>
               </div>
             </div>
-          </TabsContent>
+          </section>
 
-          {/* TAB 3: TAXES & CHARGES */}
-          <TabsContent value="taxes" className="space-y-6 p-5 lg:p-7">
+          {/* DETAILS: TAXES & CHARGES */}
+          <section className={tab === "details" ? "space-y-6 border-t p-5 lg:p-7" : "hidden"}>
+            <div><h2 className="font-semibold">Taxes and Charges</h2><SystemName>taxes · Sales Taxes and Charges</SystemName></div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Tax Category</label>
-                <select
-                  className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
-                  value={row.tax_category}
-                  onChange={(e) => update("tax_category", e.target.value)}
-                >
-                  {options.tax_categories.map((tc) => (
-                    <option key={tc} value={tc}>
-                      {tc}
-                    </option>
-                  ))}
-                </select>
+                <OptionInput value={row.tax_category} values={options.tax_categories} onChange={(value) => update("tax_category", value)} />
+                <SystemName>tax_category</SystemName>
               </div>
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Sales Taxes and Charges Template</label>
-                <select
-                  className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
-                  value={row.taxes_and_charges}
-                  onChange={(e) => update("taxes_and_charges", e.target.value)}
-                >
-                  {options.taxes_templates.map((tt) => (
-                    <option key={tt} value={tt}>
-                      {tt}
-                    </option>
-                  ))}
-                </select>
+                <OptionInput value={row.taxes_and_charges} values={options.taxes_templates} onChange={(value) => update("taxes_and_charges", value)} />
+                <SystemName>taxes_and_charges</SystemName>
               </div>
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Shipping Rule</label>
-                <select
-                  className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
-                  value={row.shipping_rule}
-                  onChange={(e) => update("shipping_rule", e.target.value)}
-                >
-                  {options.shipping_rules.map((sr) => (
-                    <option key={sr} value={sr}>
-                      {sr}
-                    </option>
-                  ))}
-                </select>
+                <OptionInput value={row.shipping_rule} values={options.shipping_rules} onChange={(value) => update("shipping_rule", value)} />
+                <SystemName>shipping_rule</SystemName>
               </div>
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Incoterm</label>
-                <select
-                  className="h-10 w-full rounded-md border px-3 text-sm dark:bg-slate-900"
-                  value={row.incoterm}
-                  onChange={(e) => update("incoterm", e.target.value)}
-                >
-                  {options.incoterms.map((inc) => (
-                    <option key={inc} value={inc}>
-                      {inc}
-                    </option>
-                  ))}
-                </select>
+                <OptionInput value={row.incoterm} values={options.incoterms} onChange={(value) => update("incoterm", value)} />
+                <SystemName>incoterm</SystemName>
               </div>
             </div>
 
@@ -690,6 +698,7 @@ export default function DeliveryNoteFormPage() {
                     <th className="p-3">Type</th>
                     <th className="p-3">Account Head</th>
                     <th className="p-3">Tax Rate (%)</th>
+                    <th className="p-3 text-right">Net Amount</th>
                     <th className="p-3 text-right">Tax Amount</th>
                     <th className="p-3 text-right">Total</th>
                     <th className="p-3 text-right">Aksi</th>
@@ -698,7 +707,7 @@ export default function DeliveryNoteFormPage() {
                 <tbody className="divide-y">
                   {row.taxes.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-6 text-center text-slate-500">
+                      <td colSpan={8} className="p-6 text-center text-slate-500">
                         No rows (Klik Add Tax Row)
                       </td>
                     </tr>
@@ -725,6 +734,7 @@ export default function DeliveryNoteFormPage() {
                             onChange={(e) => updateTaxRow(i, "rate", parseFloat(e.target.value) || 0)}
                           />
                         </td>
+                        <td className="p-3 text-right font-medium">{formatRp(t.net_amount)}</td>
                         <td className="p-3 text-right font-medium">{formatRp(t.tax_amount)}</td>
                         <td className="p-3 text-right font-medium">{formatRp(t.total)}</td>
                         <td className="p-2 text-right">
@@ -746,14 +756,19 @@ export default function DeliveryNoteFormPage() {
 
               <div className="space-y-1 text-right text-sm">
                 <div>
+                  Base Total Taxes and Charges (IDR): <span className="font-bold">{formatRp(row.base_total_taxes_and_charges)}</span>
+                  <SystemName>base_total_taxes_and_charges</SystemName>
+                </div>
+                <div>
                   Total Taxes and Charges (IDR): <span className="font-bold">{formatRp(row.total_taxes_and_charges)}</span>
+                  <SystemName>total_taxes_and_charges</SystemName>
                 </div>
               </div>
             </div>
-          </TabsContent>
+          </section>
 
-          {/* TAB 4: TOTALS & DISCOUNT */}
-          <TabsContent value="totals" className="space-y-6 p-5 lg:p-7">
+          {/* DETAILS: TOTALS & DISCOUNT */}
+          <section className={tab === "details" ? "space-y-6 border-t p-5 lg:p-7" : "hidden"}>
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4 rounded-xl border p-5">
                 <h3 className="font-semibold text-slate-900 dark:text-white">Additional Discount</h3>
@@ -767,6 +782,7 @@ export default function DeliveryNoteFormPage() {
                     <option value="grand_total">Grand Total</option>
                     <option value="net_total">Net Total</option>
                   </select>
+                  <SystemName>apply_discount_on</SystemName>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -777,6 +793,7 @@ export default function DeliveryNoteFormPage() {
                       value={row.additional_discount_percentage}
                       onChange={(e) => update("additional_discount_percentage", parseFloat(e.target.value) || 0)}
                     />
+                    <SystemName>additional_discount_percentage</SystemName>
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-slate-500">Additional Discount Amount (IDR)</label>
@@ -785,6 +802,7 @@ export default function DeliveryNoteFormPage() {
                       value={row.additional_discount_amount}
                       onChange={(e) => update("additional_discount_amount", parseFloat(e.target.value) || 0)}
                     />
+                    <SystemName>additional_discount_amount</SystemName>
                   </div>
                 </div>
               </div>
@@ -809,16 +827,24 @@ export default function DeliveryNoteFormPage() {
                   <span>Grand Total:</span>
                   <span className="text-blue-600">{formatRp(row.grand_total)}</span>
                 </div>
+                <SystemName>grand_total</SystemName>
                 <div className="flex justify-between text-xs text-slate-500">
                   <span>Rounding Adjustment:</span>
                   <span>{formatRp(row.rounding_adjustment)}</span>
                 </div>
+                <SystemName>rounding_adjustment</SystemName>
                 <div className="flex justify-between text-sm font-semibold text-slate-900 dark:text-white">
                   <span>Rounded Total:</span>
                   <span>{formatRp(row.rounded_total)}</span>
                 </div>
+                <SystemName>rounded_total</SystemName>
               </div>
             </div>
+          </section>
+
+          <TabsContent value="terms" className="space-y-4 p-5 lg:p-7">
+            <label className="block text-sm font-semibold">Terms and Conditions</label>
+            <textarea className="min-h-40 w-full rounded-md border bg-transparent p-3 text-sm" placeholder="Ketentuan pengiriman dan penerimaan barang." />
           </TabsContent>
 
           {/* TAB 5: ADDRESS & CONTACT */}

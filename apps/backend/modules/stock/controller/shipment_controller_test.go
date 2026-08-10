@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	coremodel "gin-template/model"
+	crmmodel "gin-template/model/crm"
 	stockmodel "gin-template/modules/stock/model"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ func setupStockTestRouter(t *testing.T) *gin.Engine {
 		&stockmodel.Shipment{}, &stockmodel.ShipmentParcel{}, &stockmodel.ShipmentDeliveryNote{},
 		&stockmodel.DeliveryNote{}, &stockmodel.DeliveryNoteItem{}, &stockmodel.DeliveryNoteTax{},
 		&stockmodel.StockLedgerEntry{},
+		&crmmodel.SalesOrder{}, &crmmodel.SalesOrderItem{},
 	); err != nil {
 		t.Fatalf("migrate stock test database: %v", err)
 	}
@@ -36,7 +38,7 @@ func setupStockTestRouter(t *testing.T) *gin.Engine {
 	router := gin.New()
 	router.Use(func(ctx *gin.Context) {
 		ctx.Set("db", db)
-		ctx.Set("tenant_id", "tenant-stock-test")
+		ctx.Set("tenant_id", "00000000-0000-0000-0000-000000000001")
 		ctx.Next()
 	})
 

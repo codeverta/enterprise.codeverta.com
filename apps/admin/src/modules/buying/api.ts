@@ -175,39 +175,145 @@ export type PurchaseInvoiceOptions = BuyingOptions & {
   accounts: string[];
 };
 
-export type SupplierCustomerNumber = { id?: string; company: string; customer_number: string };
+export type SupplierCustomerNumber = {
+  id?: string;
+  company: string;
+  customer_number: string;
+};
 export type Supplier = {
-  id?: string; supplier_name: string; supplier_type: "Company" | "Individual"; supplier_group: string; country: string;
-  is_transporter: boolean; default_currency: string; default_bank_account: string; default_price_list: string;
-  supplier_details: string; website: string; language: string; allow_purchase_invoice_creation_without_purchase_order: boolean;
-  allow_purchase_invoice_creation_without_purchase_receipt: boolean; disabled: boolean; is_frozen: boolean; block_supplier: boolean;
-  tax_id: string; tax_category: string; tax_withholding_category: string; tax_withholding_group: string;
-  supplier_address: string; contact_person: string; contact_email: string; contact_phone: string; accounts_payable: string;
-  portal_users: string; customer_numbers: SupplierCustomerNumber[]; created_at?: string;
+  id?: string;
+  supplier_name: string;
+  supplier_type: "Company" | "Individual";
+  supplier_group: string;
+  country: string;
+  is_transporter: boolean;
+  default_currency: string;
+  default_bank_account: string;
+  default_price_list: string;
+  supplier_details: string;
+  website: string;
+  language: string;
+  allow_purchase_invoice_creation_without_purchase_order: boolean;
+  allow_purchase_invoice_creation_without_purchase_receipt: boolean;
+  disabled: boolean;
+  is_frozen: boolean;
+  block_supplier: boolean;
+  tax_id: string;
+  tax_category: string;
+  tax_withholding_category: string;
+  tax_withholding_group: string;
+  supplier_address: string;
+  contact_person: string;
+  contact_email: string;
+  contact_phone: string;
+  accounts_payable: string;
+  portal_users: string;
+  customer_numbers: SupplierCustomerNumber[];
+  created_at?: string;
 };
-export type SupplierGroup = { id?: string; group_name: string; parent_group: string; is_group: boolean; default_price_list: string; payment_terms: string; description: string };
+export type SupplierGroup = {
+  id?: string;
+  group_name: string;
+  parent_group: string;
+  is_group: boolean;
+  default_price_list: string;
+  payment_terms: string;
+  description: string;
+};
 export type ItemUOM = { id?: string; uom: string; conversion_factor: number };
-export type ItemBarcode = { id?: string; barcode: string; barcode_type: string; uom: string };
-export type ItemReorderLevel = { id?: string; request_for: string; warehouse: string; reorder_level: number; reorder_qty: number; material_request_type: string };
-export type ItemSupplier = { id?: string; supplier: string; supplier_part_number: string };
-export type Item = {
-  id?: string; item_code: string; item_name: string; item_group: string; stock_uom: string; disabled: boolean; allow_alternative_item: boolean;
-  is_stock_item: boolean; has_variants: boolean; is_fixed_asset: boolean; opening_stock: number; standard_rate: number; description: string; brand: string;
-  valuation_method: string; valuation_rate: number; shelf_life_in_days: number; end_of_life: string; default_material_request_type: string;
-  warranty_period: number; weight_per_unit: number; weight_uom: string; allow_negative_stock: boolean; has_batch_no: boolean;
-  purchase_uom: string; min_order_qty: number; safety_stock: number; is_purchase_item: boolean; lead_time_days: number;
-  is_customer_provided_item: boolean; delivered_by_supplier: boolean; country_of_origin: string; customs_tariff_number: string;
-  income_account: string; expense_account: string; tax_category: string; quality_inspection_required: boolean;
-  uoms: ItemUOM[]; barcodes: ItemBarcode[]; reorder_levels: ItemReorderLevel[]; supplier_items: ItemSupplier[]; created_at?: string;
+export type ItemBarcode = {
+  id?: string;
+  barcode: string;
+  barcode_type: string;
+  uom: string;
 };
-export type MasterOptions = { supplier_groups: string[]; suppliers: string[]; items: string[]; item_groups: string[]; countries: string[]; currencies: string[]; price_lists: string[]; languages: string[]; uoms: string[]; weight_uoms: string[]; warehouses: string[] };
+export type ItemReorderLevel = {
+  id?: string;
+  request_for: string;
+  warehouse: string;
+  reorder_level: number;
+  reorder_qty: number;
+  material_request_type: string;
+};
+export type ItemSupplier = {
+  id?: string;
+  supplier: string;
+  supplier_part_number: string;
+};
+export type Item = {
+  id?: string;
+  item_code: string;
+  item_name: string;
+  item_group: string;
+  stock_uom: string;
+  disabled: boolean;
+  allow_alternative_item: boolean;
+  is_stock_item: boolean;
+  has_variants: boolean;
+  is_fixed_asset: boolean;
+  opening_stock: number;
+  standard_rate: number;
+  image_url: string;
+  description: string;
+  brand: string;
+  valuation_method: string;
+  valuation_rate: number;
+  shelf_life_in_days: number;
+  end_of_life: string;
+  default_material_request_type: string;
+  warranty_period: number;
+  weight_per_unit: number;
+  weight_uom: string;
+  allow_negative_stock: boolean;
+  has_batch_no: boolean;
+  purchase_uom: string;
+  min_order_qty: number;
+  safety_stock: number;
+  is_purchase_item: boolean;
+  lead_time_days: number;
+  is_customer_provided_item: boolean;
+  delivered_by_supplier: boolean;
+  country_of_origin: string;
+  customs_tariff_number: string;
+  income_account: string;
+  expense_account: string;
+  tax_category: string;
+  quality_inspection_required: boolean;
+  uoms: ItemUOM[];
+  barcodes: ItemBarcode[];
+  reorder_levels: ItemReorderLevel[];
+  supplier_items: ItemSupplier[];
+  created_at?: string;
+};
+export type MasterOptions = {
+  supplier_groups: string[];
+  suppliers: string[];
+  items: string[];
+  item_groups: string[];
+  countries: string[];
+  currencies: string[];
+  price_lists: string[];
+  languages: string[];
+  uoms: string[];
+  weight_uoms: string[];
+  warehouses: string[];
+};
 
 export const dateForApi = (value: string) => value ? `${value}T00:00:00Z` : "";
 export const dateForInput = (value?: string) => value ? value.slice(0, 10) : "";
+const unwrapItem = (payload: Item | { data: Item }) =>
+  "data" in payload ? payload.data : payload;
 
 export const buyingApi = {
-  async list(params: { page?: number; page_size?: number; q?: string; status?: string }) {
-    return (await api.get<{ data: PurchaseOrder[]; meta: { page: number; page_size: number; total: number } }>(
+  async list(
+    params: { page?: number; page_size?: number; q?: string; status?: string },
+  ) {
+    return (await api.get<
+      {
+        data: PurchaseOrder[];
+        meta: { page: number; page_size: number; total: number };
+      }
+    >(
       "/buying/purchase-orders",
       { params },
     )).data;
@@ -216,10 +322,14 @@ export const buyingApi = {
     return (await api.get<PurchaseOrder>(`/buying/purchase-orders/${id}`)).data;
   },
   async create(input: PurchaseOrder) {
-    return (await api.post<PurchaseOrder>("/buying/purchase-orders", input)).data;
+    return (await api.post<PurchaseOrder>("/buying/purchase-orders", input))
+      .data;
   },
   async update(id: string, input: PurchaseOrder) {
-    return (await api.put<PurchaseOrder>(`/buying/purchase-orders/${id}`, input)).data;
+    return (await api.put<PurchaseOrder>(
+      `/buying/purchase-orders/${id}`,
+      input,
+    )).data;
   },
   async submit(id: string) {
     return (await api.post(`/buying/purchase-orders/${id}/submit`)).data;
@@ -228,45 +338,117 @@ export const buyingApi = {
     await api.delete(`/buying/purchase-orders/${id}`);
   },
   async options() {
-    return (await api.get<BuyingOptions>("/buying/purchase-orders/options")).data;
+    return (await api.get<BuyingOptions>("/buying/purchase-orders/options"))
+      .data;
   },
-  async invoiceList(params: { page?: number; page_size?: number; q?: string; status?: string }) {
-    return (await api.get<{ data: PurchaseInvoice[]; meta: { page: number; page_size: number; total: number } }>(
-      "/buying/purchase-invoices", { params },
+  async invoiceList(
+    params: { page?: number; page_size?: number; q?: string; status?: string },
+  ) {
+    return (await api.get<
+      {
+        data: PurchaseInvoice[];
+        meta: { page: number; page_size: number; total: number };
+      }
+    >(
+      "/buying/purchase-invoices",
+      { params },
     )).data;
   },
   async invoiceGet(id: string) {
-    return (await api.get<PurchaseInvoice>(`/buying/purchase-invoices/${id}`)).data;
+    return (await api.get<PurchaseInvoice>(`/buying/purchase-invoices/${id}`))
+      .data;
   },
   async invoiceCreate(input: PurchaseInvoice) {
-    return (await api.post<PurchaseInvoice>("/buying/purchase-invoices", input)).data;
+    return (await api.post<PurchaseInvoice>("/buying/purchase-invoices", input))
+      .data;
   },
   async invoiceUpdate(id: string, input: PurchaseInvoice) {
-    return (await api.put<PurchaseInvoice>(`/buying/purchase-invoices/${id}`, input)).data;
+    return (await api.put<PurchaseInvoice>(
+      `/buying/purchase-invoices/${id}`,
+      input,
+    )).data;
   },
   async invoiceSubmit(id: string) {
-    return (await api.post<PurchaseInvoice>(`/buying/purchase-invoices/${id}/submit`)).data;
+    return (await api.post<PurchaseInvoice>(
+      `/buying/purchase-invoices/${id}/submit`,
+    )).data;
   },
   async invoiceRemove(id: string) {
     await api.delete(`/buying/purchase-invoices/${id}`);
   },
   async invoiceOptions() {
-    return (await api.get<PurchaseInvoiceOptions>("/buying/purchase-invoices/options")).data;
+    return (await api.get<PurchaseInvoiceOptions>(
+      "/buying/purchase-invoices/options",
+    )).data;
   },
-  async masterOptions() { return (await api.get<MasterOptions>("/buying/master/options")).data; },
-  async supplierList(q = "") { return (await api.get<{ data: Supplier[] }>("/buying/suppliers", { params: { q } })).data.data || []; },
-  async supplierGet(id: string) { return (await api.get<Supplier>(`/buying/suppliers/${id}`)).data; },
-  async supplierCreate(input: Supplier) { return (await api.post<Supplier>("/buying/suppliers", input)).data; },
-  async supplierUpdate(id: string, input: Supplier) { return (await api.put<Supplier>(`/buying/suppliers/${id}`, input)).data; },
-  async supplierRemove(id: string) { await api.delete(`/buying/suppliers/${id}`); },
-  async groupList() { return (await api.get<{ data: SupplierGroup[] }>("/buying/supplier-groups")).data.data || []; },
-  async groupGet(id: string) { return (await api.get<SupplierGroup>(`/buying/supplier-groups/${id}`)).data; },
-  async groupCreate(input: SupplierGroup) { return (await api.post<SupplierGroup>("/buying/supplier-groups", input)).data; },
-  async groupUpdate(id: string, input: SupplierGroup) { return (await api.put<SupplierGroup>(`/buying/supplier-groups/${id}`, input)).data; },
-  async groupRemove(id: string) { await api.delete(`/buying/supplier-groups/${id}`); },
-  async itemList(q = "") { return (await api.get<{ data: Item[] }>("/buying/items", { params: { q } })).data.data || []; },
-  async itemGet(id: string) { return (await api.get<Item>(`/buying/items/${id}`)).data; },
-  async itemCreate(input: Item) { return (await api.post<Item>("/buying/items", input)).data; },
-  async itemUpdate(id: string, input: Item) { return (await api.put<Item>(`/buying/items/${id}`, input)).data; },
-  async itemRemove(id: string) { await api.delete(`/buying/items/${id}`); },
+  async masterOptions() {
+    return (await api.get<MasterOptions>("/buying/master/options")).data;
+  },
+  async supplierList(q = "") {
+    return (await api.get<{ data: Supplier[] }>("/buying/suppliers", {
+      params: { q },
+    })).data.data || [];
+  },
+  async supplierGet(id: string) {
+    return (await api.get<Supplier>(`/buying/suppliers/${id}`)).data;
+  },
+  async supplierCreate(input: Supplier) {
+    return (await api.post<Supplier>("/buying/suppliers", input)).data;
+  },
+  async supplierUpdate(id: string, input: Supplier) {
+    return (await api.put<Supplier>(`/buying/suppliers/${id}`, input)).data;
+  },
+  async supplierRemove(id: string) {
+    await api.delete(`/buying/suppliers/${id}`);
+  },
+  async groupList() {
+    return (await api.get<{ data: SupplierGroup[] }>("/buying/supplier-groups"))
+      .data.data || [];
+  },
+  async groupGet(id: string) {
+    return (await api.get<SupplierGroup>(`/buying/supplier-groups/${id}`)).data;
+  },
+  async groupCreate(input: SupplierGroup) {
+    return (await api.post<SupplierGroup>("/buying/supplier-groups", input))
+      .data;
+  },
+  async groupUpdate(id: string, input: SupplierGroup) {
+    return (await api.put<SupplierGroup>(
+      `/buying/supplier-groups/${id}`,
+      input,
+    )).data;
+  },
+  async groupRemove(id: string) {
+    await api.delete(`/buying/supplier-groups/${id}`);
+  },
+  async itemList(q = "") {
+    return (await api.get<{ data: Item[] }>("/buying/items", { params: { q } }))
+      .data.data || [];
+  },
+  async itemGet(id: string) {
+    return unwrapItem(
+      (await api.get<Item | { data: Item }>(`/buying/items/${id}`)).data,
+    );
+  },
+  async itemCreate(input: Item) {
+    return unwrapItem(
+      (await api.post<Item | { data: Item }>("/buying/items", input)).data,
+    );
+  },
+  async itemUpdate(id: string, input: Item) {
+    return unwrapItem(
+      (await api.put<Item | { data: Item }>(`/buying/items/${id}`, input)).data,
+    );
+  },
+  async itemUploadImage(file: File) {
+    const body = new FormData();
+    body.append("file", file);
+    return (await api.post<{ image_url: string }>(
+      "/buying/items/upload-image",
+      body,
+    )).data;
+  },
+  async itemRemove(id: string) {
+    await api.delete(`/buying/items/${id}`);
+  },
 };

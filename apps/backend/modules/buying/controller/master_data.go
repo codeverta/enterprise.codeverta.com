@@ -1,20 +1,26 @@
 package controller
 
 import (
+	"mime/multipart"
 	"net/http"
 	"strings"
 
 	coremodel "gin-template/model"
 	buyingmodel "gin-template/modules/buying/model"
+	"gin-template/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-type MasterDataController struct{}
+type MasterDataController struct {
+	UploadItemImage func(multipart.File, *multipart.FileHeader) (string, error)
+}
 
-func NewMasterDataController() *MasterDataController { return &MasterDataController{} }
+func NewMasterDataController() *MasterDataController {
+	return &MasterDataController{UploadItemImage: services.ProcessAndUploadImage}
+}
 
 func masterID(c *gin.Context) (uuid.UUID, bool) {
 	id, err := uuid.Parse(c.Param("id"))
@@ -247,6 +253,23 @@ func (h *MasterDataController) ItemGet(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, row)
+}
+
+func (h *MasterDataController) ItemImageUpload(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10<<20)
+	file, header, err := c.Request.FormFile("file")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Foto item wajib dipilih dan maksimal berukuran 10 MB"})
+		return
+	}
+	defer file.Close()
+
+	imageURL, err := h.UploadItemImage(file, header)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"image_url": imageURL})
 }
 
 func resetItemChildren(row *buyingmodel.Item) {

@@ -60,11 +60,9 @@ func redisRateLimiter(c *gin.Context, maxRequestNum int, durationSeconds int64, 
 	// Menjalankan script di v8
 	rawResult, err := slidingWindowScript.Run(ctx, rdb, keys, args...).Result()
 	if err != nil {
-		fmt.Printf("SECURITY ALERT: Redis Rate Limiter Down: %v\n", err)
-		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{
-			"code":    500,
-			"message": "System integrity check failed.",
-		})
+		fmt.Printf("SECURITY ALERT: Redis Rate Limiter Error (%v), falling back to memory rate limiter\n", err)
+		inMemoryRateLimiter.Init(common.RateLimitKeyExpirationDuration)
+		memoryRateLimiter(c, maxRequestNum, durationSeconds, mark)
 		return
 	}
 

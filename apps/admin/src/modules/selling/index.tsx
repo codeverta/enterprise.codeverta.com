@@ -28,7 +28,7 @@ export default function SellingModule() {
     content = <PriceListPage />;
   } else if (pathname.startsWith("/desk/item")) {
     const isItemForm = pathname === "/desk/item/new" || /^\/desk\/item\/[^/]+$/.test(pathname);
-    content = isItemForm ? <ItemFormPage /> : <MasterListPage type="item" />;
+    content = isItemForm ? <ItemFormPage workspace="selling" /> : <MasterListPage type="item" workspace="selling" />;
   } else if (pathname.startsWith("/desk/sales-order")) {
     const isForm = pathname === "/desk/sales-order/new" || /^\/desk\/sales-order\/[^/]+$/.test(pathname);
     content = isForm ? <SalesOrderFormPage /> : <SalesOrderListPage />;

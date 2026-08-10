@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ChevronDown, Plus, Save, Trash2, Truck } from "lucide-react";
+import { ArrowLeft, ChevronDown, Info, Plus, Save, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import api from "@/lib/api";
 
 type Item = { item_code: string; item_name?: string; delivery_date?: string; quantity: number; rate: number; amount: number };
@@ -16,6 +17,7 @@ type Order = { id?: string; order_number?: string; store_order_id?: string; stat
 type Tab = "details" | "terms" | "more";
 
 const today = () => new Date().toISOString().slice(0, 10);
+const dateForInput = (value?: string) => value ? String(value).slice(0, 10) : "";
 const key = "erp.sales-orders.details";
 const blankItem = (): Item => ({ item_code: "", delivery_date: today(), quantity: 1, rate: 0, amount: 0 });
 const empty = (): Order => ({ status: "draft", naming_series: "SAL-ORD-.YYYY.-", company: "PT ZENIT TECHNOLOGY SOLUTION", customer: "", order_type: "Sales", transaction_date: today(), delivery_date: "", is_subcontracted: false, cost_center: "", project: "", currency: "IDR", selling_price_list: "Standard Selling", ignore_pricing_rule: false, set_warehouse: "", tax_category: "", taxes_and_charges: "", shipping_rule: "", incoterm: "", total_qty: 0, total: 0, base_total_taxes_and_charges: 0, total_taxes_and_charges: 0, grand_total: 0, rounding_adjustment: 0, rounded_total: 0, advance_paid: 0, apply_discount_on: "grand_total", coupon_code: "", additional_discount_percentage: 0, additional_discount_amount: 0, items: [blankItem()], taxes: [] });
@@ -26,9 +28,62 @@ const saveCache = (id: string, value: Order) => localStorage.setItem(key, JSON.s
 const removeCache = (id: string) => { const cache = readCache(); delete cache[id]; localStorage.setItem(key, JSON.stringify(cache)); };
 function calculate(o: Order): Order { const items = o.items.map(i => ({ ...i, amount: round(i.quantity * i.rate) })); const total = round(items.reduce((s, i) => s + i.amount, 0)); const taxes = o.taxes.map(t => ({ ...t, net_amount: total, amount: round(t.charge_type === "Actual" ? t.amount : total * t.rate / 100) })); const taxTotal = round(taxes.reduce((s, t) => s + t.amount, 0)); const discount = o.additional_discount_percentage ? round((total + taxTotal) * o.additional_discount_percentage / 100) : round(o.additional_discount_amount); const grand = round(Math.max(0, total + taxTotal - discount)); const rounded = Math.round(grand); return { ...o, items, taxes, total_qty: items.reduce((s, i) => s + (Number(i.quantity) || 0), 0), total, base_total_taxes_and_charges: taxTotal, total_taxes_and_charges: taxTotal, additional_discount_amount: discount, grand_total: grand, rounded_total: rounded, rounding_adjustment: round(rounded - grand) }; }
 function hydrate(o: Order): Order { const calculated = calculate(o); if (o.total_amount == null) return calculated; const total = Number(o.total_amount) || 0; return { ...calculated, total: o.subtotal ?? calculated.total, grand_total: total, rounded_total: Math.round(total), rounding_adjustment: round(Math.round(total) - total) }; }
-function mergeServerOrder(server: Order, cached?: Order): Order { return hydrate({ ...empty(), ...(cached || {}), ...server, items: server.items?.length ? server.items : cached?.items || [], taxes: cached?.taxes || server.taxes || [] }); }
-function Field({ label, name, children }: { label: string; name?: string; children: React.ReactNode }) { return <div className="space-y-1.5">
-<Label>{label}</Label>{children}{name && <p className="text-[11px] text-slate-400">{name}</p>}</div>; }
+export function mergeServerOrder(server: Order, cached?: Order): Order {
+  const transactionDate = dateForInput(server.transaction_date) || dateForInput(cached?.transaction_date) || today();
+  const deliveryDate = dateForInput(server.delivery_date) || dateForInput(cached?.delivery_date);
+  const sourceItems = server.items?.length ? server.items : cached?.items || [];
+  const items = sourceItems.map((item) => ({
+    ...item,
+    item_code: item.item_code || "",
+    item_name: item.item_name || "",
+    delivery_date: dateForInput(item.delivery_date) || deliveryDate,
+    quantity: Number(item.quantity) || 0,
+    rate: Number(item.rate) || 0,
+    amount: Number(item.amount) || 0,
+  }));
+  return hydrate({
+    ...empty(),
+    ...(cached || {}),
+    ...server,
+    transaction_date: transactionDate,
+    delivery_date: deliveryDate,
+    items,
+    taxes: server.taxes?.length ? server.taxes : cached?.taxes || [],
+  });
+}
+
+function unwrapOrderResponse(payload: Order | { data: Order }): Order {
+  return "data" in payload && payload.data && typeof payload.data === "object" ? payload.data : payload;
+}
+const fieldHelp: Record<string, string> = {
+  "Company": "Perusahaan yang menerbitkan dan membukukan Sales Order ini.",
+  "Series": "Pola penomoran yang dipakai untuk membuat nomor Sales Order secara otomatis.",
+  "Customer": "Pelanggan yang melakukan pemesanan dan akan ditagihkan.",
+  "Order Type": "Jenis transaksi penjualan yang menentukan konteks pemrosesan pesanan.",
+  "Date": "Tanggal Sales Order dicatat dalam sistem.",
+  "Delivery Date": "Target tanggal seluruh pesanan diserahkan kepada pelanggan.",
+  "Payment Method": "Metode pembayaran yang dipilih pelanggan pada transaksi toko.",
+  "Payment Provider": "Penyedia layanan yang memproses pembayaran transaksi ini.",
+  "Payment Status": "Status terakhir proses pembayaran pesanan.",
+  "Payment Reference": "Nomor referensi dari penyedia pembayaran untuk pelacakan transaksi.",
+  "Shipping Address": "Alamat tujuan pengiriman barang pesanan pelanggan.",
+  "Cost Center": "Pusat biaya yang menerima pencatatan pendapatan dan biaya transaksi ini.",
+  "Project": "Proyek yang dikaitkan dengan pendapatan, biaya, dan pelaporan pesanan.",
+  "Currency": "Mata uang yang dipakai untuk harga, pajak, diskon, dan total pesanan.",
+  "Price List": "Daftar harga yang menjadi acuan penentuan harga item.",
+  "Set Source Warehouse": "Gudang sumber default untuk pengambilan seluruh item pesanan.",
+  "Tax Category": "Kategori pajak pelanggan atau transaksi yang menentukan aturan pajak yang berlaku.",
+  "Sales Taxes and Charges Template": "Template pajak dan biaya yang akan diterapkan pada pesanan.",
+  "Shipping Rule": "Aturan yang digunakan untuk menghitung biaya pengiriman.",
+  "Incoterm": "Ketentuan perdagangan yang membagi tanggung jawab biaya dan risiko pengiriman.",
+  "Apply Additional Discount On": "Dasar nilai yang digunakan untuk menghitung diskon tambahan.",
+  "Coupon Code": "Kode promo yang memberi potongan atau manfaat pada pesanan.",
+  "Additional Discount Percentage": "Persentase diskon tambahan yang mengurangi nilai pesanan.",
+  "Additional Discount Amount (IDR)": "Nominal hasil perhitungan diskon tambahan dalam rupiah.",
+  "Advance Paid (IDR)": "Jumlah uang muka yang sudah diterima untuk pesanan ini.",
+};
+function Field({ label, name, children }: { label: string; name?: string; children: React.ReactNode }) { const help = fieldHelp[label] || `Informasi untuk kolom ${label}.`; return <div className="space-y-1.5">
+<div className="flex items-center gap-1.5"><Label>{label}</Label><Tooltip><TooltipTrigger asChild><button type="button" className="inline-flex rounded-full text-slate-400 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label={`Info ${label}`}><Info className="size-3.5" /></button></TooltipTrigger><TooltipContent side="top" sideOffset={6} className="max-w-xs"><p>{help}</p>{name && <p className="mt-1 text-[11px] opacity-75"></p>}</TooltipContent></Tooltip></div>{children}</div>; }
 function Combo({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) { const id = useMemo(() => `sales-${Math.random().toString(36).slice(2)}`, []); return <>
 <Input list={id} value={value} onChange={e => onChange(e.target.value)} placeholder="Begin typing for results." />
 <datalist id={id}>{options.map(v => <option key={v} value={v} />)}</datalist>
@@ -84,10 +139,38 @@ export function SalesOrderListPage() { const nav = useNavigate(); const [rows, s
 </div>
 </div>; }
 
-export default function SalesOrderFormPage() { const { id } = useParams(); const nav = useNavigate(); const isNew = !id || id === "new"; const [tab, setTab] = useState<Tab>("details"); const [order, setOrder] = useState<Order>(empty); const [saving, setSaving] = useState(false); const update = <K extends keyof Order>(k: K, v: Order[K]) => setOrder(o => calculate({ ...o, [k]: v })); const updateItem = (i: number, p: Partial<Item>) => setOrder(o => calculate({ ...o, items: o.items.map((x, n) => n === i ? { ...x, ...p } : x) })); const updateTax = (i: number, p: Partial<Tax>) => setOrder(o => calculate({ ...o, taxes: o.taxes.map((x, n) => n === i ? { ...x, ...p } : x) }));
- useEffect(() => { if (!isNew && id) { const cached = readCache()[id]; api.get<Order>(`/crm/sales-orders/${id}`).then(r => setOrder(mergeServerOrder(r.data, cached))).catch(() => { if (cached) setOrder(calculate(cached)); else { toast.error("Sales Order tidak ditemukan"); nav("/desk/sales-order"); } }); } }, [id, isNew, nav]);
+export default function SalesOrderFormPage() { const params = useParams(); const id = params.id || params["*"]?.split("/").filter(Boolean)[0]; const nav = useNavigate(); const isNew = !id || id === "new"; const [tab, setTab] = useState<Tab>("details"); const [order, setOrder] = useState<Order>(empty); const [loading, setLoading] = useState(!isNew); const [loadError, setLoadError] = useState(""); const [saving, setSaving] = useState(false); const update = <K extends keyof Order>(k: K, v: Order[K]) => setOrder(o => calculate({ ...o, [k]: v })); const updateItem = (i: number, p: Partial<Item>) => setOrder(o => calculate({ ...o, items: o.items.map((x, n) => n === i ? { ...x, ...p } : x) })); const updateTax = (i: number, p: Partial<Tax>) => setOrder(o => calculate({ ...o, taxes: o.taxes.map((x, n) => n === i ? { ...x, ...p } : x) }));
+ useEffect(() => {
+   let active = true;
+   if (isNew || !id) {
+     setOrder(empty());
+     setLoadError("");
+     setLoading(false);
+     return () => { active = false; };
+   }
+   const cached = readCache()[id];
+   setLoading(true);
+   setLoadError("");
+   api.get<Order | { data: Order }>(`/crm/sales-orders/${id}`)
+     .then((response) => {
+       if (!active) return;
+       const serverOrder = unwrapOrderResponse(response.data);
+       setOrder(mergeServerOrder({ ...serverOrder, id: serverOrder.id || id }, cached));
+     })
+     .catch((error: any) => {
+       if (!active) return;
+       if (cached) {
+         setOrder(mergeServerOrder({ ...cached, id }, cached));
+         toast.warning("API detail Sales Order tidak dapat diakses. Menampilkan data tersimpan.");
+         return;
+       }
+       setLoadError(error?.response?.data?.error || "Gagal mengambil detail Sales Order");
+     })
+     .finally(() => { if (active) setLoading(false); });
+   return () => { active = false; };
+ }, [id, isNew]);
  const save = async () => { if (!order.company.trim() || !order.customer.trim()) return toast.error("Company dan Customer wajib diisi"); if (order.items.some(i => !i.item_code.trim() || i.quantity <= 0)) return toast.error("Lengkapi Item Code dan Quantity"); setSaving(true); const payload = calculate(order); try { const res = isNew ? await api.post<Order>("/crm/sales-orders", { order_number: `${order.naming_series.replace(".YYYY.", new Date().getFullYear().toString())}${Date.now().toString().slice(-5)}`, total_amount: payload.grand_total, status: "processing" }) : await api.patch<Order>(`/crm/sales-orders/${id}`, { total_amount: payload.grand_total, status: payload.status }); const savedId = id || res.data.id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: res.data.order_number || payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order berhasil disimpan"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } catch (e: any) { const savedId = id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order disimpan di browser"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } finally { setSaving(false); } };
- const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["PT ZENIT TECHNOLOGY SOLUTION", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (!isNew && !order.id && !order.customer) return <div className="p-12 text-center text-slate-500">Memuat Sales Order...</div>;
+ const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["PT ZENIT TECHNOLOGY SOLUTION", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (loading) return <div className="p-12 text-center text-slate-500">Memuat detail Sales Order...</div>; if (loadError) return <div className="mx-auto max-w-xl p-12 text-center"><p className="font-semibold text-red-600">{loadError}</p><div className="mt-4 flex justify-center gap-2"><Button variant="outline" onClick={() => nav("/desk/sales-order")}>Kembali ke daftar</Button><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div></div>;
  return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
 <header className="mb-5 flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
 <div className="flex items-start gap-3">
@@ -181,7 +264,7 @@ export default function SalesOrderFormPage() { const { id } = useParams(); const
 <Field label="Currency">
 <Input value={order.currency} onChange={e => update("currency", e.target.value)} />
 </Field>
-<Field label="Price List" name="selling_price_list"><Combo value={order.selling_price_list} onChange={v => update("selling_price_list", v)} options={["Standard Selling", ...options]} /></Field>
+<Field label="Price List" name="selling_price_list"><Combo value={order.selling_price_list} onChange={v => update("selling_price_list", v)} options={[...new Set(["Standard Selling", ...options])]} /></Field>
 <Field label="Set Source Warehouse" name="set_warehouse">
 <Combo value={order.set_warehouse} onChange={v => update("set_warehouse", v)} options={options} />
 </Field>
