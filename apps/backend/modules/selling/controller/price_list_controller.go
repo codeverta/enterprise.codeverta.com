@@ -153,6 +153,9 @@ func (ctrl *PriceListController) CreateItemPrice(ctx *gin.Context) {
 	if input.Currency == "" {
 		input.Currency = "IDR"
 	}
+	if input.PackingUnit <= 0 {
+		input.PackingUnit = 1
+	}
 	input.IsActive = true
 	if err := db.Create(&input).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat Item Price"})
@@ -180,9 +183,18 @@ func (ctrl *PriceListController) UpdateItemPrice(ctx *gin.Context) {
 	existing.PriceListRate = input.PriceListRate
 	existing.Currency = strings.TrimSpace(input.Currency)
 	existing.UOM = strings.TrimSpace(input.UOM)
+	existing.PackingUnit = input.PackingUnit
+	if existing.PackingUnit <= 0 {
+		existing.PackingUnit = 1
+	}
+	existing.BatchNo = strings.TrimSpace(input.BatchNo)
+	existing.Buying = input.Buying
+	existing.Selling = input.Selling
+	existing.LeadTimeDays = input.LeadTimeDays
 	existing.ValidFrom = input.ValidFrom
 	existing.ValidUpto = input.ValidUpto
 	existing.Note = strings.TrimSpace(input.Note)
+	existing.Reference = strings.TrimSpace(input.Reference)
 	existing.IsActive = input.IsActive
 	if err := db.Save(&existing).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui Item Price"})

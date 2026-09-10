@@ -7,6 +7,7 @@ import (
 	"gin-template/common"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,7 +38,11 @@ func SeedUsers(db *gorm.DB) error {
 	if count == 0 {
 		fmt.Println("Seeding multi-role default users with hierarchical levels...")
 
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+		bootstrapPassword := strings.TrimSpace(os.Getenv("OFFLINE_BOOTSTRAP_PASSWORD"))
+		if bootstrapPassword == "" {
+			bootstrapPassword = "password123"
+		}
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(bootstrapPassword), bcrypt.DefaultCost)
 		if err != nil {
 			return fmt.Errorf("failed to hash seed password: %w", err)
 		}
@@ -50,12 +55,17 @@ func SeedUsers(db *gorm.DB) error {
 
 		now := time.Now()
 
+		adminDisplayName := strings.TrimSpace(os.Getenv("OFFLINE_ADMIN_NAME"))
+		if adminDisplayName == "" {
+			adminDisplayName = "Admin"
+		}
+
 		seedUsers := []User{
 			{
 				ID:          uuid.New(), // FIX: Langsung gunakan uuid.UUID, tanpa .String()
 				Username:    "admin",
 				Password:    string(hashedPassword),
-				DisplayName: "Admin",
+				DisplayName: adminDisplayName,
 				Role:        RoleAdmin,
 				Status:      1,
 				Email:       "admin@codeverta.com",

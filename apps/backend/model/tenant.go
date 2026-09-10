@@ -2,6 +2,8 @@ package model
 
 import (
 	"errors"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,9 +43,15 @@ func EnsureDefaultTenant(db *gorm.DB) error {
 	err := db.Set("skip_tenant_scope", true).First(&tenant, "id = ?", DefaultTenantID).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		now := time.Now()
+		tenantName := DefaultTenantName
+		if strings.EqualFold(os.Getenv("OFFLINE_MODE"), "true") {
+			if configuredName := strings.TrimSpace(os.Getenv("OFFLINE_WORKSPACE_NAME")); configuredName != "" {
+				tenantName = configuredName
+			}
+		}
 		tenant = Tenant{
 			ID:        DefaultTenantID,
-			Name:      DefaultTenantName,
+			Name:      tenantName,
 			Domain:    DefaultTenantDomain,
 			IsActive:  true,
 			CreatedAt: &now,

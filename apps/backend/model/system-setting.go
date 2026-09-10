@@ -10,27 +10,30 @@ import (
 )
 
 func GetSettingCacheKey(id string) string {
+	if common.RDB == nil {
+		return fmt.Sprintf("setting:%s", id)
+	}
 	return common.RDB.GetKey(fmt.Sprintf("setting:%s", id))
 }
 
 type SystemSetting struct {
-	ID                     uuid.UUID `gorm:"type:char(36);primaryKey"`
-	AppName                string    `json:"app_name"`
-	AppTagline             string    `json:"app_tagline"`
-	AppLogo                string    `json:"app_logo"`
-	DiscordPaymentWebhook   string    `json:"discord_payment_webhook"`
-	DiscordEmailWebhook     string    `json:"discord_email_webhook"`
-	DiscordRegisterWebhook  string    `json:"discord_register_webhook"`
+	ID                       uuid.UUID `gorm:"type:char(36);primaryKey"`
+	AppName                  string    `json:"app_name"`
+	AppTagline               string    `json:"app_tagline"`
+	AppLogo                  string    `json:"app_logo"`
+	DiscordPaymentWebhook    string    `json:"discord_payment_webhook"`
+	DiscordEmailWebhook      string    `json:"discord_email_webhook"`
+	DiscordRegisterWebhook   string    `json:"discord_register_webhook"`
 	DiscordWithdrawalWebhook string    `json:"discord_withdrawal_webhook"`
-	BannerText              string    `json:"banner_text"`
-	IsDevMode              bool      `json:"is_dev_mode"`
-	IsRegistrationOpen     bool      `json:"is_registration_open"`
-	IsMaintenanceMode      bool      `json:"is_maintenance_mode"`
-	EventStartTime         time.Time `json:"event_start_time"`
-	EmailQuota             int       `json:"email_quota"`
-	EmailUsed              int       `json:"email_used"`
-	ParticipantQuota       int       `json:"participant_quota"`
-	ParticipantUsed        int       `json:"participant_used"`
+	BannerText               string    `json:"banner_text"`
+	IsDevMode                bool      `json:"is_dev_mode"`
+	IsRegistrationOpen       bool      `json:"is_registration_open"`
+	IsMaintenanceMode        bool      `json:"is_maintenance_mode"`
+	EventStartTime           time.Time `json:"event_start_time"`
+	EmailQuota               int       `json:"email_quota"`
+	EmailUsed                int       `json:"email_used"`
+	ParticipantQuota         int       `json:"participant_quota"`
+	ParticipantUsed          int       `json:"participant_used"`
 
 	TenantID  *uuid.UUID `json:"tenant_id" gorm:"type:char(36);uniqueIndex:idx_tenant_settings"`
 	Tenant    Tenant     `gorm:"foreignKey:TenantID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`

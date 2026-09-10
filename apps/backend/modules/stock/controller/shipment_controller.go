@@ -239,8 +239,77 @@ func (ctrl *ShipmentController) Delete(ctx *gin.Context) {
 }
 
 func (ctrl *ShipmentController) Options(ctx *gin.Context) {
+	db, tenant := stockDB(ctx), stockTenant(ctx)
+
+	// Fetch real companies from db
+	var companies []model.Company
+	_ = db.Where("tenant_id = ? OR tenant_id = '00000000-0000-0000-0000-000000000000' OR tenant_id IS NULL", tenant).
+		Order("name asc").
+		Find(&companies).Error
+
+	companyNames := make([]string, 0, len(companies))
+	for _, c := range companies {
+		if c.Name != "" {
+			companyNames = append(companyNames, c.Name)
+		}
+	}
+	if len(companyNames) == 0 {
+		companyNames = []string{
+			"PT ZENIT TECHNOLOGY SOLUTION",
+			"PT Codeverta Enterprise",
+		}
+	}
+
+	// Fetch real users from db
+	type UserRow struct {
+		ID          string `json:"id"`
+		Username    string `json:"username"`
+		DisplayName string `json:"display_name"`
+		Email       string `json:"email"`
+	}
+	var users []UserRow
+	_ = db.Model(&model.User{}).
+		Select("id, username, display_name, email").
+		Order("display_name asc, username asc").
+		Limit(100).
+		Scan(&users).Error
+
+	// Fetch real customers from db
+	type CustomerRow struct {
+		ID           string `json:"id"`
+		CustomerName string `json:"customer_name"`
+		CustomerType string `json:"customer_type"`
+		Email        string `json:"email"`
+		Phone        string `json:"phone"`
+	}
+	var customers []CustomerRow
+	_ = db.Table("selling_customers").
+		Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).
+		Select("id, customer_name, customer_type, email, phone").
+		Order("customer_name asc").
+		Limit(100).
+		Scan(&customers).Error
+
+	// Fetch real delivery notes from db
+	type DeliveryNoteRow struct {
+		Number   string  `json:"number"`
+		Customer string  `json:"customer"`
+		Total    float64 `json:"total"`
+		Status   string  `json:"status"`
+	}
+	var dns []DeliveryNoteRow
+	_ = db.Model(&stockmodel.DeliveryNote{}).
+		Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).
+		Select("number, customer, COALESCE(rounded_total, grand_total, total) as total, status").
+		Order("created_at desc").
+		Limit(100).
+		Scan(&dns).Error
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"companies":        []string{"PT ZENIT TECHNOLOGY SOLUTION", "PT Codeverta Enterprise"},
+		"companies":        companyNames,
+		"users":            users,
+		"customers":        customers,
+		"delivery_notes":   dns,
 		"incoterms":        []string{"EXW", "FOB", "CIF", "DDP", "CFR", "CIP", "DAP"},
 		"service_providers": []string{"JNE", "J&T Express", "SiCepat", "DHL Express", "FedEx", "POS Indonesia"},
 		"parcel_templates": []string{"Small Box (20x15x10 cm)", "Medium Box (30x20x15 cm)", "Large Box (40x30x20 cm)", "Custom Envelope"},

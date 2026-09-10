@@ -160,7 +160,15 @@ export default function PointOfSalePage() {
         ? current.filter((row) => row.item_code !== code)
         : current.map((row) =>
             row.item_code === code ? { ...row, quantity } : row,
-          ),
+        ),
+    );
+  const changeRate = (code: string, rate: number) =>
+    setCart((current) =>
+      current.map((row) =>
+        row.item_code === code
+          ? { ...row, rate: Number.isFinite(rate) ? Math.max(0, rate) : 0 }
+          : row,
+      ),
     );
 
   const checkout = async () => {
@@ -412,9 +420,20 @@ export default function PointOfSalePage() {
                     <p className="truncate text-sm font-medium">
                       {item.item_name}
                     </p>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      {money(item.rate)} / {item.unit}
-                    </p>
+                    <label className="mt-2 block text-xs font-medium text-slate-500">
+                      Harga satuan ({item.unit})
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={item.rate}
+                        aria-label={`Harga satuan ${item.item_name}`}
+                        onChange={(event) =>
+                          changeRate(item.item_code, Number(event.target.value))
+                        }
+                        className="mt-1 h-8 bg-white px-2 text-sm font-semibold text-slate-900"
+                      />
+                    </label>
                   </div>
                   <button
                     type="button"

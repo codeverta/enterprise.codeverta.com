@@ -121,7 +121,11 @@ const readCachedItem = (id?: string): Partial<Item> | undefined => {
 export default function ItemFormPage(
   { workspace = "buying" }: { workspace?: "buying" | "selling" },
 ) {
-  const { id } = useParams();
+  // The shared `/desk/item/*` route exposes the record ID as a splat (`*`),
+  // not as a named `id` parameter. Keep support for a named param as well so
+  // this form remains safe if the route is mounted directly in the future.
+  const params = useParams<{ id?: string; "*"?: string }>();
+  const id = params.id || params["*"]?.split("/").filter(Boolean)[0];
   const location = useLocation();
   const navigate = useNavigate();
   const isNew = !id || id === "new";

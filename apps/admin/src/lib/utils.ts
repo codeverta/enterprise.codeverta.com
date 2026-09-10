@@ -1,9 +1,10 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { runtimeApiUrl } from "./desktop-runtime"
 
-export const BASE_API_URL = import.meta.env.VITE_BASE_API_URL || "http://localhost:8084";
+export const BASE_API_URL = runtimeApiUrl(import.meta.env.VITE_BASE_API_URL || "http://localhost:8084");
 
-export const BASE_STORAGE_URL = import.meta.env.VITE_COS_CDN_BASE_URL || "https://cdn.codeverta.com";
+export const BASE_STORAGE_URL = runtimeApiUrl(import.meta.env.VITE_COS_CDN_BASE_URL || "https://cdn.codeverta.com");
 
 export const DEFAULT_APP_LOGO = "/brand/codeverta-erp-icon-256.png";
 
@@ -42,12 +43,15 @@ export const renderBody = (body) => {
 
 
 
-export const formatCurrency = (amount) =>
-    new Intl.NumberFormat("id-ID", {
+export const formatCurrency = (amount) => {
+  const currency = localStorage.getItem("appCurrency") || "IDR";
+  const locale = localStorage.getItem("appLanguage") === "en" ? "en-US" : "id-ID";
+  return new Intl.NumberFormat(locale, {
       style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
+      currency,
+      minimumFractionDigits: currency === "IDR" ? 0 : 2,
     }).format(amount);
+};
 
 export const generateGoogleCalendarUrl = (event) => {
   // Format tanggal harus: YYYYMMDDTHHmmssZ (UTC)

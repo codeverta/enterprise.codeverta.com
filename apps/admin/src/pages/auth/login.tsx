@@ -15,13 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthCarousel } from "@/components/AuthCarousel";
 import { Helmet } from "react-helmet";
-import { Eye, EyeOff, Fingerprint, Handshake, Loader2, Store } from "lucide-react";
+import { Eye, EyeOff, Fingerprint, Handshake, Loader2, Store, WifiOff } from "lucide-react";
 import { useSettingsStore } from "@/store/useSettingsStore";
 import { BASE_STORAGE_URL, DEFAULT_APP_LOGO, getStorageUrl } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { ROLES } from "@/lib/constants";
 import { clearImpersonationStorage } from "@/lib/impersonation";
 import { resolveAuthenticatedLandingPath } from "@/lib/dynamic-permissions";
+import { readCachedDesktopConfig } from "@/lib/desktop-runtime";
 
 // --- LIBRARY PENTING UNTUK WEBAUTHN ---
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -29,7 +30,9 @@ import { toast } from "sonner"; // Opsional: untuk notifikasi error yang lebih c
 
 export default function LoginPage() {
     const { t } = useLanguage();
-    const [identifier, setIdentifier] = useState("");
+    const desktopConfig = useMemo(() => readCachedDesktopConfig(), []);
+    const isOfflineDesktop = desktopConfig?.mode === "offline";
+    const [identifier, setIdentifier] = useState(() => isOfflineDesktop ? "admin" : "");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -39,7 +42,7 @@ export default function LoginPage() {
     const { settings, fetchSettings } = useSettingsStore();
     const [isChecking, setIsChecking] = useState(true);
     const loginBrand = "erp";
-    const isRoleSpecificPortal = true;
+    const isRoleSpecificPortal = !isOfflineDesktop;
     const logo = useMemo(() => {
         if (settings?.app_logo) {
             return getStorageUrl(settings.app_logo);
@@ -271,7 +274,9 @@ export default function LoginPage() {
                                 {settings?.app_name || "Codeverta Enterprise System"}
                             </h1>
                             <p className="mt-2 text-white/75 lg:text-muted-foreground">
-                                {loginType === "merchant"
+                                {isOfflineDesktop
+                                    ? `${desktopConfig?.workspaceName || "Workspace lokal"} · Mode offline`
+                                    : loginType === "merchant"
                                     ? "Kelola impor, order, dan operasional bisnis Anda."
                                     : "Koordinasikan layanan logistik dan pengiriman merchant."}
                             </p>
@@ -339,34 +344,42 @@ export default function LoginPage() {
                                     </div>
                                 )}
 
-                                {/* --- TOMBOL PASSKEY UTAMA (HIGHLIGHT) --- */}
-                                <Button
-                                    type="button"
-                                    variant="default" // Gunakan style primary/default biar menonjol
-                                    size="lg"
-                                    className="w-full h-12 text-md font-semibold flex gap-2 items-center justify-center"
-                                    onClick={handleDiscoverableLogin}
-                                    disabled={isLoading}
-                                >
-                                    {isLoading ? (
-                                        <Loader2 className="animate-spin h-5 w-5" />
-                                    ) : (
-                                        <Fingerprint className="h-6 w-6" />
-                                    )}
-                                    {t("login.passkey_btn")}
-                                </Button>
+                                {!isOfflineDesktop && (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="default"
+                                            size="lg"
+                                            className="w-full h-12 text-md font-semibold flex gap-2 items-center justify-center"
+                                            onClick={handleDiscoverableLogin}
+                                            disabled={isLoading}
+                                        >
+                                            {isLoading ? (
+                                                <Loader2 className="animate-spin h-5 w-5" />
+                                            ) : (
+                                                <Fingerprint className="h-6 w-6" />
+                                            )}
+                                            {t("login.passkey_btn")}
+                                        </Button>
+                                        <div className="relative my-2">
+                                            <div className="absolute inset-0 flex items-center">
+                                                <span className="w-full border-t" />
+                                            </div>
+                                            <div className="relative flex justify-center text-xs uppercase">
+                                                <span className="bg-background px-2 text-muted-foreground">
+                                                    {t("login.divider")}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
 
-                                {/* --- DIVIDER --- */}
-                                <div className="relative my-2">
-                                    <div className="absolute inset-0 flex items-center">
-                                        <span className="w-full border-t" />
+                                {isOfflineDesktop && (
+                                    <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                        <WifiOff className="size-4 shrink-0" />
+                                        <span>Database lokal siap digunakan tanpa internet.</span>
                                     </div>
-                                    <div className="relative flex justify-center text-xs uppercase">
-                                        <span className="bg-background px-2 text-muted-foreground">
-                                            {t("login.divider")}
-                                        </span>
-                                    </div>
-                                </div>
+                                )}
 
                                 {/* --- FORM LOGIN MANUAL --- */}
                                 <form onSubmit={handleManualLogin} className="grid gap-4">
@@ -387,7 +400,7 @@ export default function LoginPage() {
                                     <div className="grid gap-2">
 									<div className="flex items-center justify-between">
 										<Label htmlFor="password">{t("login.password")}</Label>
-										<button type="button" onClick={() => navigate("/forgot-password")} className="text-xs font-medium text-primary hover:underline">Lupa password?</button>
+										{!isOfflineDesktop && <button type="button" onClick={() => navigate("/forgot-password")} className="text-xs font-medium text-primary hover:underline">Lupa password?</button>}
 									</div>
                                         <div className="relative">
                                             <Input
@@ -416,7 +429,7 @@ export default function LoginPage() {
                                     <Button
                                         size="lg"
                                         type="submit"
-                                        variant="outline" // Gunakan outline biar tidak rebutan perhatian dgn passkey
+                                        variant={isOfflineDesktop ? "default" : "outline"}
                                         className="w-full mt-2"
                                         disabled={isLoading}
                                     >

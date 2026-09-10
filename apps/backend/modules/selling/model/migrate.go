@@ -28,6 +28,10 @@ func Migrate(db *gorm.DB) error {
 		&SalesInvoice{},
 		&SalesInvoiceItem{},
 		&SalesLedgerEntry{},
+		&Customer{},
+		&CustomerGroup{},
+		&Address{},
+		&Contact{},
 	); err != nil {
 		return fmt.Errorf("auto migrate Selling models: %w", err)
 	}
@@ -49,6 +53,10 @@ func Migrate(db *gorm.DB) error {
 		{&SalesInvoice{}, "idx_sales_invoice_tenant_status", "tenant_id, status, is_return"},
 		{&SalesInvoiceItem{}, "idx_sales_invoice_item_invoice", "sales_invoice_id"},
 		{&SalesLedgerEntry{}, "idx_sales_ledger_voucher", "tenant_id, voucher_id, entry_type"},
+		{&Customer{}, "idx_selling_customer_tenant", "tenant_id"},
+		{&CustomerGroup{}, "idx_selling_customer_group_tenant", "tenant_id"},
+		{&Address{}, "idx_selling_address_tenant", "tenant_id"},
+		{&Contact{}, "idx_selling_contact_tenant", "tenant_id"},
 	}
 
 	for _, index := range indexes {

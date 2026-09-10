@@ -261,9 +261,9 @@ function Check({
 }) {
   return (
     <div className="flex items-start gap-2 pt-2">
-      <Checkbox checked={checked} onCheckedChange={(value) => onChange(Boolean(value))} />
+      <Checkbox id={name} checked={checked} onCheckedChange={(value) => onChange(Boolean(value))} />
       <div>
-        <Label>{label}</Label>
+        <Label htmlFor={name} className="cursor-pointer">{label}</Label>
         <p className="text-[11px] text-slate-400">{name}</p>
       </div>
     </div>

@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"reflect"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -43,7 +44,9 @@ func main() {
 	defer stop()
 	// Init Logger
 	common.InitZapLogger()
-	services.InitXenditClient()
+	if !strings.EqualFold(os.Getenv("OFFLINE_MODE"), "true") {
+		services.InitXenditClient()
+	}
 	defer common.SyncLogger()
 	if err := run(ctx); err != nil {
 		common.FatalLog(fmt.Errorf("application failed: %w", err))
@@ -97,6 +100,10 @@ func run(ctx context.Context) error {
 	// Get port
 	port := getPort()
 	addr := ":" + port
+	if strings.EqualFold(os.Getenv("OFFLINE_MODE"), "true") {
+		// Never expose a standalone desktop database to the local network.
+		addr = "127.0.0.1:" + port
+	}
 
 	// Create HTTP server with timeouts
 	srv := &http.Server{
@@ -109,7 +116,11 @@ func run(ctx context.Context) error {
 	// Start server in goroutine
 	serverErr := make(chan error, 1)
 	go func() {
-		common.SysLog(fmt.Sprintf("🚀 Server starting on http://localhost%s", addr))
+		displayAddr := addr
+		if strings.HasPrefix(displayAddr, ":") {
+			displayAddr = "localhost" + displayAddr
+		}
+		common.SysLog(fmt.Sprintf("🚀 Server starting on http://%s", displayAddr))
 		common.SysLog("Press Ctrl+C to shutdown")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			serverErr <- fmt.Errorf("server error: %w", err)
@@ -184,14 +195,13 @@ func setupServer() *gin.Engine {
 		})
 	})
 
-	// Worker Send Email
-	go services.StartEmailWorker()
-	// Cleanup for ticket reservation
-	go services.StartOrderReservationCleanupWorker(model.DB)
-	// Reset daily Email
-	go services.StartDailyResetWorker()
-	// Start bulk email
-	go services.StartBulkEmailWorker()
+	if !strings.EqualFold(os.Getenv("OFFLINE_MODE"), "true") {
+		// Network-backed workers are intentionally disabled for standalone desktop installs.
+		go services.StartEmailWorker()
+		go services.StartOrderReservationCleanupWorker(model.DB)
+		go services.StartDailyResetWorker()
+		go services.StartBulkEmailWorker()
+	}
 	// Web Socket
 	// Setup API routes only
 	router.SetApiRouter(server, model.DB)

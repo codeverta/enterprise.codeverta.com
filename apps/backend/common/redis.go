@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -55,6 +56,11 @@ func getRedisConfig() RedisConfig {
 
 // InitRedisClient This function is called after init()
 func InitRedisClient() (err error) {
+	if strings.EqualFold(os.Getenv("OFFLINE_MODE"), "true") {
+		RedisEnabled = false
+		SysLog("Offline mode enabled, Redis is not used")
+		return nil
+	}
 	if os.Getenv("REDIS_CONN_STRING") == "" {
 		RedisEnabled = false
 		SysLog("REDIS_CONN_STRING not set, Redis is not enabled")

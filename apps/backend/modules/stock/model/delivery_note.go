@@ -105,6 +105,13 @@ type StockLedgerEntry struct {
 	ItemCode        string    `gorm:"size:120;not null;index" json:"item_code"`
 	Warehouse       string    `gorm:"size:180;not null;index" json:"warehouse"`
 	ActualQty       float64   `gorm:"type:decimal(18,2);not null" json:"actual_qty"`
+	IncomingRate    float64   `gorm:"type:decimal(18,2);default:0" json:"incoming_rate"`
+	ValuationRate   float64   `gorm:"type:decimal(18,2);default:0" json:"valuation_rate"`
+	StockValue      float64   `gorm:"type:decimal(18,2);default:0" json:"stock_value"`
+	Company         string    `gorm:"size:180;index" json:"company"`
+	BatchNo         string    `gorm:"size:120;index" json:"batch_no"`
+	SerialNo        string    `gorm:"size:140;index" json:"serial_no"`
+	Project         string    `gorm:"size:120" json:"project"`
 	CreatedAt       time.Time `json:"created_at"`
 }
 

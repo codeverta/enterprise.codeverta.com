@@ -10,13 +10,13 @@ import (
 )
 
 type CourseBundle struct {
-	ID          uuid.UUID          `json:"id" gorm:"type:char(36);primaryKey"`
-	Name        string             `json:"name" gorm:"type:varchar(160);not null;index"`
-	Slug        string             `json:"slug" gorm:"type:varchar(180);not null;uniqueIndex"`
-	Description string             `json:"description" gorm:"type:text"`
-	AgeRange    string             `json:"age_range" gorm:"type:varchar(80)"`
-	GradeRange  string             `json:"grade_range" gorm:"type:varchar(80)"`
-	Pillar      string             `json:"pillar" gorm:"type:varchar(120);index"`
+	ID                          uuid.UUID          `json:"id" gorm:"type:char(36);primaryKey"`
+	Name                        string             `json:"name" gorm:"type:varchar(160);not null;index"`
+	Slug                        string             `json:"slug" gorm:"type:varchar(180);not null;uniqueIndex"`
+	Description                 string             `json:"description" gorm:"type:text"`
+	AgeRange                    string             `json:"age_range" gorm:"type:varchar(80)"`
+	GradeRange                  string             `json:"grade_range" gorm:"type:varchar(80)"`
+	Pillar                      string             `json:"pillar" gorm:"type:varchar(120);index"`
 	IsActive                    bool               `json:"is_active" gorm:"default:true;index"`
 	RequireSequentialCompletion bool               `json:"require_sequential_completion" gorm:"default:false"`
 	CourseCount                 int                `json:"course_count" gorm:"default:0"`

@@ -295,7 +295,7 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 	itemCodes := make([]string, 0, len(input.Items))
 	for index := range input.Items {
 		input.Items[index].ItemCode = strings.TrimSpace(input.Items[index].ItemCode)
-		if input.Items[index].ItemCode == "" || input.Items[index].Quantity <= 0 {
+		if input.Items[index].ItemCode == "" || input.Items[index].Quantity <= 0 || input.Items[index].Rate < 0 {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Kode item dan quantity POS harus valid"})
 			return
 		}
@@ -333,7 +333,11 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		input.Items[i].ID = "posii-" + uuid.New().String()[:8]
 		input.Items[i].InvoiceID = input.ID
 		input.Items[i].ItemName = masterItem.ItemName
-		input.Items[i].Rate = masterItem.StandardRate
+		// POS may override the catalog rate for a negotiated or promotional price.
+		// Keep the master rate as a fallback for clients that omit the rate.
+		if input.Items[i].Rate == 0 {
+			input.Items[i].Rate = masterItem.StandardRate
+		}
 		input.Items[i].Amount = input.Items[i].Quantity * input.Items[i].Rate
 		input.NetTotal += input.Items[i].Amount
 	}

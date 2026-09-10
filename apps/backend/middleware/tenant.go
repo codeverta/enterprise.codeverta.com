@@ -23,6 +23,9 @@ type TenantMiddleware struct {
 
 // Helper Cache Key (konsisten dengan snippet kamu)
 func getTenantCacheKey(id string) string {
+	if common.RDB == nil {
+		return fmt.Sprintf("tenant:%s", id)
+	}
 	return common.RDB.GetKey(fmt.Sprintf("tenant:%s", id))
 }
 
@@ -82,8 +85,13 @@ func (m *TenantMiddleware) TenantResolver() gin.HandlerFunc {
 		cacheKey := getTenantCacheKey(tenantID)
 
 		// 1. Coba ambil dari Cache
-		cachedData, err := m.Redis.Get(c, cacheKey).Result()
-		cacheHit := err == nil && cachedData != ""
+		cachedData := ""
+		cacheHit := false
+		if common.RedisEnabled && m.Redis != nil {
+			var err error
+			cachedData, err = m.Redis.Get(c, cacheKey).Result()
+			cacheHit = err == nil && cachedData != ""
+		}
 
 		if cacheHit {
 			if jsonErr := json.Unmarshal([]byte(cachedData), &tenant); jsonErr == nil {
@@ -105,8 +113,10 @@ func (m *TenantMiddleware) TenantResolver() gin.HandlerFunc {
 				return
 			}
 			// Simpan balik ke Redis
-			tenantBytes, _ := json.Marshal(tenant)
-			m.Redis.Set(c, cacheKey, tenantBytes, 0)
+			if common.RedisEnabled && m.Redis != nil {
+				tenantBytes, _ := json.Marshal(tenant)
+				m.Redis.Set(c, cacheKey, tenantBytes, 0)
+			}
 		}
 
 		// 3. BAGIAN KRUSIAL: Set Scoped DB & Context (Berlaku untuk Hit & Miss)

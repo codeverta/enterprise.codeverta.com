@@ -202,6 +202,7 @@ const documentIconMap: Record<string, LucideIcon> = {
   "Supplier Scorecard Standing": Medal,
   "Buying Settings": Settings2,
   "Stock Entry": Boxes,
+  "Stock Entry Type": Boxes,
   "Purchase Receipt": Receipt,
   "Delivery Note": Truck,
   "Pick List": ClipboardList,
@@ -590,7 +591,7 @@ const selling = workspace(
   "selling",
   [
     "Quotation", "Sales Order", "Sales Invoice", ["POS", "/desk/point-of-sale"],
-    // ["Orders", "/desk/selling/orders"],
+    ["Item Price", "/desk/item-price"],
     ["Subscriptions", "/desk/selling/subscriptions"],
     ["Promotions", "/desk/selling/promotions"],
     ["Loyalty Program", "/desk/loyalty-program"],
@@ -640,14 +641,14 @@ const stockHome = "/desk/stock";
 const stock = workspace(
   "Stock",
   "stock",
-  ["Stock Entry", "Purchase Receipt", "Delivery Note", "Material Request", "Pick List", "Shipment"],
+  ["Stock Entry", "Purchase Receipt", "Delivery Note", "Material Request", "Pick List", "Shipment", ["UOM", "/desk/uom"], ["Warehouse", "/desk/warehouse"], ["Stock Entry Type", "/desk/stock-entry-type"], ["Serial No", "/desk/serial-no"], ["Batch No", "/desk/batch-no"], ["Stock Ledger", "/desk/stock-ledger"]],
   [
     group("Alat & Operasional", stockHome, documentLinks([
       "Stock Reconciliation", "Landed Cost Voucher", "Repost Item Valuation", "Packing Slip", "Quality Inspection",
     ]), PackageCheck),
     group("Pengaturan & Master Data", stockHome, documentLinks([
-      "Item", "Item Group", "Item Attribute", "Brand", "Warehouse", ["Unit of Measure (UOM)", "/desk/uom"],
-      "UOM Conversion Factor", "Serial No", "Batch No", "Serial and Batch Bundle", "Inventory Dimension",
+      "Item", "Item Group", "Item Attribute", "Brand", "Warehouse", ["Stock Entry Type", "/desk/stock-entry-type"], ["Unit of Measure (UOM)", "/desk/uom"],
+      "UOM Conversion Factor", ["Serial No", "/desk/serial-no"], ["Batch No", "/desk/batch-no"], "Serial and Batch Bundle", "Inventory Dimension",
       "Shipping Rule", "Item Alternative", "Quality Inspection Template", "Delivery Trip",
     ]), Warehouse),
     group("Laporan & Analisis", stockHome, reportLinks([

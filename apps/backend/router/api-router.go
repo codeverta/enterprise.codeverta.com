@@ -9,9 +9,9 @@ import (
 	stockmodule "gin-template/modules/stock"
 	"gin-template/repository"
 	"gin-template/services"
-	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -27,10 +27,6 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 	secretKey := os.Getenv("TENCENTCLOUD_SECRET_KEY")
 	region := "ap-singapore"
 
-	if secretID == "" || secretKey == "" {
-		log.Fatal("Error: TENCENTCLOUD_SECRET_ID atau KEY tidak ditemukan di env")
-	}
-
 	// Root Landing Page Route
 	htmlContent := `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Document</title></head><body><div style="text-align: center; margin-top: 20%;">developed by <a href="http://bikinwebsitejogja.com" target="_blank" rel="noopener noreferrer">bikinwebsitejogja.com</a></div></body></html>`
 	router.GET("/", func(c *gin.Context) {
@@ -42,9 +38,18 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 	dashboardRepo := repository.NewDashboardRepository(db)
 	participantDashboardRepo := repository.NewParticipantStatRepository(db)
 
-	sesService, err := services.NewSESService(secretID, secretKey, region, logger)
-	if err != nil {
-		log.Fatal("Gagal init Tencent Service:", err)
+	var sesService *services.SESService
+	if strings.EqualFold(os.Getenv("OFFLINE_MODE"), "true") {
+		sesService = services.NewOfflineSESService(logger)
+	} else {
+		if secretID == "" || secretKey == "" {
+			panic("TENCENTCLOUD_SECRET_ID atau TENCENTCLOUD_SECRET_KEY tidak ditemukan di env")
+		}
+		var err error
+		sesService, err = services.NewSESService(secretID, secretKey, region, logger)
+		if err != nil {
+			panic("Gagal init Tencent Service: " + err.Error())
+		}
 	}
 	promoService := services.NewPromoService(promoRepo)
 

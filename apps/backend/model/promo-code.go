@@ -23,7 +23,7 @@ type PromoCode struct {
 	Code string    `gorm:"uniqueIndex;type:varchar(20)" json:"code"`
 
 	// Sesuai request: discount_type ENUM('PERCENT','FIXED')
-	DiscountType DiscountType `gorm:"type:enum('PERCENT','FIXED');default:'FIXED'" json:"discount_type"`
+	DiscountType DiscountType `gorm:"type:varchar(10);default:'FIXED'" json:"discount_type"`
 
 	// Sesuai request: discount_value
 	DiscountValue float64 `json:"discount_value"`

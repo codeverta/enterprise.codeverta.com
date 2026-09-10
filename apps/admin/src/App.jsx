@@ -23,6 +23,7 @@ import SettingsModule from "./modules/settings";
 import { isAdminRole } from "./lib/erp-desk";
 import { isTauri } from "@tauri-apps/api/core";
 import DesktopTitleBar from "./components/DesktopTitleBar";
+import { DesktopBootstrap } from "./components/DesktopSetup";
 
 const LegacyDashboardHome = () => {
   let user = null;
@@ -77,6 +78,10 @@ const router = createBrowserRouter([
           { path: "desk/purchase-invoice/*", element: <BuyingModule /> },
           { path: "desk/supplier/*", element: <BuyingModule /> },
           { path: "desk/supplier-group/*", element: <BuyingModule /> },
+          { path: "desk/customer/*", element: <SellingModule /> },
+          { path: "desk/customer-group/*", element: <SellingModule /> },
+          { path: "desk/address/*", element: <SellingModule /> },
+          { path: "desk/contact/*", element: <SellingModule /> },
           { path: "desk/item/*", element: <SharedItemRoute /> },
           { path: "desk/organization/users/*", element: <OrganizationModule /> },
           { path: "desk/organization/tenants/*", element: <OrganizationModule /> },
@@ -93,9 +98,20 @@ const router = createBrowserRouter([
           { path: "desk/pos-closing-entry/*", element: <SellingModule /> },
           { path: "desk/pos-invoice/*", element: <SellingModule /> },
           { path: "desk/sales-order/*", element: <SellingModule /> },
+          { path: "desk/item-price/*", element: <SellingModule /> },
           { path: "desk/price-list/*", element: <SellingModule /> },
           { path: "desk/shipment/*", element: <StockModule /> },
           { path: "desk/delivery-note/*", element: <StockModule /> },
+          { path: "desk/uom/*", element: <StockModule /> },
+          { path: "desk/warehouse/*", element: <StockModule /> },
+          { path: "desk/stock-entry/*", element: <StockModule /> },
+          { path: "desk/stock-entry-type/*", element: <StockModule /> },
+          { path: "desk/purchase-receipt/*", element: <StockModule /> },
+          { path: "desk/serial-no/*", element: <StockModule /> },
+          { path: "desk/batch-no/*", element: <StockModule /> },
+          { path: "desk/stock-ledger/*", element: <StockModule /> },
+          { path: "desk/query-report/Stock%20Ledger", element: <StockModule /> },
+          { path: "desk/query-report/Stock Ledger", element: <StockModule /> },
           { path: "desk/query-report/Sales%20Register", element: <SellingModule /> },
           { path: "desk/query-report/*", element: <SellingModule /> },
           { path: "desk/loyalty-program/*", element: <SellingModule /> },
@@ -130,7 +146,9 @@ export default function App() {
     <div className="tauri-shell h-screen overflow-hidden bg-background">
       <DesktopTitleBar />
       <main className="tauri-app-content">
-        <RouterProvider router={router} />
+        <DesktopBootstrap>
+          <RouterProvider router={router} />
+        </DesktopBootstrap>
       </main>
     </div>
   );

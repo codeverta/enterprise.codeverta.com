@@ -9,6 +9,7 @@ import (
 	sellingmodel "gin-template/modules/selling/model"
 	stockmodel "gin-template/modules/stock/model"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -17,14 +18,16 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func InitDB() error {
 	var (
-		db  *gorm.DB
-		err error
-		dsn = os.Getenv("SQL_DSN")
+		db         *gorm.DB
+		err        error
+		dsn        = os.Getenv("SQL_DSN")
+		sqlitePath = strings.TrimSpace(os.Getenv("SQLITE_PATH"))
 	)
 
 	config := &gorm.Config{
@@ -32,18 +35,27 @@ func InitDB() error {
 		DisableForeignKeyConstraintWhenMigrating: true,
 	}
 
-	if dsn != "" {
+	if strings.EqualFold(os.Getenv("OFFLINE_MODE"), "true") || sqlitePath != "" {
+		if sqlitePath == "" {
+			sqlitePath = common.SQLitePath
+		}
+		if dir := filepath.Dir(sqlitePath); dir != "." {
+			if err := os.MkdirAll(dir, 0o700); err != nil {
+				return fmt.Errorf("failed to create SQLite directory: %w", err)
+			}
+		}
+		db, err = gorm.Open(sqlite.Open(sqlitePath+"?_busy_timeout=5000&_journal_mode=WAL&_foreign_keys=on"), config)
+	} else if dsn != "" {
 		db, err = gorm.Open(mysql.Open(dsn), config)
 	} else {
-		common.SysLog("SQL_DSN not set")
-		// db, err = gorm.Open(sqlite.Open(common.SQLitePath), config)
+		common.SysLog("SQL_DSN and SQLITE_PATH are not set")
 	}
 
 	if err != nil {
 		return fmt.Errorf("failed to connect database: %w", err)
 	}
 	if db == nil {
-		return fmt.Errorf("failed to connect database: SQL_DSN is not configured")
+		return fmt.Errorf("failed to connect database: SQL_DSN or SQLITE_PATH is not configured")
 	}
 	if err := configureSQLPool(db); err != nil {
 		return err
@@ -154,8 +166,14 @@ func configureSQLPool(db *gorm.DB) error {
 	if err != nil {
 		return fmt.Errorf("get SQL connection pool: %w", err)
 	}
-	sqlDB.SetMaxOpenConns(envInt("SQL_MAX_OPEN_CONNS", 25))
-	sqlDB.SetMaxIdleConns(envInt("SQL_MAX_IDLE_CONNS", 10))
+	if db.Dialector.Name() == "sqlite" {
+		// A single writer avoids SQLITE_BUSY errors while WAL still allows concurrent reads.
+		sqlDB.SetMaxOpenConns(1)
+		sqlDB.SetMaxIdleConns(1)
+	} else {
+		sqlDB.SetMaxOpenConns(envInt("SQL_MAX_OPEN_CONNS", 25))
+		sqlDB.SetMaxIdleConns(envInt("SQL_MAX_IDLE_CONNS", 10))
+	}
 	sqlDB.SetConnMaxLifetime(time.Duration(envInt("SQL_CONN_MAX_LIFETIME_MINUTES", 30)) * time.Minute)
 	sqlDB.SetConnMaxIdleTime(time.Duration(envInt("SQL_CONN_MAX_IDLE_MINUTES", 5)) * time.Minute)
 

@@ -15,16 +15,29 @@ import POSInvoicePage from "./pages/POSInvoicePage";
 import SalesOrderFormPage, { SalesOrderListPage } from "./pages/SalesOrderPage";
 import SalesRegisterPage from "./pages/SalesRegisterPage";
 import PriceListPage from "./pages/PriceListPage";
+import ItemPricePage from "./pages/ItemPricePage";
 import MasterListPage from "../buying/pages/MasterListPage";
 import ItemFormPage from "../buying/pages/ItemFormPage";
 import SalesInvoiceFormPage, { SalesInvoiceListPage } from "./pages/SalesInvoicePage";
+import CustomerPage from "./pages/CustomerPage";
+import CustomerMasterPage from "./pages/CustomerMasterPage";
 
 export default function SellingModule() {
   const { pathname } = useLocation();
 
   let content: React.ReactNode;
 
-  if (pathname.startsWith("/desk/price-list")) {
+  if (pathname.startsWith("/desk/customer-group")) {
+    content = <CustomerMasterPage kind="customer-group" />;
+  } else if (pathname.startsWith("/desk/address")) {
+    content = <CustomerMasterPage kind="address" />;
+  } else if (pathname.startsWith("/desk/contact")) {
+    content = <CustomerMasterPage kind="contact" />;
+  } else if (pathname.startsWith("/desk/customer")) {
+    content = <CustomerPage />;
+  } else if (pathname.startsWith("/desk/item-price")) {
+    content = <ItemPricePage />;
+  } else if (pathname.startsWith("/desk/price-list")) {
     content = <PriceListPage />;
   } else if (pathname.startsWith("/desk/item")) {
     const isItemForm = pathname === "/desk/item/new" || /^\/desk\/item\/[^/]+$/.test(pathname);

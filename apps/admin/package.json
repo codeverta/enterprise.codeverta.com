@@ -6,6 +6,7 @@
   "scripts": {
     "build:malabar": "vite build --mode malabar",
     "build:manglayang": "vite build --mode manglayang",
+    "build:desktop-sidecar": "node scripts/build-desktop-sidecar.mjs",
     "dev": "vite",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",

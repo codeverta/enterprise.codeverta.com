@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/base64"
+	"errors"
 
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
@@ -12,6 +13,19 @@ import (
 type SESService struct {
 	Client *ses.Client
 	Logger *zap.Logger
+}
+
+var errOfflineService = errors.New("layanan email cloud tidak tersedia dalam mode offline")
+
+func NewOfflineSESService(logger *zap.Logger) *SESService {
+	return &SESService{Logger: logger}
+}
+
+func (s *SESService) available() error {
+	if s == nil || s.Client == nil {
+		return errOfflineService
+	}
+	return nil
 }
 
 func mapTencentStatus(status uint64) string {
@@ -42,6 +56,9 @@ func NewSESService(secretId, secretKey, region string, logger *zap.Logger) (*SES
 }
 
 func (s *SESService) GetTemplateStatusMap(limit, offset uint64) (map[uint64]string, error) {
+	if err := s.available(); err != nil {
+		return nil, err
+	}
 	request := ses.NewListEmailTemplatesRequest()
 	request.Limit = common.Uint64Ptr(limit)
 	request.Offset = common.Uint64Ptr(offset)
@@ -67,6 +84,9 @@ func (s *SESService) GetTemplateStatusMap(limit, offset uint64) (map[uint64]stri
 }
 
 func (s *SESService) GetTemplateStatus(tencentID uint64) (string, error) {
+	if err := s.available(); err != nil {
+		return "", err
+	}
 	request := ses.NewGetEmailTemplateRequest()
 	request.TemplateID = common.Uint64Ptr(tencentID)
 
@@ -83,6 +103,9 @@ func (s *SESService) GetTemplateStatus(tencentID uint64) (string, error) {
 
 // 1. Create Template
 func (s *SESService) CreateTemplate(name, htmlBody string) (uint64, error) {
+	if err := s.available(); err != nil {
+		return 0, err
+	}
 	// Log intent
 	s.Logger.Info("attempting to create email template", zap.String("template_name", name))
 
@@ -115,6 +138,9 @@ func (s *SESService) CreateTemplate(name, htmlBody string) (uint64, error) {
 
 // 2. Update Template
 func (s *SESService) UpdateTemplate(tencentID uint64, name, htmlBody string) error {
+	if err := s.available(); err != nil {
+		return err
+	}
 	s.Logger.Info("attempting to update email template",
 		zap.Uint64("template_id", tencentID),
 		zap.String("new_name", name),
@@ -144,6 +170,9 @@ func (s *SESService) UpdateTemplate(tencentID uint64, name, htmlBody string) err
 
 // 3. Delete Template
 func (s *SESService) DeleteTemplate(tencentID uint64) error {
+	if err := s.available(); err != nil {
+		return err
+	}
 	s.Logger.Info("attempting to delete email template", zap.Uint64("template_id", tencentID))
 
 	request := ses.NewDeleteEmailTemplateRequest()

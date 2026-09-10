@@ -121,4 +121,3 @@ func (te *TrainingEvent) BeforeCreate(tx *gorm.DB) error {
 	return fmt.Errorf("tenant_id is required for security isolation")
 }
 
-

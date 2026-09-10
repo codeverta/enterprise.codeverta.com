@@ -72,11 +72,36 @@ export type Shipment = {
   updated_at?: string;
 };
 
+export type StockMasterUser = {
+  id: string;
+  username: string;
+  display_name: string;
+  email: string;
+};
+
+export type StockMasterCustomer = {
+  id: string;
+  customer_name: string;
+  customer_type?: string;
+  email?: string;
+  phone?: string;
+};
+
+export type StockMasterDeliveryNote = {
+  number: string;
+  customer?: string;
+  total?: number;
+  status?: string;
+};
+
 export type StockMasterOptions = {
   companies: string[];
   incoterms: string[];
   service_providers: string[];
   parcel_templates: string[];
+  users?: StockMasterUser[];
+  customers?: StockMasterCustomer[];
+  delivery_notes?: StockMasterDeliveryNote[];
 };
 
 // Delivery Note Types
@@ -247,3 +272,342 @@ export const stockApi = {
     return res.data;
   },
 };
+
+export type SerialNoStatus = "Available" | "Delivered" | "Expired" | "Inactive";
+
+export type SerialNo = {
+  id?: string;
+  tenant_id?: string;
+  serial_no: string;
+  item_code: string;
+  item_name?: string;
+  description?: string;
+  warehouse?: string;
+  company?: string;
+  status: SerialNoStatus;
+  batch_no?: string;
+
+  // Purchase Details
+  purchase_document_type?: string;
+  purchase_document_no?: string;
+  purchase_date?: string;
+  purchase_rate?: number;
+  supplier?: string;
+  supplier_name?: string;
+
+  // Delivery Details
+  delivery_document_type?: string;
+  delivery_document_no?: string;
+  delivery_date?: string;
+  customer?: string;
+  customer_name?: string;
+
+  // Warranty Details
+  warranty_period?: number;
+  warranty_expiry_date?: string;
+  amc_expiry_date?: string;
+  maintenance_status?: string;
+
+  notes?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type SerialNoStats = {
+  total: number;
+  available: number;
+  delivered: number;
+  expired: number;
+  inactive: number;
+};
+
+export type SerialNoOptions = {
+  items: Array<{
+    item_code: string;
+    item_name: string;
+    stock_uom: string;
+    has_serial_no: boolean;
+    has_batch_no: boolean;
+  }>;
+  warehouses: Array<{
+    id: string;
+    warehouse_name: string;
+    company: string;
+    is_group: boolean;
+  }>;
+  companies: Array<{
+    id: string;
+    name: string;
+  }>;
+  batches: Array<{
+    batch_id: string;
+    item_code: string;
+    batch_qty: number;
+  }>;
+  suppliers: Array<{
+    id: string;
+    supplier_name: string;
+  }>;
+  customers: Array<{
+    id: string;
+    customer_name: string;
+  }>;
+};
+
+export const serialNoApi = {
+  async list(params?: {
+    q?: string;
+    status?: string;
+    item_code?: string;
+    warehouse?: string;
+    batch_no?: string;
+  }): Promise<{ data: SerialNo[]; stats: SerialNoStats }> {
+    const res = await api.get<{ data: SerialNo[]; stats: SerialNoStats }>("/stock/serial-nos", { params });
+    return res.data;
+  },
+
+  async get(id: string): Promise<SerialNo> {
+    const res = await api.get<SerialNo>(`/stock/serial-nos/${id}`);
+    return res.data;
+  },
+
+  async create(data: Partial<SerialNo> & { serial_nos?: string[] }): Promise<any> {
+    const res = await api.post("/stock/serial-nos", data);
+    return res.data;
+  },
+
+  async update(id: string, data: Partial<SerialNo>): Promise<SerialNo> {
+    const res = await api.put<SerialNo>(`/stock/serial-nos/${id}`, data);
+    return res.data;
+  },
+
+  async remove(id: string): Promise<void> {
+    await api.delete(`/stock/serial-nos/${id}`);
+  },
+
+  async options(): Promise<SerialNoOptions> {
+    const res = await api.get<SerialNoOptions>("/stock/serial-nos/options");
+    return res.data;
+  },
+};
+
+export type Batch = {
+  id?: string;
+  tenant_id?: string;
+  batch_id: string;
+  item_code: string;
+  item_name?: string;
+  batch_qty: number;
+  manufacturing_date?: string;
+  expiry_date?: string;
+  shelf_life_in_days?: number;
+  reference_doctype?: string;
+  reference_name?: string;
+  supplier?: string;
+  disabled: boolean;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type BatchStats = {
+  total: number;
+  active: number;
+  expiring_soon: number;
+  expired: number;
+};
+
+export type BatchOptions = {
+  items: Array<{
+    item_code: string;
+    item_name: string;
+    stock_uom: string;
+    has_batch_no: boolean;
+    shelf_life_in_days: number;
+  }>;
+  suppliers: Array<{
+    id: string;
+    supplier_name: string;
+  }>;
+};
+
+export const batchApi = {
+  async list(params?: {
+    q?: string;
+    item_code?: string;
+    status?: string;
+  }): Promise<{ data: Batch[]; stats: BatchStats }> {
+    const res = await api.get<{ data: Batch[]; stats: BatchStats }>("/stock/batches", { params });
+    return res.data;
+  },
+
+  async get(id: string): Promise<Batch> {
+    const res = await api.get<Batch>(`/stock/batches/${id}`);
+    return res.data;
+  },
+
+  async create(data: Partial<Batch>): Promise<Batch> {
+    const res = await api.post<Batch>("/stock/batches", data);
+    return res.data;
+  },
+
+  async update(id: string, data: Partial<Batch>): Promise<Batch> {
+    const res = await api.put<Batch>(`/stock/batches/${id}`, data);
+    return res.data;
+  },
+
+  async remove(id: string): Promise<void> {
+    await api.delete(`/stock/batches/${id}`);
+  },
+
+  async options(): Promise<BatchOptions> {
+    const res = await api.get<BatchOptions>("/stock/batches/options");
+    return res.data;
+  },
+};
+
+export type StockLedgerEntry = {
+  id: string;
+  date: string;
+  posting_date: string;
+  item_code: string;
+  item_name: string;
+  stock_uom: string;
+  in_qty: number;
+  out_qty: number;
+  balance_qty: number;
+  warehouse: string;
+  item_group: string;
+  brand: string;
+  description: string;
+  incoming_rate: number;
+  valuation_rate: number;
+  balance_value: number;
+  voucher_type: string;
+  voucher_number: string;
+  voucher_id: string;
+  voucher_detail_id: string;
+  batch_no: string;
+  serial_no: string;
+  company: string;
+  project: string;
+};
+
+export type StockLedgerStats = {
+  total_entries: number;
+  total_in_qty: number;
+  total_out_qty: number;
+  net_balance: number;
+};
+
+export type StockLedgerOptions = {
+  companies: string[];
+  warehouses: string[];
+  items: Array<{
+    item_code: string;
+    item_name: string;
+    stock_uom: string;
+    item_group: string;
+    brand: string;
+  }>;
+  item_groups: string[];
+  brands: string[];
+  batches: string[];
+};
+
+export const stockLedgerApi = {
+  async list(params?: {
+    company?: string;
+    from_date?: string;
+    to_date?: string;
+    warehouse?: string;
+    item_code?: string;
+    item_group?: string;
+    batch_no?: string;
+    brand?: string;
+    voucher_no?: string;
+    project?: string;
+    include_uom?: boolean | string;
+    segregate_serial_batch_bundle?: boolean | string;
+    q?: string;
+  }): Promise<{ data: StockLedgerEntry[]; stats: StockLedgerStats }> {
+    const res = await api.get<{ data: StockLedgerEntry[]; stats: StockLedgerStats }>("/stock/stock-ledger", { params });
+    return res.data;
+  },
+
+  async options(): Promise<StockLedgerOptions> {
+    const res = await api.get<StockLedgerOptions>("/stock/stock-ledger/options");
+    return res.data;
+  },
+};
+
+export type StockEntryType = {
+  id?: string;
+  tenant_id?: string;
+  name: string;
+  purpose: string;
+  is_standard: boolean;
+  disabled: boolean;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export const STANDARD_STOCK_ENTRY_PURPOSES = [
+  "Material Issue",
+  "Material Receipt",
+  "Material Transfer",
+  "Material Transfer for Manufacture",
+  "Material Consumption for Manufacture",
+  "Manufacture",
+  "Repack",
+  "Send to Subcontractor",
+  "Disassemble",
+  "Receive from Customer",
+  "Return Raw Material to Customer",
+  "Subcontracting Delivery",
+  "Subcontracting Return",
+] as const;
+
+export const stockEntryTypeApi = {
+  async list(params?: {
+    q?: string;
+    purpose?: string;
+    disabled?: boolean | string;
+  }): Promise<{ data: StockEntryType[]; count: number }> {
+    const res = await api.get<{ data: StockEntryType[]; count: number }>("/stock/stock-entry-types", { params });
+    return res.data;
+  },
+
+  async get(id: string): Promise<StockEntryType> {
+    const res = await api.get<StockEntryType>(`/stock/stock-entry-types/${id}`);
+    return res.data;
+  },
+
+  async create(data: Partial<StockEntryType>): Promise<StockEntryType> {
+    const res = await api.post<StockEntryType>("/stock/stock-entry-types", data);
+    return res.data;
+  },
+
+  async update(id: string, data: Partial<StockEntryType>): Promise<StockEntryType> {
+    const res = await api.put<StockEntryType>(`/stock/stock-entry-types/${id}`, data);
+    return res.data;
+  },
+
+  async remove(id: string): Promise<void> {
+    await api.delete(`/stock/stock-entry-types/${id}`);
+  },
+
+  async seed(): Promise<{ message: string }> {
+    const res = await api.post<{ message: string }>("/stock/stock-entry-types/seed");
+    return res.data;
+  },
+
+  async purposes(): Promise<{ purposes: string[] }> {
+    const res = await api.get<{ purposes: string[] }>("/stock/stock-entry-types/purposes");
+    return res.data;
+  },
+};
+
+
+
