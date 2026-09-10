@@ -236,9 +236,9 @@ func getPort() string {
 func printBanner() {
 	banner := `
 ╔═══════════════════════════════════════╗
-║        GIN TEMPLATE SERVER            ║
+║   PT ZENIT TECHNOLOGY SOLUTION'S      ║
 ║                                       ║
-║  Version: %-28s║
+║  Version: %-28s.                      ║
 ╚═══════════════════════════════════════╝
 `
 	fmt.Printf(banner, common.Version)

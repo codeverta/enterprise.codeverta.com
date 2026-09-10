@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft,
@@ -21,6 +21,8 @@ import {
   Tag,
   DollarSign,
   Info,
+  ChevronDown,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -31,15 +33,22 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SearchableSelect, SearchableWarehouseSelect } from "@/components/ui/searchable-select";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { stockApi } from "@/modules/stock/api";
+import { customerApi, type Customer } from "../customerApi";
 import {
   salesInvoiceApi,
   type SalesInvoice,
   type SalesInvoiceItem,
   type SalesInvoiceOptions,
+  type SalesInvoiceItemOption,
 } from "../salesInvoiceApi";
 
 const today = () => new Date().toISOString().slice(0, 10);
 const nowTime = () => new Date().toTimeString().slice(0, 8);
+const addDays = (dateStr: string, days: number) => {
+  const d = new Date(dateStr || new Date());
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+};
 
 const money = (value?: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -66,7 +75,7 @@ const emptyInvoice = (): SalesInvoice => ({
   posting_date: today(),
   posting_time: nowTime(),
   set_posting_time: false,
-  due_date: today(),
+  due_date: addDays(today(), 7),
   is_pos: false,
   is_return: false,
   is_debit_note: false,
@@ -311,6 +320,139 @@ export function SalesInvoiceListPage() {
   );
 }
 
+function SearchableItemSelect({
+  value,
+  itemOptions,
+  onChange,
+  disabled,
+  placeholder = "Pilih item...",
+}: {
+  value: string;
+  itemOptions: SalesInvoiceItemOption[];
+  onChange: (item: SalesInvoiceItemOption) => void;
+  disabled?: boolean;
+  placeholder?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedItem = itemOptions.find((x) => x.item_code === value);
+
+  const filtered = itemOptions.filter((it) => {
+    const q = search.toLowerCase();
+    return (
+      it.item_code.toLowerCase().includes(q) ||
+      it.item_name.toLowerCase().includes(q) ||
+      (it.barcode && it.barcode.toLowerCase().includes(q))
+    );
+  });
+
+  return (
+    <div className="relative w-full" ref={dropdownRef}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => {
+          if (!disabled) {
+            setOpen(!open);
+            setSearch("");
+          }
+        }}
+        className={`flex h-8 w-full items-center justify-between rounded border border-slate-200 bg-white px-2 py-1 text-left text-xs font-medium text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 ${
+          open ? "ring-1 ring-blue-500 border-blue-500" : ""
+        }`}
+      >
+        <div className="truncate">
+          {value ? (
+            <span>
+              <span className="font-semibold">{value}</span>
+              {selectedItem?.item_name && (
+                <span className="ml-1 text-slate-500 truncate">- {selectedItem.item_name}</span>
+              )}
+            </span>
+          ) : (
+            <span className="text-slate-400 font-normal">{placeholder}</span>
+          )}
+        </div>
+        <ChevronDown className="ml-1.5 size-3 shrink-0 opacity-50" />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-64 w-[340px] rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-800 dark:bg-slate-950">
+          <div className="flex items-center gap-1.5 border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
+            <Search className="size-3.5 text-slate-400" />
+            <input
+              autoFocus
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Ketik kode, nama, atau barcode item..."
+              className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
+            />
+          </div>
+
+          <div className="max-h-44 overflow-y-auto py-1">
+            {filtered.length === 0 ? (
+              <div className="px-3 py-2 text-xs text-slate-400">Tidak ada item ditemukan</div>
+            ) : (
+              filtered.map((opt) => (
+                <button
+                  key={opt.item_code}
+                  type="button"
+                  onClick={() => {
+                    onChange(opt);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full flex-col rounded px-2.5 py-1.5 text-left hover:bg-blue-50 dark:hover:bg-slate-800 ${
+                    value === opt.item_code ? "bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400" : "text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  <div className="flex items-center justify-between font-semibold text-xs">
+                    <span>{opt.item_code}</span>
+                    <span className="text-[11px] font-normal text-slate-500">{opt.uom || "Nos"}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="truncate max-w-[200px]">{opt.item_name}</span>
+                    {opt.rate > 0 && (
+                      <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                        {money(opt.rate)}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+
+          <div className="border-t border-slate-100 pt-1 dark:border-slate-800">
+            <a
+              href="/desk/item/new"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
+            >
+              <Plus className="size-3.5" />
+              <span>+ Tambah Item Baru</span>
+              <ExternalLink className="ml-auto size-3 opacity-60" />
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* =========================================================================
    FORM PAGE
    ========================================================================= */
@@ -327,6 +469,7 @@ export default function SalesInvoiceFormPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [warehouses, setWarehouses] = useState<string[]>([
     "Stores - PT ZENIT",
     "Finished Goods - PT ZENIT",
@@ -335,9 +478,9 @@ export default function SalesInvoiceFormPage() {
 
   const [options, setOptions] = useState<SalesInvoiceOptions>({
     naming_series: ["ACC-SINV-.YYYY.-", "ACC-SINV-RET-.YYYY.-"],
-    companies: ["PT ZENIT TECHNOLOGY SOLUTION", "UD MILLION CANDLES"],
-    warehouses: ["Stores - PT ZENIT", "Finished Goods - PT ZENIT"],
-    customers: ["PT Mitra Niaga Mandiri", "Walk-in Customer"],
+    companies: [""],
+    warehouses: [""],
+    customers: [""],
     currencies: ["IDR", "USD", "SGD", "EUR"],
     tax_categories: ["In State", "Out of State", "Export"],
     taxes_templates: ["PPN 11%", "PPN 12%", "Exempt Tax"],
@@ -352,14 +495,28 @@ export default function SalesInvoiceFormPage() {
     const init = async () => {
       setLoading(true);
       try {
-        const [opts, compList, whList] = await Promise.all([
+        const [opts, compList, whList, custList] = await Promise.all([
           salesInvoiceApi.options(),
           warehouseApi.listCompanies(),
           warehouseApi.list(),
+          customerApi.list().catch(() => [] as Customer[]),
         ]);
         if (opts) setOptions(opts);
         if (compList && compList.length > 0) setCompanies(compList);
-        if (whList && whList.length > 0) setWarehouses(whList.map((w) => w.warehouse_name));
+        
+        const whOptions: string[] = [];
+        if (whList && whList.length > 0) {
+          whOptions.push(...whList.map((w) => w.warehouse_name));
+        }
+        if (opts?.warehouses && opts.warehouses.length > 0) {
+          opts.warehouses.forEach((w) => {
+            if (!whOptions.includes(w)) whOptions.push(w);
+          });
+        }
+        if (whOptions.length > 0) {
+          setWarehouses(whOptions);
+        }
+        if (custList && custList.length > 0) setCustomers(custList);
 
         if (!isNew && id) {
           const loaded = await salesInvoiceApi.get(id);
@@ -435,6 +592,33 @@ export default function SalesInvoiceFormPage() {
     update("items", row.items.filter((_, i) => i !== index));
   };
 
+  const handleCustomerSelect = (customerName: string) => {
+    const cust = customers.find((c) => c.customer_name.toLowerCase() === customerName.toLowerCase());
+    setRow((prev) => {
+      const updated: SalesInvoice = {
+        ...prev,
+        customer: customerName,
+      };
+      if (cust) {
+        if (cust.address && !prev.customer_address) updated.customer_address = cust.address;
+        if (cust.territory && (!prev.territory || prev.territory === "Indonesia")) updated.territory = cust.territory;
+        if ((cust.phone || cust.email) && !prev.contact_person) updated.contact_person = cust.phone || cust.email;
+      }
+      return calculateTotals(updated);
+    });
+  };
+
+  const handlePostingDateChange = (dateVal: string) => {
+    setRow((prev) => {
+      const updated: SalesInvoice = {
+        ...prev,
+        posting_date: dateVal,
+        due_date: addDays(dateVal, 7),
+      };
+      return calculateTotals(updated);
+    });
+  };
+
   const isReadonly = row.status !== "Draft";
 
   const handleBarcodeScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -442,26 +626,35 @@ export default function SalesInvoiceFormPage() {
       e.preventDefault();
       const code = (row.scan_barcode || "").trim();
       if (!code) return;
-      const matchIdx = row.items.findIndex(
-        (it) => it.item_code.toLowerCase() === code.toLowerCase()
+
+      const foundOpt = (options.items || []).find(
+        (it) =>
+          it.item_code.toLowerCase() === code.toLowerCase() ||
+          (it.barcode && it.barcode.toLowerCase() === code.toLowerCase())
       );
+
+      const itemCodeToMatch = foundOpt ? foundOpt.item_code : code;
+      const matchIdx = row.items.findIndex(
+        (it) => it.item_code.toLowerCase() === itemCodeToMatch.toLowerCase()
+      );
+
       if (matchIdx >= 0) {
         updateItem(matchIdx, { quantity: (row.items[matchIdx].quantity || 0) + 1 });
-        toast.success(`Item ${code} quantity +1`);
+        toast.success(`Item ${itemCodeToMatch} quantity +1`);
       } else {
         update("items", [
           ...row.items,
           {
-            item_code: code,
-            item_name: code,
+            item_code: itemCodeToMatch,
+            item_name: foundOpt ? foundOpt.item_name : code,
             warehouse: warehouses[0] || "Stores - PT ZENIT",
             quantity: 1,
-            uom: "Nos",
-            rate: 0,
-            amount: 0,
+            uom: foundOpt?.uom || "Nos",
+            rate: foundOpt?.rate || 0,
+            amount: foundOpt?.rate || 0,
           },
         ]);
-        toast.success(`Item ${code} ditambahkan`);
+        toast.success(`Item ${foundOpt ? foundOpt.item_name : itemCodeToMatch} ditambahkan`);
       }
       update("scan_barcode", "");
     }
@@ -477,6 +670,9 @@ export default function SalesInvoiceFormPage() {
     setSaving(true);
     try {
       const payload = calculateTotals(row);
+      if (!payload.due_date) {
+        payload.due_date = addDays(payload.posting_date || today(), 7);
+      }
       const saved =
         isNew && returnAgainst
           ? await salesInvoiceApi.createReturn(returnAgainst, {
@@ -715,13 +911,39 @@ export default function SalesInvoiceFormPage() {
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Customer <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  value={row.customer}
-                  disabled={isReadonly}
-                  onChange={(e) => update("customer", e.target.value)}
-                  placeholder="Ketik nama customer..."
-                  className="mt-1"
-                />
+                <div className="mt-1">
+                  <SearchableSelect
+                    value={row.customer}
+                    disabled={isReadonly}
+                    options={(customers.length > 0
+                      ? customers.map((c) => ({
+                          value: c.customer_name,
+                          label: c.customer_name,
+                          sublabel: c.email || c.phone || c.territory || undefined,
+                          badge: c.customer_group || undefined,
+                        }))
+                      : options.customers.map((name) => ({ value: name, label: name }))
+                    )}
+                    onSearch={async (query) => {
+                      try {
+                        const searchResult = await customerApi.list(query);
+                        return searchResult.map((c) => ({
+                          value: c.customer_name,
+                          label: c.customer_name,
+                          sublabel: c.email || c.phone || c.territory || undefined,
+                          badge: c.customer_group || undefined,
+                        }));
+                      } catch {
+                        return [];
+                      }
+                    }}
+                    onChange={(val) => handleCustomerSelect(val)}
+                    placeholder="Pilih Customer..."
+                    searchPlaceholder="Cari customer dari database..."
+                    addNewLabel="+ Buat Customer Baru"
+                    addNewHref="/desk/customer/new"
+                  />
+                </div>
               </div>
 
               <div>
@@ -732,7 +954,7 @@ export default function SalesInvoiceFormPage() {
                   type="date"
                   value={row.posting_date?.slice(0, 10)}
                   disabled={isReadonly}
-                  onChange={(e) => update("posting_date", e.target.value)}
+                  onChange={(e) => handlePostingDateChange(e.target.value)}
                   className="mt-1"
                 />
               </div>
@@ -916,18 +1138,26 @@ export default function SalesInvoiceFormPage() {
                       <td className="py-2.5 px-3 text-center text-slate-400">{idx + 1}</td>
                       <td className="py-2.5 px-3">
                         <div className="space-y-1">
-                          <Input
+                          <SearchableItemSelect
                             value={it.item_code}
+                            itemOptions={options.items || []}
                             disabled={isReadonly}
-                            onChange={(e) => updateItem(idx, { item_code: e.target.value })}
-                            placeholder="Kode item..."
-                            className="h-8 text-xs font-semibold"
+                            onChange={(opt) => {
+                              const qty = Math.abs(it.quantity) || 1;
+                              updateItem(idx, {
+                                item_code: opt.item_code,
+                                item_name: opt.item_name,
+                                uom: opt.uom || it.uom || "Nos",
+                                rate: opt.rate,
+                                amount: qty * opt.rate,
+                              });
+                            }}
                           />
                           <Input
                             value={it.item_name || ""}
                             disabled={isReadonly}
                             onChange={(e) => updateItem(idx, { item_name: e.target.value })}
-                            placeholder="Deskripsi..."
+                            placeholder="Deskripsi/nama item..."
                             className="h-7 text-[11px] text-slate-500"
                           />
                         </div>

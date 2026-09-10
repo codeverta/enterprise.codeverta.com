@@ -37,6 +37,13 @@ func Migrate(db *gorm.DB) error {
 		&CustomerGroup{},
 		&Address{},
 		&Contact{},
+		&Territory{},
+		&TerritoryTarget{},
+		&SalesPartnerType{},
+		&ItemGroup{},
+		&FiscalYear{},
+		&SalesPartner{},
+		&SalesPartnerTarget{},
 	); err != nil {
 		return fmt.Errorf("auto migrate Selling models: %w", err)
 	}
@@ -62,6 +69,13 @@ func Migrate(db *gorm.DB) error {
 		{&CustomerGroup{}, "idx_selling_customer_group_tenant", "tenant_id"},
 		{&Address{}, "idx_selling_address_tenant", "tenant_id"},
 		{&Contact{}, "idx_selling_contact_tenant", "tenant_id"},
+		{&Territory{}, "idx_selling_territory_tenant", "tenant_id"},
+		{&TerritoryTarget{}, "idx_selling_territory_target_tenant", "tenant_id, territory_id"},
+		{&SalesPartnerType{}, "idx_selling_sp_type_tenant", "tenant_id"},
+		{&ItemGroup{}, "idx_selling_item_group_tenant", "tenant_id"},
+		{&FiscalYear{}, "idx_selling_fiscal_year_tenant", "tenant_id"},
+		{&SalesPartner{}, "idx_selling_sales_partner_tenant", "tenant_id"},
+		{&SalesPartnerTarget{}, "idx_selling_sp_target_tenant", "tenant_id, sales_partner_id"},
 	}
 
 	for _, index := range indexes {

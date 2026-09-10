@@ -42,21 +42,35 @@ func authErr(c *gin.Context, err error) {
 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 }
 
+func findRole(db *gorm.DB, identifier string, row *model.RoleDefinition) error {
+	if _, err := uuid.Parse(identifier); err == nil {
+		return db.Preload("Permissions").Where("id = ? OR name = ?", identifier, identifier).First(row).Error
+	}
+	return db.Preload("Permissions").Where("name = ?", identifier).First(row).Error
+}
+
 func (a *AuthorizationController) ListRoles(c *gin.Context) {
+	db := model.GetDB(c)
+	var count int64
+	db.Model(&model.RoleDefinition{}).Count(&count)
+	if count == 0 {
+		_ = model.SeedDefaultRoles(db)
+	}
 	var rows []model.RoleDefinition
-	if err := model.GetDB(c).Preload("Permissions").Order("name").Find(&rows).Error; err != nil {
+	if err := db.Preload("Permissions").Order("name ASC").Find(&rows).Error; err != nil {
 		authErr(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": rows})
 }
 func (a *AuthorizationController) GetRole(c *gin.Context) {
-	id, ok := authID(c)
-	if !ok {
+	identifier := c.Param("id")
+	if identifier == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id or role name is required"})
 		return
 	}
 	var row model.RoleDefinition
-	if err := model.GetDB(c).Preload("Permissions").First(&row, "id = ?", id).Error; err != nil {
+	if err := findRole(model.GetDB(c), identifier, &row); err != nil {
 		authErr(c, err)
 		return
 	}
@@ -78,6 +92,17 @@ func (a *AuthorizationController) CreateRole(c *gin.Context) {
 	if err := c.ShouldBindJSON(&row); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
+	}
+	if row.Name == "" && row.RoleName != "" {
+		row.Name = row.RoleName
+	}
+	if row.RoleName == "" && row.Name != "" {
+		row.RoleName = row.Name
+	}
+	if row.Disabled {
+		row.Enabled = false
+	} else {
+		row.Enabled = true
 	}
 	row.ID = uuid.New()
 	row.TenantID = tenantID
@@ -103,8 +128,9 @@ func (a *AuthorizationController) CreateRole(c *gin.Context) {
 	c.JSON(http.StatusCreated, row)
 }
 func (a *AuthorizationController) UpdateRole(c *gin.Context) {
-	id, ok := authID(c)
-	if !ok {
+	identifier := c.Param("id")
+	if identifier == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id or role name is required"})
 		return
 	}
 	var input, existing model.RoleDefinition
@@ -113,9 +139,20 @@ func (a *AuthorizationController) UpdateRole(c *gin.Context) {
 		return
 	}
 	db := model.GetDB(c)
-	if err := db.First(&existing, "id = ?", id).Error; err != nil {
+	if err := findRole(db, identifier, &existing); err != nil {
 		authErr(c, err)
 		return
+	}
+	if input.RoleName != "" && input.Name == "" {
+		input.Name = input.RoleName
+	}
+	if input.Name != "" && input.RoleName == "" {
+		input.RoleName = input.Name
+	}
+	if input.Disabled {
+		input.Enabled = false
+	} else {
+		input.Enabled = true
 	}
 	input.ID, input.TenantID, input.CreatedAt, input.IsCustom = existing.ID, existing.TenantID, existing.CreatedAt, existing.IsCustom
 	permissions := input.Permissions
@@ -124,7 +161,7 @@ func (a *AuthorizationController) UpdateRole(c *gin.Context) {
 		if err := tx.Omit("Permissions").Save(&input).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("role_id = ?", id).Delete(&model.RolePermission{}).Error; err != nil {
+		if err := tx.Where("role_id = ?", existing.ID).Delete(&model.RolePermission{}).Error; err != nil {
 			return err
 		}
 		input.Permissions = permissions
@@ -141,13 +178,14 @@ func (a *AuthorizationController) UpdateRole(c *gin.Context) {
 	c.JSON(http.StatusOK, input)
 }
 func (a *AuthorizationController) DeleteRole(c *gin.Context) {
-	id, ok := authID(c)
-	if !ok {
+	identifier := c.Param("id")
+	if identifier == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "id or role name is required"})
 		return
 	}
 	db := model.GetDB(c)
 	var row model.RoleDefinition
-	if err := db.First(&row, "id = ?", id).Error; err != nil {
+	if err := findRole(db, identifier, &row); err != nil {
 		authErr(c, err)
 		return
 	}
@@ -156,10 +194,10 @@ func (a *AuthorizationController) DeleteRole(c *gin.Context) {
 		return
 	}
 	if err := db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("role_id = ?", id).Delete(&model.RolePermission{}).Error; err != nil {
+		if err := tx.Where("role_id = ?", row.ID).Delete(&model.RolePermission{}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("role_id = ?", id).Delete(&model.UserRoleAssignment{}).Error; err != nil {
+		if err := tx.Where("role_id = ?", row.ID).Delete(&model.UserRoleAssignment{}).Error; err != nil {
 			return err
 		}
 		return tx.Delete(&row).Error
@@ -167,7 +205,7 @@ func (a *AuthorizationController) DeleteRole(c *gin.Context) {
 		authErr(c, err)
 		return
 	}
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, gin.H{"message": "role deleted"})
 }
 
 type profileInput struct {

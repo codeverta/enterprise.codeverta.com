@@ -24,13 +24,50 @@ import ItemFormPage from "../buying/pages/ItemFormPage";
 import SalesInvoiceFormPage, { SalesInvoiceListPage } from "./pages/SalesInvoicePage";
 import CustomerPage from "./pages/CustomerPage";
 import CustomerMasterPage from "./pages/CustomerMasterPage";
+import TerritoryFormPage, { TerritoryListPage } from "./pages/TerritoryPage";
+import SalesPartnerFormPage, { SalesPartnerListPage } from "./pages/SalesPartnerPage";
+import ItemGroupFormPage, { ItemGroupListPage } from "./pages/ItemGroupPage";
 
 export default function SellingModule() {
   const { pathname } = useLocation();
 
   let content: React.ReactNode;
 
-  if (pathname.startsWith("/desk/customer-group")) {
+  if (pathname.startsWith("/desk/item-group")) {
+    const isList =
+      pathname === "/desk/item-group" ||
+      pathname === "/desk/item-group/view/Tree" ||
+      pathname === "/desk/item-group/view/List" ||
+      pathname.startsWith("/desk/item-group/view");
+    const isForm =
+      !isList &&
+      (pathname === "/desk/item-group/new" ||
+        pathname.includes("/desk/item-group/new-item-group") ||
+        /^\/desk\/item-group\/[^/]+$/.test(pathname));
+    content = isForm ? <ItemGroupFormPage /> : <ItemGroupListPage />;
+  } else if (pathname.startsWith("/desk/sales-partner")) {
+    const isList =
+      pathname === "/desk/sales-partner" ||
+      pathname === "/desk/sales-partner/view/List" ||
+      pathname.startsWith("/desk/sales-partner/view");
+    const isForm =
+      !isList &&
+      (pathname === "/desk/sales-partner/new" ||
+        pathname.includes("/desk/sales-partner/new-sales-partner") ||
+        /^\/desk\/sales-partner\/[^/]+$/.test(pathname));
+    content = isForm ? <SalesPartnerFormPage /> : <SalesPartnerListPage />;
+  } else if (pathname.startsWith("/desk/territory")) {
+    const isList =
+      pathname === "/desk/territory" ||
+      pathname === "/desk/territory/view/List" ||
+      pathname.startsWith("/desk/territory/view");
+    const isForm =
+      !isList &&
+      (pathname === "/desk/territory/new" ||
+        pathname.includes("/desk/territory/new-territory") ||
+        /^\/desk\/territory\/[^/]+$/.test(pathname));
+    content = isForm ? <TerritoryFormPage /> : <TerritoryListPage />;
+  } else if (pathname.startsWith("/desk/customer-group")) {
     content = <CustomerMasterPage kind="customer-group" />;
   } else if (pathname.startsWith("/desk/address")) {
     content = <CustomerMasterPage kind="address" />;

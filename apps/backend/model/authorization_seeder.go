@@ -41,7 +41,16 @@ func SeedDefaultRoles(db *gorm.DB) error {
 		roles := map[string]RoleDefinition{}
 		for _, name := range defaultRoleNames {
 			desk, legacy := defaultRoleAccess(name)
-			role := RoleDefinition{TenantID: tenant.ID, Name: name, Enabled: true, IsCustom: false, DeskAccess: desk, LegacyLevel: legacy}
+			role := RoleDefinition{
+				TenantID:    tenant.ID,
+				Name:        name,
+				RoleName:    name,
+				Enabled:     true,
+				Disabled:    false,
+				IsCustom:    false,
+				DeskAccess:  desk,
+				LegacyLevel: legacy,
+			}
 			if err := db.Where("tenant_id = ? AND name = ?", tenant.ID, name).Attrs(role).FirstOrCreate(&role).Error; err != nil {
 				return fmt.Errorf("seed role %s: %w", name, err)
 			}

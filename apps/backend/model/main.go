@@ -77,6 +77,7 @@ func InitDB() error {
 		&Guide{}, &GuideCategory{}, &Notification{},
 		&RoleDefinition{}, &RolePermission{}, &RoleProfile{}, &UserRoleAssignment{}, &UserRoleProfileAssignment{},
 		&InstallationSeedState{},
+		&DocumentRevision{},
 	}
 
 	err = db.AutoMigrate(models...)

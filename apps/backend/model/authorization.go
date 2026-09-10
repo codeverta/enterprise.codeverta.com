@@ -9,23 +9,54 @@ import (
 )
 
 type RoleDefinition struct {
-	ID          uuid.UUID        `json:"id" gorm:"type:char(36);primaryKey"`
-	TenantID    uuid.UUID        `json:"tenant_id" gorm:"type:char(36);not null;index:idx_role_tenant_name,unique"`
-	Name        string           `json:"name" gorm:"type:varchar(120);not null;index:idx_role_tenant_name,unique" binding:"required,max=120"`
-	Description string           `json:"description" gorm:"type:text"`
-	Enabled     bool             `json:"enabled" gorm:"not null;default:true;index"`
-	IsCustom    bool             `json:"is_custom" gorm:"not null;default:true"`
-	DeskAccess  bool             `json:"desk_access" gorm:"not null;default:false"`
-	LegacyLevel *int             `json:"legacy_level" gorm:"index"`
-	CreatedAt   time.Time        `json:"created_at"`
-	UpdatedAt   time.Time        `json:"updated_at"`
-	DeletedAt   gorm.DeletedAt   `json:"-" gorm:"index"`
-	Permissions []RolePermission `json:"permissions,omitempty" gorm:"foreignKey:RoleID"`
+	ID               uuid.UUID        `json:"id" gorm:"type:char(36);primaryKey"`
+	TenantID         uuid.UUID        `json:"tenant_id" gorm:"type:char(36);not null;index:idx_role_tenant_name,unique"`
+	Name             string           `json:"name" gorm:"type:varchar(120);not null;index:idx_role_tenant_name,unique" binding:"required,max=120"`
+	RoleName         string           `json:"role_name" gorm:"type:varchar(120);index"`
+	Description      string           `json:"description" gorm:"type:text"`
+	HomePage         string           `json:"home_page" gorm:"type:varchar(180)"`
+	RestrictToDomain string           `json:"restrict_to_domain" gorm:"type:varchar(140)"`
+	Disabled         bool             `json:"disabled" gorm:"default:false;index"`
+	Enabled          bool             `json:"enabled" gorm:"not null;default:true;index"`
+	IsCustom         bool             `json:"is_custom" gorm:"not null;default:true"`
+	DeskAccess       bool             `json:"desk_access" gorm:"not null;default:false"`
+	TwoFactorAuth    bool             `json:"two_factor_auth" gorm:"default:false"`
+	LegacyLevel      *int             `json:"legacy_level" gorm:"index"`
+	CreatedAt        time.Time        `json:"created_at"`
+	UpdatedAt        time.Time        `json:"updated_at"`
+	DeletedAt        gorm.DeletedAt   `json:"-" gorm:"index"`
+	Permissions      []RolePermission `json:"permissions,omitempty" gorm:"foreignKey:RoleID"`
 }
 
 func (r *RoleDefinition) BeforeCreate(_ *gorm.DB) error {
 	if r.ID == uuid.Nil {
 		r.ID = uuid.New()
+	}
+	if r.Name == "" && r.RoleName != "" {
+		r.Name = r.RoleName
+	}
+	if r.RoleName == "" && r.Name != "" {
+		r.RoleName = r.Name
+	}
+	if r.Disabled {
+		r.Enabled = false
+	} else {
+		r.Enabled = true
+	}
+	return nil
+}
+
+func (r *RoleDefinition) BeforeSave(_ *gorm.DB) error {
+	if r.Name == "" && r.RoleName != "" {
+		r.Name = r.RoleName
+	}
+	if r.RoleName == "" && r.Name != "" {
+		r.RoleName = r.Name
+	}
+	if r.Disabled {
+		r.Enabled = false
+	} else {
+		r.Enabled = true
 	}
 	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	buyingmodel "gin-template/modules/buying/model"
 	sellingmodel "gin-template/modules/selling/model"
 	stockmodel "gin-template/modules/stock/model"
 
@@ -151,6 +152,66 @@ func (ctrl *SalesInvoiceController) Options(ctx *gin.Context) {
 		customers = []string{"PT Mitra Niaga Mandiri", "Walk-in Customer"}
 	}
 
+	var items []buyingmodel.Item
+	_ = db.Preload("Barcodes").Preload("UOMs").
+		Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).
+		Order("item_code asc").
+		Find(&items).Error
+
+	var itemPrices []sellingmodel.ItemPrice
+	_ = db.Where("(tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL) AND is_active = ?", tenant, true).
+		Find(&itemPrices).Error
+
+	priceMap := make(map[string]float64)
+	for _, ip := range itemPrices {
+		if ip.PriceListRate > 0 && priceMap[ip.ItemCode] == 0 {
+			priceMap[ip.ItemCode] = ip.PriceListRate
+		}
+	}
+
+	type SalesInvoiceItemOption struct {
+		ItemCode    string  `json:"item_code"`
+		ItemName    string  `json:"item_name"`
+		UOM         string  `json:"uom"`
+		Rate        float64 `json:"rate"`
+		Barcode     string  `json:"barcode"`
+		Description string  `json:"description"`
+	}
+
+	itemOptions := make([]SalesInvoiceItemOption, 0, len(items))
+	for _, itm := range items {
+		barcode := ""
+		if len(itm.Barcodes) > 0 {
+			barcode = itm.Barcodes[0].Barcode
+		}
+		uom := "Nos"
+		if len(itm.UOMs) > 0 && itm.UOMs[0].UOM != "" {
+			uom = itm.UOMs[0].UOM
+		} else if itm.StockUOM != "" {
+			uom = itm.StockUOM
+		}
+		rate := priceMap[itm.ItemCode]
+		if rate == 0 && itm.StandardRate > 0 {
+			rate = itm.StandardRate
+		}
+		itemOptions = append(itemOptions, SalesInvoiceItemOption{
+			ItemCode:    itm.ItemCode,
+			ItemName:    itm.ItemName,
+			UOM:         uom,
+			Rate:        rate,
+			Barcode:     barcode,
+			Description: itm.Description,
+		})
+	}
+
+	if len(itemOptions) == 0 {
+		itemOptions = []SalesInvoiceItemOption{
+			{ItemCode: "LIP-001", ItemName: "Lipstick Matte Red", UOM: "Nos", Rate: 100000, Barcode: "8991234001"},
+			{ItemCode: "CAN-001", ItemName: "Aromatherapy Candle 200g", UOM: "Nos", Rate: 85000, Barcode: "8991234002"},
+			{ItemCode: "SKN-001", ItemName: "Hydrating Facial Serum 30ml", UOM: "Bottle", Rate: 150000, Barcode: "8991234003"},
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"naming_series": []string{
 			"ACC-SINV-.YYYY.-",
@@ -159,6 +220,7 @@ func (ctrl *SalesInvoiceController) Options(ctx *gin.Context) {
 		"companies":       companies,
 		"warehouses":      warehouses,
 		"customers":       customers,
+		"items":           itemOptions,
 		"currencies":      []string{"IDR", "USD", "SGD", "EUR"},
 		"tax_categories":  []string{"In State", "Out of State", "Export"},
 		"taxes_templates": []string{"PPN 11%", "PPN 12%", "Exempt Tax"},

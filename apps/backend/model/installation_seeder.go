@@ -25,7 +25,7 @@ func (InstallationSeedState) TableName() string { return "installation_seed_stat
 // succeeds, so an interrupted setup resumes safely on the next launch.
 func SeedInstallationData(db *gorm.DB) error {
 	var state InstallationSeedState
-	err := db.Where("key = ?", "default").First(&state).Error
+	err := db.Where("`key` = ?", "default").First(&state).Error
 	if err == nil && state.Version >= InstallationSeedVersion {
 		return nil
 	}

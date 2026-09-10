@@ -97,11 +97,21 @@ export type SalesInvoice = {
   updated_at?: string;
 };
 
+export type SalesInvoiceItemOption = {
+  item_code: string;
+  item_name: string;
+  uom: string;
+  rate: number;
+  barcode?: string;
+  description?: string;
+};
+
 export type SalesInvoiceOptions = {
   naming_series: string[];
   companies: string[];
   warehouses: string[];
   customers: string[];
+  items?: SalesInvoiceItemOption[];
   currencies: string[];
   tax_categories: string[];
   taxes_templates: string[];

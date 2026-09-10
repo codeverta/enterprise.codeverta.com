@@ -36,3 +36,33 @@ func TestResourcePermissionMatching(t *testing.T) {
 		}
 	}
 }
+
+func TestRoleDefinitionFieldsAndSync(t *testing.T) {
+	r := &RoleDefinition{
+		RoleName: "Custom Inspector",
+		Disabled: true,
+	}
+	if err := r.BeforeCreate(nil); err != nil {
+		t.Fatalf("BeforeCreate error: %v", err)
+	}
+	if r.Name != "Custom Inspector" {
+		t.Fatalf("expected Name to sync from RoleName, got %q", r.Name)
+	}
+	if r.Enabled != false {
+		t.Fatalf("expected Enabled to be false when Disabled is true")
+	}
+
+	r2 := &RoleDefinition{
+		Name:     "Another Role",
+		Disabled: false,
+	}
+	if err := r2.BeforeSave(nil); err != nil {
+		t.Fatalf("BeforeSave error: %v", err)
+	}
+	if r2.RoleName != "Another Role" {
+		t.Fatalf("expected RoleName to sync from Name, got %q", r2.RoleName)
+	}
+	if r2.Enabled != true {
+		t.Fatalf("expected Enabled to be true when Disabled is false")
+	}
+}

@@ -5,9 +5,18 @@ import UserManagementPage from "./pages/users";
 import TenantPage from "./pages/tenants";
 import PermissionManagementPage from "./pages/permissions";
 import OrganizationDeskPage from "./pages/organization-desk";
+import RolePage from "./pages/RolePage";
 
 export default function OrganizationModule() {
   const { pathname } = useLocation();
+
+  if (pathname.includes("/role")) {
+    return (
+      <WorkspaceModuleLayout slug="framework">
+        <RolePage />
+      </WorkspaceModuleLayout>
+    );
+  }
 
   if (
     pathname.includes("/company") ||
@@ -34,3 +43,4 @@ export default function OrganizationModule() {
     </WorkspaceModuleLayout>
   );
 }
+

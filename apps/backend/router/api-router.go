@@ -5,6 +5,7 @@ import (
 	"gin-template/controller"
 	"gin-template/middleware"
 	buyingmodule "gin-template/modules/buying"
+	frameworkmodule "gin-template/modules/framework"
 	printingmodule "gin-template/modules/printing"
 	sellingmodule "gin-template/modules/selling"
 	stockmodule "gin-template/modules/stock"
@@ -105,6 +106,9 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		registerCoreProfileAndMediaRoutes(tenantGroup, ctrls)
 		registerCRMRoutes(tenantGroup)
 		buyingmodule.RegisterRoutes(tenantGroup)
+		if err := frameworkmodule.RegisterRoutes(tenantGroup, db); err != nil {
+			panic("Gagal mendaftarkan DocType framework: " + err.Error())
+		}
 		printingmodule.RegisterRoutes(tenantGroup)
 		sellingmodule.RegisterRoutes(tenantGroup)
 		stockmodule.RegisterRoutes(tenantGroup)

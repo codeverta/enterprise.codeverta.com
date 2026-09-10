@@ -417,7 +417,7 @@ function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; onSearc
             <div className="mb-5 flex items-end justify-between gap-4">
               <div>
                 <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-violet-600"><LayoutGrid className="size-3.5" /> Workspace</div>
-                <h2 className="text-2xl font-bold tracking-tight text-slate-950">Modul bisnis</h2>
+                <h2 className="text-2xl font-bold tracking-tight text-slate-950">Daftar Modul Sistem</h2>
                 <p className="mt-1 text-sm text-slate-500">Buka area kerja sesuai kebutuhan operasional Anda.</p>
               </div>
               <span className="hidden text-sm text-slate-400 sm:block">{deskModules.length} modul tersedia</span>
