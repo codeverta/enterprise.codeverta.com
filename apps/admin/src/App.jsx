@@ -20,6 +20,7 @@ import AccountingModule from "./modules/accounting";
 import CommunicationModule from "./modules/communication";
 import AdministrationModule from "./modules/administration";
 import SettingsModule from "./modules/settings";
+import PrintingModule from "./modules/printing";
 import { isAdminRole } from "./lib/erp-desk";
 import { isTauri } from "@tauri-apps/api/core";
 import DesktopTitleBar from "./components/DesktopTitleBar";
@@ -120,6 +121,11 @@ const router = createBrowserRouter([
           { path: "desk/communication/*", element: <CommunicationModule /> },
           { path: "desk/administration/*", element: <AdministrationModule /> },
           { path: "desk/erpnext-settings/system-settings/*", element: <SettingsModule /> },
+          { path: "desk/printing/*", element: <PrintingModule /> },
+          { path: "desk/print-format/*", element: <PrintingModule /> },
+          { path: "desk/print-heading/*", element: <PrintingModule /> },
+          { path: "desk/print-format-builder/*", element: <PrintingModule /> },
+          { path: "desk/print-settings/*", element: <PrintingModule /> },
           { path: "desk/*", element: <ErpWorkspacePage /> },
           { path: "dashboard", element: <LegacyDashboardHome /> },
           { path: "dashboard/users/*", element: <Navigate to="/desk/organization/users" replace /> },

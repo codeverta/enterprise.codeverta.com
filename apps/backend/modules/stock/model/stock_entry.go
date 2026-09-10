@@ -11,18 +11,23 @@ type StockEntry struct {
 	StockEntryNumber string           `gorm:"size:120;not null;index" json:"stock_entry_number"`
 	StockEntryType   string           `gorm:"size:80;not null;index" json:"stock_entry_type"`
 	Purpose          string           `gorm:"size:80" json:"purpose"`
+	CompanyID        string           `gorm:"size:64;index" json:"company_id"`
 	Company          string           `gorm:"size:180;not null;index" json:"company"`
-	PostingDate      time.Time        `gorm:"index;not null" json:"posting_date"`
-	PostingTime      string           `gorm:"size:16" json:"posting_time"`
-	SetPostingTime   bool             `gorm:"default:false" json:"set_posting_time"`
-	FromBOM          bool             `gorm:"default:false" json:"from_bom"`
-	BOMNo            string           `gorm:"size:120" json:"bom_no"`
-	FromWarehouse    string           `gorm:"size:180" json:"from_warehouse"`
-	ToWarehouse      string           `gorm:"size:180" json:"to_warehouse"`
-	ScanBarcode      string           `gorm:"size:120" json:"scan_barcode"`
-	TotalQty         float64          `gorm:"type:decimal(18,2);default:0" json:"total_qty"`
-	TotalAmount      float64          `gorm:"type:decimal(18,2);default:0" json:"total_amount"`
-	Status           string           `gorm:"size:32;not null;default:'Draft';index" json:"status"`
+	PostingDate        time.Time        `gorm:"index;not null" json:"posting_date"`
+	PostingTime        string           `gorm:"size:16" json:"posting_time"`
+	SetPostingTime     bool             `gorm:"default:false" json:"set_posting_time"`
+	InspectionRequired bool             `gorm:"default:false" json:"inspection_required"`
+	AddToTransit       bool             `gorm:"default:false" json:"add_to_transit"`
+	ApplyPutawayRule   bool             `gorm:"default:false" json:"apply_putaway_rule"`
+	WorkOrder          string           `gorm:"size:120" json:"work_order"`
+	FromBOM            bool             `gorm:"default:false" json:"from_bom"`
+	BOMNo              string           `gorm:"size:120" json:"bom_no"`
+	FromWarehouse      string           `gorm:"size:180" json:"from_warehouse"`
+	ToWarehouse        string           `gorm:"size:180" json:"to_warehouse"`
+	ScanBarcode        string           `gorm:"size:120" json:"scan_barcode"`
+	TotalQty           float64          `gorm:"type:decimal(18,2);default:0" json:"total_qty"`
+	TotalAmount        float64          `gorm:"type:decimal(18,2);default:0" json:"total_amount"`
+	Status             string           `gorm:"size:32;not null;default:'Draft';index" json:"status"`
 	Remarks          string           `gorm:"type:text" json:"remarks"`
 	Items            []StockEntryItem `gorm:"foreignKey:StockEntryID" json:"items"`
 	CreatedAt        time.Time        `json:"created_at"`

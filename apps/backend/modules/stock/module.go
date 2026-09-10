@@ -18,6 +18,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 	batchHandler := controller.NewBatchController()
 	stockLedgerHandler := controller.NewStockLedgerController()
 	stockEntryTypeHandler := controller.NewStockEntryTypeController()
+	pickListHandler := controller.NewPickListController()
 
 	group := parent.Group("/stock")
 	group.Use(middleware.AdminAuth())
@@ -97,5 +98,16 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.PUT("/stock-entry-types/:id", stockEntryTypeHandler.Update)
 		group.DELETE("/stock-entry-types/:id", stockEntryTypeHandler.Delete)
 		group.POST("/stock-entry-types/seed", stockEntryTypeHandler.Seed)
+
+		group.GET("/pick-lists/options", pickListHandler.Options)
+		group.GET("/pick-lists/pending-references", pickListHandler.GetPendingReferences)
+		group.POST("/pick-lists/get-item-locations", pickListHandler.GetItemLocations)
+		group.GET("/pick-lists", pickListHandler.List)
+		group.GET("/pick-lists/:id", pickListHandler.Get)
+		group.POST("/pick-lists", pickListHandler.Create)
+		group.PUT("/pick-lists/:id", pickListHandler.Update)
+		group.DELETE("/pick-lists/:id", pickListHandler.Delete)
+		group.POST("/pick-lists/:id/submit", pickListHandler.Submit)
+		group.POST("/pick-lists/:id/cancel", pickListHandler.Cancel)
 	}
 }

@@ -80,12 +80,39 @@ func (c *POSController) OpeningEntries(ctx *gin.Context) {
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
+	if status := strings.TrimSpace(ctx.Query("status")); status != "" {
+		query = query.Where("status = ?", status)
+	}
+	if company := strings.TrimSpace(ctx.Query("company")); company != "" {
+		query = query.Where("company = ?", company)
+	}
+	if posProfile := strings.TrimSpace(ctx.Query("pos_profile")); posProfile != "" {
+		query = query.Where("pos_profile = ?", posProfile)
+	}
 	var entries []sellingmodel.POSOpeningEntry
 	if err := query.Find(&entries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil POS Opening Entry"})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": entries})
+}
+
+func (c *POSController) GetOpeningEntry(ctx *gin.Context) {
+	id := ctx.Param("id")
+	query := posDB(ctx).Preload("BalanceDetails").Where("id = ?", id)
+	if tenant := tenantString(ctx); tenant != "" {
+		query = query.Where("tenant_id = ?", tenant)
+	}
+	var entry sellingmodel.POSOpeningEntry
+	if err := query.First(&entry).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "POS Opening Entry tidak ditemukan"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil POS Opening Entry"})
+		return
+	}
+	ctx.JSON(http.StatusOK, entry)
 }
 
 func (c *POSController) CurrentOpening(ctx *gin.Context) {
@@ -212,11 +239,15 @@ func closePOSOpening(db *gorm.DB, tenant, openingID string, closingAmounts map[s
 			openingByMode[row.ModeOfPayment] += row.OpeningAmount
 		}
 		salesByMode := map[string]float64{}
-		var netTotal, grandTotal float64
+		var netTotal, grandTotal, totalQty, totalTaxes float64
 		for _, invoice := range invoices {
 			salesByMode[invoice.ModeOfPayment] += invoice.PaidAmount
 			netTotal += invoice.NetTotal
+			totalTaxes += invoice.TaxTotal
 			grandTotal += invoice.GrandTotal
+			for _, it := range invoice.Items {
+				totalQty += it.Quantity
+			}
 		}
 		modes := map[string]bool{}
 		for mode := range openingByMode {
@@ -233,9 +264,22 @@ func closePOSOpening(db *gorm.DB, tenant, openingID string, closingAmounts map[s
 
 		now := time.Now()
 		closing = sellingmodel.POSClosingEntry{
-			ID:       "POS-CLOSE-" + now.Format("20060102") + "-" + uuid.New().String()[:6],
-			TenantID: tenant, OpeningEntryID: opening.ID, PeriodEndDate: now, PostingDate: now,
-			Company: opening.Company, User: opening.User, NetTotal: netTotal, GrandTotal: grandTotal, CreatedAt: now,
+			ID:                   "POS-CLOSE-" + now.Format("20060102") + "-" + uuid.New().String()[:6],
+			TenantID:             tenant,
+			OpeningEntryID:       opening.ID,
+			PeriodStartDate:      &opening.PeriodStartDate,
+			PeriodEndDate:        now,
+			PostingDate:          now,
+			PostingTime:          now.Format("15:04:05"),
+			Company:              opening.Company,
+			POSProfile:           opening.POSProfile,
+			User:                 opening.User,
+			TotalQuantity:        totalQty,
+			NetTotal:             netTotal,
+			TotalTaxesAndCharges: totalTaxes,
+			GrandTotal:           grandTotal,
+			Status:               "Submitted",
+			CreatedAt:            now,
 		}
 		for _, mode := range keys {
 			expected := openingByMode[mode] + salesByMode[mode]
@@ -264,12 +308,36 @@ func (c *POSController) ClosingEntries(ctx *gin.Context) {
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
+	if company := strings.TrimSpace(ctx.Query("company")); company != "" {
+		query = query.Where("company = ?", company)
+	}
+	if posProfile := strings.TrimSpace(ctx.Query("pos_profile")); posProfile != "" {
+		query = query.Where("pos_profile = ?", posProfile)
+	}
 	var entries []sellingmodel.POSClosingEntry
 	if err := query.Find(&entries).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil POS Closing Entry"})
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": entries})
+}
+
+func (c *POSController) GetClosingEntry(ctx *gin.Context) {
+	id := ctx.Param("id")
+	query := posDB(ctx).Preload("Reconciliations").Where("id = ?", id)
+	if tenant := tenantString(ctx); tenant != "" {
+		query = query.Where("tenant_id = ?", tenant)
+	}
+	var entry sellingmodel.POSClosingEntry
+	if err := query.First(&entry).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			ctx.JSON(http.StatusNotFound, gin.H{"error": "POS Closing Entry tidak ditemukan"})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil POS Closing Entry"})
+		return
+	}
+	ctx.JSON(http.StatusOK, entry)
 }
 
 func (c *POSController) CreateInvoice(ctx *gin.Context) {

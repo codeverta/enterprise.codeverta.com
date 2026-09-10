@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	coremodel "gin-template/model"
 	buyingmodel "gin-template/modules/buying/model"
 	sellingmodel "gin-template/modules/selling/model"
 	stockmodel "gin-template/modules/stock/model"
@@ -91,6 +92,18 @@ func (ctrl *StockEntryController) Create(ctx *gin.Context) {
 	db, tenant := stockDB(ctx), stockTenant(ctx)
 	now := time.Now()
 
+	if input.CompanyID != "" && input.Company == "" {
+		var comp coremodel.Company
+		if err := db.Where("id = ?", input.CompanyID).First(&comp).Error; err == nil {
+			input.Company = comp.Name
+		}
+	} else if input.CompanyID == "" && input.Company != "" {
+		var comp coremodel.Company
+		if err := db.Where("name = ?", input.Company).First(&comp).Error; err == nil {
+			input.CompanyID = comp.ID.String()
+		}
+	}
+
 	input.ID = "ste-" + uuid.NewString()[:8]
 	input.TenantID = tenant
 	if input.StockEntryNumber == "" {
@@ -156,13 +169,30 @@ func (ctrl *StockEntryController) Update(ctx *gin.Context) {
 		return
 	}
 
+	if input.CompanyID != "" && input.Company == "" {
+		var comp coremodel.Company
+		if err := db.Where("id = ?", input.CompanyID).First(&comp).Error; err == nil {
+			input.Company = comp.Name
+		}
+	} else if input.CompanyID == "" && input.Company != "" {
+		var comp coremodel.Company
+		if err := db.Where("name = ?", input.Company).First(&comp).Error; err == nil {
+			input.CompanyID = comp.ID.String()
+		}
+	}
+
 	existing.StockEntryType = input.StockEntryType
 	existing.Purpose = input.Purpose
+	existing.CompanyID = input.CompanyID
 	existing.Company = input.Company
 	existing.Series = input.Series
 	existing.PostingDate = input.PostingDate
 	existing.PostingTime = input.PostingTime
 	existing.SetPostingTime = input.SetPostingTime
+	existing.InspectionRequired = input.InspectionRequired
+	existing.AddToTransit = input.AddToTransit
+	existing.ApplyPutawayRule = input.ApplyPutawayRule
+	existing.WorkOrder = input.WorkOrder
 	existing.FromBOM = input.FromBOM
 	existing.BOMNo = input.BOMNo
 	existing.FromWarehouse = input.FromWarehouse
@@ -518,22 +548,69 @@ func (ctrl *StockEntryController) Options(ctx *gin.Context) {
 		}
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{
-		"stock_entry_types": []string{
-			"Material Transfer",
-			"Material Receipt",
+	var entryTypes []stockmodel.StockEntryType
+	db.Where("(tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL) AND (disabled = ? OR disabled IS NULL)", tenant, false).
+		Order("name asc").
+		Find(&entryTypes)
+
+	typeNames := make([]string, 0, len(entryTypes))
+	for _, et := range entryTypes {
+		typeNames = append(typeNames, et.Name)
+	}
+	if len(typeNames) == 0 {
+		typeNames = []string{
 			"Material Issue",
+			"Material Receipt",
+			"Material Transfer",
 			"Manufacture",
 			"Repack",
-		},
+			"Disassemble",
+			"Send to Subcontractor",
+			"Material Transfer for Manufacture",
+			"Material Consumption for Manufacture",
+		}
+	}
+
+	var dbCompanies []coremodel.Company
+	_ = db.Order("name asc").Find(&dbCompanies)
+
+	type CompanyOptionItem struct {
+		ID           string `json:"id"`
+		Name         string `json:"name"`
+		Abbreviation string `json:"abbreviation"`
+	}
+	companyNames := make([]string, 0, len(dbCompanies))
+	companyOptions := make([]CompanyOptionItem, 0, len(dbCompanies))
+	for _, c := range dbCompanies {
+		companyNames = append(companyNames, c.Name)
+		companyOptions = append(companyOptions, CompanyOptionItem{
+			ID:           c.ID.String(),
+			Name:         c.Name,
+			Abbreviation: c.Abbreviation,
+		})
+	}
+
+	if len(companyNames) == 0 {
+		companyNames = []string{
+			"PT ZENIT TECHNOLOGY SOLUTION",
+			"PT Codeverta Utama (PZTS)",
+			"PT Codeverta Mandiri (MC)",
+		}
+		companyOptions = []CompanyOptionItem{
+			{ID: "cmp-pzts", Name: "PT ZENIT TECHNOLOGY SOLUTION", Abbreviation: "PZTS"},
+			{ID: "cmp-utama", Name: "PT Codeverta Utama (PZTS)", Abbreviation: "PZTS"},
+			{ID: "cmp-mandiri", Name: "PT Codeverta Mandiri (MC)", Abbreviation: "MC"},
+		}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"stock_entry_types": typeNames,
 		"naming_series": []string{
 			"MAT-STE-.YYYY.-",
 		},
-		"companies": []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
-			"PT Codeverta Enterprise",
-		},
-		"warehouses": warehouseNames,
-		"items":      itemOptions,
+		"companies":       companyNames,
+		"company_options": companyOptions,
+		"warehouses":      warehouseNames,
+		"items":           itemOptions,
 	})
 }

@@ -89,6 +89,7 @@ import {
   PieChart,
   PiggyBank,
   Plane,
+  Printer,
   Receipt,
   RefreshCw,
   Repeat,
@@ -742,6 +743,15 @@ const framework = workspace("Framework", "framework", [], [
   group("Settings", frameworkHome, documentLinks(["System Settings", "Website Settings", "Email Account"]), Settings2),
 ]);
 
+const printingHome = "/desk/printing";
+const printing = workspace("Printing", "printing", [
+  ["Print Format", "/desk/print-format?sidebar=Printing"],
+  ["Print Heading", "/desk/print-heading?sidebar=Printing"],
+  ["Print Format Builder", "/desk/print-format-builder?sidebar=Printing"],
+  ["Print Settings", "/desk/print-settings/Print%20Settings?sidebar=Printing"],
+], []
+);
+
 const communication = workspace("Communication", "communication", [
   ["Email Templates", "/desk/communication/email-templates"],
   ["Email Broadcast", "/desk/communication/broadcast"],
@@ -1044,6 +1054,7 @@ export const erpWorkspaces: Record<string, ErpWorkspace> = {
   "tax-and-benefits": taxAndBenefits,
   "tax-and-benef": taxAndBenefits,
   framework,
+  printing,
   administration,
   communication,
   organization,

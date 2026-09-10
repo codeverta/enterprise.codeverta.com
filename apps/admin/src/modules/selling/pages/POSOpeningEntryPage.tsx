@@ -90,13 +90,65 @@ export default function POSOpeningEntryPage() {
           <div className="border-b px-5 py-4"><h2 className="font-semibold">Riwayat Opening Entry</h2></div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Entry</th><th className="px-5 py-3">POS Profile</th><th className="px-5 py-3">Cashier</th><th className="px-5 py-3">Mulai</th><th className="px-5 py-3">Opening Balance</th><th className="px-5 py-3">Status</th></tr></thead>
+              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th className="px-5 py-3">Entry</th>
+                  <th className="px-5 py-3">POS Profile</th>
+                  <th className="px-5 py-3">Cashier</th>
+                  <th className="px-5 py-3">Mulai</th>
+                  <th className="px-5 py-3">Opening Balance</th>
+                  <th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
               <tbody className="divide-y">
-                {entries.map((entry) => <tr key={entry.id} className="hover:bg-slate-50/70">
-                  <td className="px-5 py-4 font-mono text-xs font-medium">{entry.id}</td><td className="px-5 py-4">{entry.pos_profile}</td><td className="px-5 py-4">{entry.user}</td><td className="px-5 py-4 text-slate-600">{dateTime(entry.period_start_date)}</td><td className="px-5 py-4 font-medium">{money(entry.opening_balance_total)}</td>
-                  <td className="px-5 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${entry.status === "Open" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{entry.status}</span></td>
-                </tr>)}
-                {!loading && entries.length === 0 && <tr><td colSpan={6} className="px-5 py-12 text-center text-slate-500">Belum ada POS Opening Entry.</td></tr>}
+                {entries.map((entry) => (
+                  <tr
+                    key={entry.id}
+                    className="hover:bg-slate-50/70 cursor-pointer"
+                    onClick={() => navigate(`/desk/pos-opening-entry/${entry.id}`)}
+                  >
+                    <td className="px-5 py-4 font-mono text-xs font-semibold text-blue-600 hover:underline">
+                      {entry.id}
+                    </td>
+                    <td className="px-5 py-4 font-medium">{entry.pos_profile}</td>
+                    <td className="px-5 py-4 text-xs">{entry.user}</td>
+                    <td className="px-5 py-4 text-slate-600 text-xs">
+                      {dateTime(entry.period_start_date)}
+                    </td>
+                    <td className="px-5 py-4 font-semibold text-slate-900 dark:text-slate-100">
+                      {money(entry.opening_balance_total)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          entry.status === "Open"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-100 text-slate-600"
+                        }`}
+                      >
+                        {entry.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-blue-600"
+                        onClick={() => navigate(`/desk/pos-opening-entry/${entry.id}`)}
+                      >
+                        <ArrowRight className="size-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {!loading && entries.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
+                      Belum ada POS Opening Entry.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

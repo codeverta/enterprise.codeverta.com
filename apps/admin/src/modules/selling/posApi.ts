@@ -30,12 +30,18 @@ export type POSReconciliation = {
 export type POSClosingEntry = {
   id: string;
   pos_opening_entry: string;
+  period_start_date?: string;
   period_end_date: string;
   posting_date: string;
+  posting_time?: string;
   company: string;
+  pos_profile?: string;
   user: string;
+  total_quantity?: number;
   net_total: number;
+  total_taxes_and_charges?: number;
   grand_total: number;
+  status?: string;
   payment_reconciliation: POSReconciliation[];
 };
 
@@ -173,13 +179,54 @@ export const posApi = {
     return items.map(decoratePOSItem);
   },
 
-  async listOpenings(): Promise<POSOpeningEntry[]> {
+  async listOpenings(params?: { status?: string; company?: string; pos_profile?: string }): Promise<POSOpeningEntry[]> {
     try {
       return unwrap<POSOpeningEntry[]>(
-        (await api.get("/selling/pos/opening-entries")).data,
+        (await api.get("/selling/pos/opening-entries", { params })).data,
       );
     } catch {
-      return localOpenings();
+      let data = localOpenings();
+      if (params?.status) data = data.filter((d) => d.status === params.status);
+      if (params?.company) data = data.filter((d) => d.company === params.company);
+      if (params?.pos_profile) data = data.filter((d) => d.pos_profile === params.pos_profile);
+      return data;
+    }
+  },
+
+  async getOpening(id: string): Promise<POSOpeningEntry> {
+    try {
+      return unwrap<POSOpeningEntry>(
+        (await api.get(`/selling/pos/opening-entries/${id}`)).data,
+      );
+    } catch {
+      const found = localOpenings().find((o) => o.id === id);
+      if (!found) throw new Error("POS Opening Entry tidak ditemukan");
+      return found;
+    }
+  },
+
+  async listClosings(params?: { company?: string; pos_profile?: string }): Promise<POSClosingEntry[]> {
+    try {
+      return unwrap<POSClosingEntry[]>(
+        (await api.get("/selling/pos/closing-entries", { params })).data,
+      );
+    } catch {
+      let data = read<POSClosingEntry[]>(CLOSINGS_KEY, []);
+      if (params?.company) data = data.filter((d) => d.company === params.company);
+      if (params?.pos_profile) data = data.filter((d) => d.pos_profile === params.pos_profile);
+      return data;
+    }
+  },
+
+  async getClosing(id: string): Promise<POSClosingEntry> {
+    try {
+      return unwrap<POSClosingEntry>(
+        (await api.get(`/selling/pos/closing-entries/${id}`)).data,
+      );
+    } catch {
+      const found = read<POSClosingEntry[]>(CLOSINGS_KEY, []).find((c) => c.id === id);
+      if (!found) throw new Error("POS Closing Entry tidak ditemukan");
+      return found;
     }
   },
 

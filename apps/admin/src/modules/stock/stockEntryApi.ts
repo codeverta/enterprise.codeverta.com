@@ -26,10 +26,15 @@ export type StockEntry = {
   stock_entry_number?: string;
   stock_entry_type: string;
   purpose?: string;
+  company_id?: string;
   company: string;
   posting_date: string;
   posting_time: string;
   set_posting_time: boolean;
+  inspection_required?: boolean;
+  add_to_transit?: boolean;
+  apply_putaway_rule?: boolean;
+  work_order?: string;
   from_bom: boolean;
   bom_no?: string;
   from_warehouse?: string;
@@ -57,6 +62,7 @@ export type StockEntryOptions = {
   stock_entry_types: string[];
   naming_series: string[];
   companies: string[];
+  company_options?: { id: string; name: string; abbreviation?: string }[];
   warehouses: string[];
   items: StockEntryItemOption[];
 };

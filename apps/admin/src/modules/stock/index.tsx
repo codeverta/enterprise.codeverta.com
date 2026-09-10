@@ -17,13 +17,18 @@ import BatchListPage from "./pages/BatchListPage";
 import StockLedgerPage from "./pages/StockLedgerPage";
 import StockEntryTypeListPage from "./pages/StockEntryTypeListPage";
 import StockEntryTypeFormPage from "./pages/StockEntryTypeFormPage";
+import PickListPage from "./pages/PickListPage";
+import PickListFormPage from "./pages/PickListFormPage";
 
 export default function StockModule() {
   const { pathname } = useLocation();
 
   let content: React.ReactNode;
 
-  if (pathname.startsWith("/desk/stock-entry-type")) {
+  if (pathname.startsWith("/desk/pick-list")) {
+    const isForm = pathname === "/desk/pick-list/new" || /^\/desk\/pick-list\/[^/]+$/.test(pathname);
+    content = isForm ? <PickListFormPage /> : <PickListPage />;
+  } else if (pathname.startsWith("/desk/stock-entry-type")) {
     const isForm = pathname === "/desk/stock-entry-type/new" || /^\/desk\/stock-entry-type\/[^/]+$/.test(pathname);
     content = isForm ? <StockEntryTypeFormPage /> : <StockEntryTypeListPage />;
   } else if (

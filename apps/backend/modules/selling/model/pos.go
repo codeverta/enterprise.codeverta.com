@@ -57,17 +57,23 @@ type POSInvoiceItem struct {
 }
 
 type POSClosingEntry struct {
-	ID              string                     `gorm:"primaryKey;size:64" json:"id"`
-	TenantID        string                     `gorm:"size:64;index;not null" json:"tenant_id"`
-	OpeningEntryID  string                     `gorm:"size:64;uniqueIndex;not null" json:"pos_opening_entry"`
-	PeriodEndDate   time.Time                  `gorm:"not null" json:"period_end_date"`
-	PostingDate     time.Time                  `gorm:"type:date;not null" json:"posting_date"`
-	Company         string                     `gorm:"size:255;not null" json:"company"`
-	User            string                     `gorm:"size:255;not null" json:"user"`
-	NetTotal        float64                    `gorm:"type:decimal(16,2);default:0" json:"net_total"`
-	GrandTotal      float64                    `gorm:"type:decimal(16,2);default:0" json:"grand_total"`
-	Reconciliations []POSPaymentReconciliation `gorm:"foreignKey:ClosingEntryID;constraint:OnDelete:CASCADE" json:"payment_reconciliation"`
-	CreatedAt       time.Time                  `json:"created_at"`
+	ID                   string                     `gorm:"primaryKey;size:64" json:"id"`
+	TenantID             string                     `gorm:"size:64;index;not null" json:"tenant_id"`
+	OpeningEntryID       string                     `gorm:"size:64;uniqueIndex;not null" json:"pos_opening_entry"`
+	PeriodStartDate      *time.Time                 `json:"period_start_date"`
+	PeriodEndDate        time.Time                  `gorm:"not null" json:"period_end_date"`
+	PostingDate          time.Time                  `gorm:"type:date;not null" json:"posting_date"`
+	PostingTime          string                     `gorm:"size:20" json:"posting_time"`
+	Company              string                     `gorm:"size:255;not null" json:"company"`
+	POSProfile           string                     `gorm:"size:255;index" json:"pos_profile"`
+	User                 string                     `gorm:"size:255;not null" json:"user"`
+	TotalQuantity        float64                    `gorm:"type:decimal(16,2);default:0" json:"total_quantity"`
+	NetTotal             float64                    `gorm:"type:decimal(16,2);default:0" json:"net_total"`
+	TotalTaxesAndCharges float64                    `gorm:"type:decimal(16,2);default:0" json:"total_taxes_and_charges"`
+	GrandTotal           float64                    `gorm:"type:decimal(16,2);default:0" json:"grand_total"`
+	Status               string                     `gorm:"size:20;default:'Submitted'" json:"status"`
+	Reconciliations      []POSPaymentReconciliation `gorm:"foreignKey:ClosingEntryID;constraint:OnDelete:CASCADE" json:"payment_reconciliation"`
+	CreatedAt            time.Time                  `json:"created_at"`
 }
 
 type POSPaymentReconciliation struct {

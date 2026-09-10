@@ -6,6 +6,7 @@ import (
 	"gin-template/common"
 	crmmodel "gin-template/model/crm"
 	buyingmodel "gin-template/modules/buying/model"
+	printingmodel "gin-template/modules/printing/model"
 	sellingmodel "gin-template/modules/selling/model"
 	stockmodel "gin-template/modules/stock/model"
 	"os"
@@ -85,6 +86,9 @@ func InitDB() error {
 		return err
 	}
 	if err := buyingmodel.Migrate(db); err != nil {
+		return err
+	}
+	if err := printingmodel.Migrate(db); err != nil {
 		return err
 	}
 	if err := sellingmodel.Migrate(db); err != nil {

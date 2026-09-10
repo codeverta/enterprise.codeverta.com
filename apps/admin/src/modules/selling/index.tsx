@@ -11,6 +11,9 @@ import PointOfSalePage from "./pages/PointOfSalePage";
 import POSOpeningEntryPage from "./pages/POSOpeningEntryPage";
 import POSOpeningFormPage from "./pages/POSOpeningFormPage";
 import POSClosingEntryPage from "./pages/POSClosingEntryPage";
+import POSClosingFormPage from "./pages/POSClosingFormPage";
+import POSProfileListPage from "./pages/POSProfileListPage";
+import POSProfileFormPage from "./pages/POSProfileFormPage";
 import POSInvoicePage from "./pages/POSInvoicePage";
 import SalesOrderFormPage, { SalesOrderListPage } from "./pages/SalesOrderPage";
 import SalesRegisterPage from "./pages/SalesRegisterPage";
@@ -52,12 +55,15 @@ export default function SellingModule() {
     content = <SalesRegisterPage />;
   } else if (pathname === "/desk/point-of-sale" || pathname.startsWith("/desk/point-of-sale/")) {
     content = <PointOfSalePage />;
-  } else if (pathname === "/desk/pos-opening-entry/new") {
-    content = <POSOpeningFormPage />;
+  } else if (pathname.startsWith("/desk/pos-profile")) {
+    const isForm = pathname === "/desk/pos-profile/new" || /^\/desk\/pos-profile\/[^/]+$/.test(pathname);
+    content = isForm ? <POSProfileFormPage /> : <POSProfileListPage />;
   } else if (pathname.startsWith("/desk/pos-opening-entry")) {
-    content = <POSOpeningEntryPage />;
+    const isForm = pathname === "/desk/pos-opening-entry/new" || /^\/desk\/pos-opening-entry\/[^/]+$/.test(pathname);
+    content = isForm ? <POSOpeningFormPage /> : <POSOpeningEntryPage />;
   } else if (pathname.startsWith("/desk/pos-closing-entry")) {
-    content = <POSClosingEntryPage />;
+    const isForm = pathname === "/desk/pos-closing-entry/new" || /^\/desk\/pos-closing-entry\/[^/]+$/.test(pathname);
+    content = isForm ? <POSClosingFormPage /> : <POSClosingEntryPage />;
   } else if (pathname.startsWith("/desk/pos-invoice")) {
     content = <POSInvoicePage />;
   } else if (pathname.startsWith("/desk/loyalty-point-entry")) {

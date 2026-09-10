@@ -26,6 +26,19 @@ import {
   type StockEntryItemOption,
   type StockEntryOptions,
 } from "../stockEntryApi";
+import {
+  stockEntryTypeApi,
+  type StockEntryType,
+} from "../api";
+import {
+  warehouseApi,
+  type CompanyOption,
+} from "../warehouseApi";
+import {
+  SearchableSelect,
+  SearchableWarehouseSelect,
+  type SearchableSelectOption,
+} from "@/components/ui/searchable-select";
 import { toast } from "sonner";
 
 type Tab = "details" | "dimensions" | "other";
@@ -57,10 +70,15 @@ const emptyEntry = (): StockEntry => {
     naming_series: "MAT-STE-.YYYY.-",
     stock_entry_type: "Material Transfer",
     purpose: "Material Transfer",
+    company_id: "",
     company: "PT ZENIT TECHNOLOGY SOLUTION",
     posting_date: now.toISOString().slice(0, 10),
     posting_time: timeStr,
     set_posting_time: false,
+    inspection_required: false,
+    add_to_transit: false,
+    apply_putaway_rule: false,
+    work_order: "",
     from_bom: false,
     bom_no: "",
     from_warehouse: "",
@@ -73,8 +91,6 @@ const emptyEntry = (): StockEntry => {
     items: [emptyItem()],
   };
 };
-
-import { SearchableWarehouseSelect } from "@/components/ui/searchable-select";
 
 /**
  * Searchable Dropdown for Items with "+ Tambah Item" button
@@ -218,6 +234,8 @@ export default function StockEntryFormPage() {
   const [row, setRow] = useState<StockEntry>(emptyEntry());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [stockEntryTypes, setStockEntryTypes] = useState<StockEntryType[]>([]);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [options, setOptions] = useState<StockEntryOptions>({
     stock_entry_types: [
       "Material Transfer",
@@ -240,10 +258,37 @@ export default function StockEntryFormPage() {
   const loadOptionsAndData = async () => {
     setLoading(true);
     try {
-      const opts = await stockEntryApi.options();
+      const [opts, typesRes, companyList] = await Promise.all([
+        stockEntryApi.options(),
+        stockEntryTypeApi.list(),
+        warehouseApi.listCompanies(),
+      ]);
+
       if (opts) {
         setOptions(opts);
       }
+
+      let compOptions: CompanyOption[] = [];
+      if (companyList && companyList.length > 0) {
+        compOptions = companyList;
+      } else if (opts?.company_options && opts.company_options.length > 0) {
+        compOptions = opts.company_options;
+      } else if (opts?.companies && opts.companies.length > 0) {
+        compOptions = opts.companies.map((c) => ({ name: c }));
+      }
+      setCompanies(compOptions);
+
+      let typesList = typesRes?.data || [];
+      if (typesList.length === 0) {
+        try {
+          await stockEntryTypeApi.seed();
+          const reloaded = await stockEntryTypeApi.list();
+          typesList = reloaded.data || [];
+        } catch {
+          // ignore seeding error
+        }
+      }
+      setStockEntryTypes(typesList);
 
       if (!isNew && id) {
         const data = await stockEntryApi.get(id);
@@ -254,21 +299,34 @@ export default function StockEntryFormPage() {
           if (!data.items || data.items.length === 0) {
             data.items = [emptyItem()];
           }
+          if (!data.purpose && data.stock_entry_type) {
+            const matched = typesList.find((t) => t.name === data.stock_entry_type);
+            if (matched?.purpose) {
+              data.purpose = matched.purpose;
+            }
+          }
+          if (!data.company_id && data.company && compOptions.length > 0) {
+            const foundComp = compOptions.find((c) => c.name === data.company);
+            if (foundComp?.id) {
+              data.company_id = foundComp.id;
+            }
+          }
           setRow(data);
         }
       } else {
-        if (opts.warehouses?.length >= 2) {
-          setRow((prev) => ({
-            ...prev,
-            from_warehouse: opts.warehouses[0],
-            to_warehouse: opts.warehouses[1],
-            items: prev.items.map((it) => ({
-              ...it,
-              source_warehouse: opts.warehouses[0],
-              target_warehouse: opts.warehouses[1],
-            })),
-          }));
-        }
+        const initialCompany = compOptions.length > 0 ? compOptions[0] : null;
+        setRow((prev) => ({
+          ...prev,
+          company: prev.company || (initialCompany ? initialCompany.name : "PT ZENIT TECHNOLOGY SOLUTION"),
+          company_id: prev.company_id || (initialCompany?.id ? initialCompany.id : ""),
+          from_warehouse: opts?.warehouses?.length ? opts.warehouses[0] : prev.from_warehouse,
+          to_warehouse: opts?.warehouses && opts.warehouses.length >= 2 ? opts.warehouses[1] : prev.to_warehouse,
+          items: prev.items.map((it) => ({
+            ...it,
+            source_warehouse: opts?.warehouses?.length ? opts.warehouses[0] : it.source_warehouse,
+            target_warehouse: opts?.warehouses && opts.warehouses.length >= 2 ? opts.warehouses[1] : it.target_warehouse,
+          })),
+        }));
       }
     } catch {
       toast.error("Gagal memuat data formulir Stock Entry");
@@ -280,6 +338,60 @@ export default function StockEntryFormPage() {
   useEffect(() => {
     loadOptionsAndData();
   }, [id, isNew]);
+
+  const handleSelectCompany = (val: string) => {
+    const matched = companies.find((c) => c.name === val || c.id === val);
+    const companyName = matched?.name || val;
+    const companyId = matched?.id || "";
+
+    setRow((prev) => ({
+      ...prev,
+      company: companyName,
+      company_id: companyId || prev.company_id || "",
+    }));
+  };
+
+  const selectedType = stockEntryTypes.find((t) => t.name === row.stock_entry_type);
+  const currentPurpose = selectedType?.purpose || row.purpose || row.stock_entry_type || "Material Transfer";
+
+  const showSourceWarehouse = currentPurpose !== "Material Receipt";
+  const showTargetWarehouse =
+    currentPurpose !== "Material Issue" && currentPurpose !== "Material Consumption for Manufacture";
+  const showWorkOrder = [
+    "Manufacture",
+    "Disassemble",
+    "Material Transfer for Manufacture",
+    "Material Consumption for Manufacture",
+  ].includes(currentPurpose);
+  const showInspectionRequired = currentPurpose === "Manufacture";
+  const showTransitOptions = currentPurpose === "Material Transfer";
+
+  const handleSelectStockEntryType = (val: string) => {
+    const matched = stockEntryTypes.find((t) => t.name === val);
+    const purpose = matched?.purpose || val;
+    const isReceipt = purpose === "Material Receipt";
+    const isIssueOrConsumption =
+      purpose === "Material Issue" || purpose === "Material Consumption for Manufacture";
+
+    setRow((prev) => {
+      const nextFromWarehouse = isReceipt ? "" : prev.from_warehouse;
+      const nextToWarehouse = isIssueOrConsumption ? "" : prev.to_warehouse;
+      const nextItems = prev.items.map((it) => ({
+        ...it,
+        source_warehouse: isReceipt ? "" : it.source_warehouse || nextFromWarehouse,
+        target_warehouse: isIssueOrConsumption ? "" : it.target_warehouse || nextToWarehouse,
+      }));
+
+      return {
+        ...prev,
+        stock_entry_type: val,
+        purpose,
+        from_warehouse: nextFromWarehouse,
+        to_warehouse: nextToWarehouse,
+        items: nextItems,
+      };
+    });
+  };
 
   const recalculate = (items: StockEntryItem[]) => {
     let totalQty = 0;
@@ -362,8 +474,8 @@ export default function StockEntryFormPage() {
         ...prev.items,
         {
           ...emptyItem(),
-          source_warehouse: prev.from_warehouse || "",
-          target_warehouse: prev.to_warehouse || "",
+          source_warehouse: showSourceWarehouse ? (prev.from_warehouse || "") : "",
+          target_warehouse: showTargetWarehouse ? (prev.to_warehouse || "") : "",
         },
       ];
       const { items, totalQty, totalAmount } = recalculate(newItems);
@@ -409,43 +521,32 @@ export default function StockEntryFormPage() {
       setRow((prev) => {
         const existingIdx = prev.items.findIndex((it) => it.item_code === found.item_code);
         let newItems: StockEntryItem[];
+        const defaultSource = showSourceWarehouse ? (prev.from_warehouse || "") : "";
+        const defaultTarget = showTargetWarehouse ? (prev.to_warehouse || "") : "";
+
         if (existingIdx >= 0) {
           newItems = prev.items.map((it, idx) =>
             idx === existingIdx ? { ...it, qty: it.qty + 1 } : it
           );
           toast.success(`Menambahkan kuantitas untuk ${found.item_name}`);
         } else {
+          const newItemData: StockEntryItem = {
+            ...emptyItem(),
+            item_code: found.item_code,
+            item_name: found.item_name,
+            uom: found.uom,
+            basic_rate: found.basic_rate,
+            barcode: found.barcode,
+            description: found.description,
+            source_warehouse: defaultSource,
+            target_warehouse: defaultTarget,
+            qty: 1,
+          };
+
           if (prev.items.length === 1 && !prev.items[0].item_code) {
-            newItems = [
-              {
-                ...emptyItem(),
-                item_code: found.item_code,
-                item_name: found.item_name,
-                uom: found.uom,
-                basic_rate: found.basic_rate,
-                barcode: found.barcode,
-                description: found.description,
-                source_warehouse: prev.from_warehouse || "",
-                target_warehouse: prev.to_warehouse || "",
-                qty: 1,
-              },
-            ];
+            newItems = [newItemData];
           } else {
-            newItems = [
-              ...prev.items,
-              {
-                ...emptyItem(),
-                item_code: found.item_code,
-                item_name: found.item_name,
-                uom: found.uom,
-                basic_rate: found.basic_rate,
-                barcode: found.barcode,
-                description: found.description,
-                source_warehouse: prev.from_warehouse || "",
-                target_warehouse: prev.to_warehouse || "",
-                qty: 1,
-              },
-            ];
+            newItems = [...prev.items, newItemData];
           }
           toast.success(`Menambahkan item ${found.item_name}`);
         }
@@ -475,14 +576,45 @@ export default function StockEntryFormPage() {
       return;
     }
 
+    // Clean up warehouse data based on purpose
+    const cleanedItems = row.items.map((it) => ({
+      ...it,
+      source_warehouse: showSourceWarehouse ? (it.source_warehouse || row.from_warehouse || "") : "",
+      target_warehouse: showTargetWarehouse ? (it.target_warehouse || row.to_warehouse || "") : "",
+    }));
+
+    if (showSourceWarehouse) {
+      const missingSource = cleanedItems.some((it) => !it.source_warehouse && it.item_code);
+      if (missingSource) {
+        toast.error(`Source Warehouse wajib diisi untuk tujuan ${currentPurpose}`);
+        return;
+      }
+    }
+
+    if (showTargetWarehouse) {
+      const missingTarget = cleanedItems.some((it) => !it.target_warehouse && it.item_code);
+      if (missingTarget) {
+        toast.error(`Target Warehouse wajib diisi untuk tujuan ${currentPurpose}`);
+        return;
+      }
+    }
+
+    const payload: StockEntry = {
+      ...row,
+      purpose: currentPurpose,
+      from_warehouse: showSourceWarehouse ? (row.from_warehouse || "") : "",
+      to_warehouse: showTargetWarehouse ? (row.to_warehouse || "") : "",
+      items: cleanedItems,
+    };
+
     setSaving(true);
     try {
       if (isNew) {
-        const created = await stockEntryApi.create(row);
+        const created = await stockEntryApi.create(payload);
         toast.success("Stock Entry berhasil dibuat");
         navigate(`/desk/stock-entry/${created.id}`);
       } else {
-        const updated = await stockEntryApi.update(id!, row);
+        const updated = await stockEntryApi.update(id!, payload);
         toast.success("Stock Entry berhasil diperbarui");
         setRow(updated);
       }
@@ -632,19 +764,31 @@ export default function StockEntryFormPage() {
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Company <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  list="companies-list"
-                  value={row.company}
-                  disabled={isReadonly}
-                  onChange={(e) => updateField("company", e.target.value)}
-                  placeholder="Begin typing for results."
-                  className="mt-1"
-                />
-                <datalist id="companies-list">
-                  {options.companies.map((c) => (
-                    <ERPSelectOption key={c} value={c} />
-                  ))}
-                </datalist>
+                <div className="mt-1">
+                  <SearchableSelect
+                    value={row.company}
+                    disabled={isReadonly}
+                    options={(companies.length > 0
+                      ? companies
+                      : (options.companies || []).map((name) => ({ name }))
+                    ).map((c) => ({
+                      value: c.name,
+                      label: c.name,
+                      badge: c.abbreviation || undefined,
+                      sublabel: c.id ? `ID: ${c.id}` : undefined,
+                    }))}
+                    onChange={(val) => handleSelectCompany(val)}
+                    placeholder="Pilih Company..."
+                    searchPlaceholder="Cari nama company atau singkatan..."
+                    addNewLabel="+ Tambah Company"
+                    addNewHref="/desk/company"
+                  />
+                </div>
+                {row.company_id && (
+                  <p className="mt-1 text-[10px] text-slate-400 font-mono truncate">
+                    ID: {row.company_id}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -669,23 +813,110 @@ export default function StockEntryFormPage() {
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Stock Entry Type <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  list="stock-entry-types-list"
-                  value={row.stock_entry_type}
-                  disabled={isReadonly}
-                  onChange={(e) => {
-                    updateField("stock_entry_type", e.target.value);
-                    updateField("purpose", e.target.value);
-                  }}
-                  placeholder="Begin typing for results."
-                  className="mt-1"
-                />
-                <datalist id="stock-entry-types-list">
-                  {options.stock_entry_types.map((t) => (
-                    <ERPSelectOption key={t} value={t} />
-                  ))}
-                </datalist>
+                <div className="mt-1">
+                  <SearchableSelect
+                    value={row.stock_entry_type}
+                    disabled={isReadonly}
+                    options={(stockEntryTypes.length > 0
+                      ? stockEntryTypes
+                      : (options.stock_entry_types || []).map((name) => ({
+                          id: name,
+                          name,
+                          purpose: name,
+                          is_standard: true,
+                          disabled: false,
+                        }))
+                    ).map((t) => ({
+                      value: t.name,
+                      label: t.name,
+                      sublabel: t.purpose && t.purpose !== t.name ? `Purpose: ${t.purpose}` : undefined,
+                      badge: t.is_standard ? "Standard" : undefined,
+                    }))}
+                    onChange={(val) => handleSelectStockEntryType(val)}
+                    placeholder="Pilih Stock Entry Type..."
+                    searchPlaceholder="Cari tipe atau purpose..."
+                    addNewLabel="+ Tambah Stock Entry Type"
+                    addNewHref="/desk/stock-entry-type/new"
+                  />
+                </div>
+                {selectedType?.purpose && selectedType.purpose !== row.stock_entry_type && (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Purpose: <span className="font-medium text-slate-700 dark:text-slate-300">{selectedType.purpose}</span>
+                  </p>
+                )}
               </div>
+
+              {showWorkOrder && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Work Order
+                  </label>
+                  <Input
+                    value={row.work_order || ""}
+                    disabled={isReadonly}
+                    onChange={(e) => updateField("work_order", e.target.value)}
+                    placeholder="MFG-WO-YYYY-00001"
+                    className="mt-1"
+                  />
+                </div>
+              )}
+
+              {showInspectionRequired && (
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="inspection_required"
+                    checked={!!row.inspection_required}
+                    disabled={isReadonly}
+                    onChange={(e) => updateField("inspection_required", e.target.checked)}
+                    className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <label
+                    htmlFor="inspection_required"
+                    className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+                  >
+                    Inspection Required
+                  </label>
+                </div>
+              )}
+
+              {showTransitOptions && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="add_to_transit"
+                      checked={!!row.add_to_transit}
+                      disabled={isReadonly}
+                      onChange={(e) => updateField("add_to_transit", e.target.checked)}
+                      className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="add_to_transit"
+                      className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+                    >
+                      Add to Transit
+                    </label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="apply_putaway_rule"
+                      checked={!!row.apply_putaway_rule}
+                      disabled={isReadonly}
+                      onChange={(e) => updateField("apply_putaway_rule", e.target.checked)}
+                      className="size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <label
+                      htmlFor="apply_putaway_rule"
+                      className="text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer"
+                    >
+                      Apply Putaway Rule
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Column */}
@@ -770,44 +1001,50 @@ export default function StockEntryFormPage() {
             </div>
 
             {/* Default Warehouses */}
-            <div className="space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Default Warehouse</h3>
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Default Source Warehouse
-                </label>
-                <div className="mt-1">
-                  <SearchableWarehouseSelect
-                    value={row.from_warehouse || ""}
-                    warehouses={options.warehouses}
-                    disabled={isReadonly}
-                    onChange={(val) => updateField("from_warehouse", val)}
-                    placeholder="Pilih default source warehouse..."
-                  />
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Sets 'Source Warehouse' in each row of the items table.
-                </p>
-              </div>
+            {(showSourceWarehouse || showTargetWarehouse) && (
+              <div className="space-y-4">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Default Warehouse</h3>
+                {showSourceWarehouse && (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Default Source Warehouse
+                    </label>
+                    <div className="mt-1">
+                      <SearchableWarehouseSelect
+                        value={row.from_warehouse || ""}
+                        warehouses={options.warehouses}
+                        disabled={isReadonly}
+                        onChange={(val) => updateField("from_warehouse", val)}
+                        placeholder="Pilih default source warehouse..."
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Sets 'Source Warehouse' in each row of the items table.
+                    </p>
+                  </div>
+                )}
 
-              <div>
-                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  Default Target Warehouse
-                </label>
-                <div className="mt-1">
-                  <SearchableWarehouseSelect
-                    value={row.to_warehouse || ""}
-                    warehouses={options.warehouses}
-                    disabled={isReadonly}
-                    onChange={(val) => updateField("to_warehouse", val)}
-                    placeholder="Pilih default target warehouse..."
-                  />
-                </div>
-                <p className="mt-1 text-[11px] text-slate-500">
-                  Sets 'Target Warehouse' in each row of the items table.
-                </p>
+                {showTargetWarehouse && (
+                  <div>
+                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      Default Target Warehouse
+                    </label>
+                    <div className="mt-1">
+                      <SearchableWarehouseSelect
+                        value={row.to_warehouse || ""}
+                        warehouses={options.warehouses}
+                        disabled={isReadonly}
+                        onChange={(val) => updateField("to_warehouse", val)}
+                        placeholder="Pilih default target warehouse..."
+                      />
+                    </div>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Sets 'Target Warehouse' in each row of the items table.
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
           </div>
 
           {/* Barcode Scanner Box */}
@@ -859,8 +1096,12 @@ export default function StockEntryFormPage() {
                   <tr>
                     <th className="py-3 pl-3 pr-2 w-10">No.</th>
                     <th className="px-2 py-3 min-w-[220px]">Item Code</th>
-                    <th className="px-2 py-3 min-w-[190px]">Source Warehouse</th>
-                    <th className="px-2 py-3 min-w-[190px]">Target Warehouse</th>
+                    {showSourceWarehouse && (
+                      <th className="px-2 py-3 min-w-[190px]">Source Warehouse</th>
+                    )}
+                    {showTargetWarehouse && (
+                      <th className="px-2 py-3 min-w-[190px]">Target Warehouse</th>
+                    )}
                     <th className="px-2 py-3 w-24 text-right">Qty</th>
                     <th className="px-2 py-3 w-20">UOM</th>
                     <th className="px-2 py-3 w-32 text-right">Basic Rate</th>
@@ -889,26 +1130,30 @@ export default function StockEntryFormPage() {
                         </td>
 
                         {/* Source Warehouse (Searchable dropdown with + Tambah Warehouse) */}
-                        <td className="px-2 py-2">
-                          <SearchableWarehouseSelect
-                            value={item.source_warehouse || ""}
-                            warehouses={options.warehouses}
-                            disabled={isReadonly}
-                            onChange={(val) => updateItem(idx, "source_warehouse", val)}
-                            placeholder="Source warehouse"
-                          />
-                        </td>
+                        {showSourceWarehouse && (
+                          <td className="px-2 py-2">
+                            <SearchableWarehouseSelect
+                              value={item.source_warehouse || ""}
+                              warehouses={options.warehouses}
+                              disabled={isReadonly}
+                              onChange={(val) => updateItem(idx, "source_warehouse", val)}
+                              placeholder="Source warehouse"
+                            />
+                          </td>
+                        )}
 
                         {/* Target Warehouse (Searchable dropdown with + Tambah Warehouse) */}
-                        <td className="px-2 py-2">
-                          <SearchableWarehouseSelect
-                            value={item.target_warehouse || ""}
-                            warehouses={options.warehouses}
-                            disabled={isReadonly}
-                            onChange={(val) => updateItem(idx, "target_warehouse", val)}
-                            placeholder="Target warehouse"
-                          />
-                        </td>
+                        {showTargetWarehouse && (
+                          <td className="px-2 py-2">
+                            <SearchableWarehouseSelect
+                              value={item.target_warehouse || ""}
+                              warehouses={options.warehouses}
+                              disabled={isReadonly}
+                              onChange={(val) => updateItem(idx, "target_warehouse", val)}
+                              placeholder="Target warehouse"
+                            />
+                          </td>
+                        )}
 
                         {/* Qty */}
                         <td className="px-2 py-2">

@@ -5,6 +5,7 @@ import (
 	"gin-template/controller"
 	"gin-template/middleware"
 	buyingmodule "gin-template/modules/buying"
+	printingmodule "gin-template/modules/printing"
 	sellingmodule "gin-template/modules/selling"
 	stockmodule "gin-template/modules/stock"
 	"gin-template/repository"
@@ -104,6 +105,7 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		registerCoreProfileAndMediaRoutes(tenantGroup, ctrls)
 		registerCRMRoutes(tenantGroup)
 		buyingmodule.RegisterRoutes(tenantGroup)
+		printingmodule.RegisterRoutes(tenantGroup)
 		sellingmodule.RegisterRoutes(tenantGroup)
 		stockmodule.RegisterRoutes(tenantGroup)
 		registerOrganizationRoutes(tenantGroup, db)

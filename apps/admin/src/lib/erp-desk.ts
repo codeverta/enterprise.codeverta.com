@@ -5,6 +5,7 @@ import {
   Building2,
   CircleDollarSign,
   ClipboardCheck,
+  Database,
   ContactRound,
   CreditCard,
   Factory,
@@ -12,14 +13,18 @@ import {
   Landmark,
   Mail,
   Package,
+  Plug,
   PiggyBank,
+  Printer,
   ReceiptText,
   RefreshCw,
   Settings,
+  ServerCog,
   ShieldCheck,
   ShoppingBag,
   Tags,
   Users,
+  Workflow,
   WalletCards,
 } from "lucide-react";
 
@@ -61,6 +66,18 @@ export const hrSubmodules = [
   { name: "Pajak & Tunjangan", slug: "tax-and-benefits", href: "/desk/tax-and-benefits?sidebar=Tax%20%26%20Benefits", icon: CircleDollarSign },
 ] as const;
 
+export const frameworkSubmodules = [
+  { name: "Automation", slug: "automation", href: "/desk/assignment-rule?sidebar=Automation", icon: Workflow },
+  { name: "Build", slug: "build", href: "/desk/doctype?sidebar=Build", icon: Package },
+  { name: "Data", slug: "data", href: "/desk/data-import?sidebar=Data", icon: Database },
+  { name: "Email", slug: "email", href: "/desk/email-account?sidebar=Email", icon: Mail },
+  { name: "Integrations", slug: "integrations", href: "/desk/connected-app?sidebar=Integrations", icon: Plug },
+  { name: "Printing", slug: "printing", href: "/desk/print-format?sidebar=Printing", icon: Printer },
+  { name: "System", slug: "system", href: "/desk/system-health-report/System%20Health%20Report?sidebar=System", icon: ServerCog },
+  { name: "Users", slug: "users", href: "/desk/users?sidebar=Users", icon: Users },
+  { name: "Website", slug: "website", href: "/desk/website?sidebar=Website", icon: Settings },
+] as const;
+
 export const accountingMenus = [
   { name: "Faktur & Penagihan", href: "/desk/invoicing?sidebar=Invoicing", icon: ReceiptText },
   { name: "Pembayaran", href: "/desk/dashboard-view/Payments?sidebar=Payments", icon: CreditCard },
@@ -72,4 +89,3 @@ export const accountingMenus = [
   { name: "Manajemen Saham", href: "/desk/shareholder?sidebar=Share%20Management", icon: Users },
   { name: "Langganan", href: "/desk/subscription?sidebar=Subscription", icon: Banknote },
 ] as const;
-
