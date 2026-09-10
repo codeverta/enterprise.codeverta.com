@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { emptyPrintFormat, getPrintFormat, savePrintFormat, type PrintFormat } from "../printingApi";
 
-const docTypes = ["Sales Invoice", "Purchase Invoice", "Sales Order", "Purchase Order", "Delivery Note", "Purchase Receipt", "Quotation", "Customer", "Supplier", "Item", "Stock Entry", "Employee", "Expense Claim"];
+const docTypes = ["Sales Invoice", "Purchase Invoice", "Sales Order", "Purchase Order", "POS Invoice", "Delivery Note", "Purchase Receipt", "Pick List", "Journal Entry", "Payment Entry", "Dunning", "Quotation", "Customer", "Supplier", "Item", "Stock Entry", "Employee", "Expense Claim"];
+const reports = ["General Ledger", "Accounts Receivable", "Accounts Payable", "Stock Ledger", "Sales Register", "Purchase Register", "Balance Sheet", "Profit and Loss Statement"];
 const modules = ["Selling", "Buying", "Stock", "Accounting", "CRM", "Human Resources", "Assets", "Manufacturing", "Projects"];
 const languages = [{ value: "id", label: "Bahasa Indonesia" }, { value: "en", label: "English" }];
 const fonts = ["", "Inter", "Roboto", "Open Sans", "Lato", "Montserrat", "Poppins", "Noto Sans"];
@@ -38,11 +39,12 @@ export default function PrintFormatFormPage() {
     setDirty(true);
   };
 
-  const canSave = useMemo(() => Boolean(form.name.trim() && form.doc_type.trim()), [form.doc_type, form.name]);
+  const canSave = useMemo(() => Boolean(form.name.trim() && (form.print_format_for === "Report" ? form.report.trim() : form.doc_type.trim())), [form.doc_type, form.name, form.print_format_for, form.report]);
 
   const submit = async () => {
     if (!form.name.trim()) return toast.error("Name wajib diisi");
-    if (!form.doc_type.trim()) return toast.error("DocType wajib dipilih");
+    if (form.print_format_for === "DocType" && !form.doc_type.trim()) return toast.error("DocType wajib dipilih");
+    if (form.print_format_for === "Report" && !form.report.trim()) return toast.error("Report wajib dipilih");
     setSaving(true);
     try {
       const saved = await savePrintFormat(form);
@@ -79,7 +81,7 @@ export default function PrintFormatFormPage() {
         <FormGrid>
           <Field label="Name" required fieldName="__newname"><Input value={form.name} onChange={(event) => update("name", event.target.value)} placeholder="Contoh: Sales Invoice Standard" className="h-10 rounded-lg" /></Field>
           <Field label="Print Format For" fieldName="print_format_for"><Segmented value={form.print_format_for} options={["DocType", "Report"]} onChange={(value) => update("print_format_for", value as PrintFormat["print_format_for"])} /></Field>
-          <Field label="DocType" required fieldName="doc_type"><SearchableSelect value={form.doc_type} options={docTypes} onChange={(value) => update("doc_type", value)} placeholder="Begin typing for results." searchPlaceholder="Cari DocType..." /></Field>
+          {form.print_format_for === "DocType" ? <Field label="DocType" required fieldName="doc_type"><SearchableSelect value={form.doc_type} options={docTypes} onChange={(value) => update("doc_type", value)} placeholder="Begin typing for results." searchPlaceholder="Cari DocType..." /></Field> : <Field label="Report" required fieldName="report"><SearchableSelect value={form.report} options={reports} onChange={(value) => update("report", value)} placeholder="Begin typing for results." searchPlaceholder="Cari report..." /></Field>}
           <Field label="Module" fieldName="module"><SearchableSelect value={form.module} options={modules} onChange={(value) => update("module", value)} placeholder="Begin typing for results." searchPlaceholder="Cari module..." /></Field>
           <Field label="Default Print Language" fieldName="default_print_language"><SearchableSelect value={form.default_print_language} options={languages} onChange={(value) => update("default_print_language", value)} placeholder="Begin typing for results." /></Field>
           <div className="grid grid-cols-2 gap-3"><Toggle label="Custom Format" fieldName="custom_format" checked={form.custom_format} onChange={(value) => update("custom_format", value)} /><Toggle label="Disabled" fieldName="disabled" checked={form.disabled} onChange={(value) => update("disabled", value)} /></div>

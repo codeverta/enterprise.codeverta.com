@@ -44,19 +44,54 @@ func calculateSalesInvoice(invoice *sellingmodel.SalesInvoice) {
 		sign = -1
 	}
 	var net float64
+	var totalQty float64
 	for i := range invoice.Items {
 		qty := math.Abs(invoice.Items[i].Quantity)
 		invoice.Items[i].Quantity = sign * qty
 		invoice.Items[i].Amount = sign * qty * math.Abs(invoice.Items[i].Rate)
 		net += invoice.Items[i].Amount
+		totalQty += qty
+	}
+	invoice.TotalQty = totalQty
+
+	// Additional Discount
+	absNet := math.Abs(net)
+	discount := math.Abs(invoice.DiscountAmount)
+	if invoice.AdditionalDiscountPercentage > 0 {
+		discount = absNet * (invoice.AdditionalDiscountPercentage / 100)
+		invoice.DiscountAmount = discount
+	}
+	absDiscountedNet := absNet - discount
+	if absDiscountedNet < 0 {
+		absDiscountedNet = 0
 	}
 	invoice.NetTotal = net
-	invoice.TaxAmount = net * math.Abs(invoice.TaxRate) / 100
-	invoice.GrandTotal = invoice.NetTotal + invoice.TaxAmount
+
+	// Tax calculation
+	tax := sign * (absDiscountedNet * math.Abs(invoice.TaxRate) / 100)
+	invoice.TaxAmount = tax
+	invoice.TotalTaxesAndCharges = tax
+
+	rawGrand := (sign * absDiscountedNet) + tax
+	invoice.GrandTotal = rawGrand
+
+	// Rounding
+	if !invoice.UseCompanyRoundoffCostCenter {
+		invoice.RoundedTotal = math.Round(rawGrand)
+		invoice.RoundingAdjustment = invoice.RoundedTotal - rawGrand
+	} else {
+		invoice.RoundedTotal = rawGrand
+		invoice.RoundingAdjustment = 0
+	}
+
 	if invoice.IsReturn {
 		invoice.OutstandingAmount = 0
 	} else if !invoice.IsPaid {
-		invoice.OutstandingAmount = invoice.GrandTotal
+		outstanding := invoice.RoundedTotal - math.Abs(invoice.TotalAdvance)
+		if outstanding < 0 {
+			outstanding = 0
+		}
+		invoice.OutstandingAmount = outstanding
 	}
 }
 
@@ -74,6 +109,10 @@ func prepareSalesInvoice(invoice *sellingmodel.SalesInvoice, tenant string) {
 	if invoice.Company == "" {
 		invoice.Company = "PT ZENIT TECHNOLOGY SOLUTION"
 	}
+	if invoice.DueDate == nil || invoice.DueDate.IsZero() {
+		due := now.AddDate(0, 0, 7)
+		invoice.DueDate = &due
+	}
 	if invoice.Number == "" {
 		prefix := "ACC-SINV"
 		if invoice.IsReturn {
@@ -90,6 +129,48 @@ func prepareSalesInvoice(invoice *sellingmodel.SalesInvoice, tenant string) {
 		}
 	}
 	calculateSalesInvoice(invoice)
+}
+
+func (ctrl *SalesInvoiceController) Options(ctx *gin.Context) {
+	db, tenant := posDB(ctx), tenantString(ctx)
+	var companies []string
+	db.Table("companies").Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Pluck("name", &companies)
+	if len(companies) == 0 {
+		companies = []string{"PT ZENIT TECHNOLOGY SOLUTION", "UD MILLION CANDLES"}
+	}
+
+	var warehouses []string
+	db.Table("warehouses").Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Pluck("warehouse_name", &warehouses)
+	if len(warehouses) == 0 {
+		warehouses = []string{"Stores - PT ZENIT", "Finished Goods - PT ZENIT", "Stores - MC"}
+	}
+
+	var customers []string
+	db.Table("selling_customers").Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Pluck("customer_name", &customers)
+	if len(customers) == 0 {
+		customers = []string{"PT Mitra Niaga Mandiri", "Walk-in Customer"}
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"naming_series": []string{
+			"ACC-SINV-.YYYY.-",
+			"ACC-SINV-RET-.YYYY.-",
+		},
+		"companies":       companies,
+		"warehouses":      warehouses,
+		"customers":       customers,
+		"currencies":      []string{"IDR", "USD", "SGD", "EUR"},
+		"tax_categories":  []string{"In State", "Out of State", "Export"},
+		"taxes_templates": []string{"PPN 11%", "PPN 12%", "Exempt Tax"},
+		"shipping_rules":  []string{"Standard Delivery", "Express Delivery", "Free Shipping"},
+		"incoterms":       []string{"EXW", "FOB", "CIF", "DDP"},
+		"apply_discount_on": []string{
+			"Grand Total",
+			"Net Total",
+		},
+		"cost_centers": []string{"Main - PZTS", "Sales - PZTS"},
+		"projects":     []string{"Internal Project", "Customer Delivery"},
+	})
 }
 
 func (ctrl *SalesInvoiceController) List(ctx *gin.Context) {
@@ -191,9 +272,65 @@ func (ctrl *SalesInvoiceController) Update(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Sales Invoice tidak valid"})
 		return
 	}
-	existing.Customer, existing.Company = input.Customer, input.Company
-	existing.PostingDate, existing.DueDate = input.PostingDate, input.DueDate
-	existing.TaxRate, existing.Items, existing.UpdatedAt = input.TaxRate, input.Items, time.Now()
+	existing.Customer = input.Customer
+	existing.Company = input.Company
+	existing.NamingSeries = input.NamingSeries
+	existing.PostingDate = input.PostingDate
+	existing.PostingTime = input.PostingTime
+	existing.SetPostingTime = input.SetPostingTime
+	existing.DueDate = input.DueDate
+	existing.IsPOS = input.IsPOS
+	existing.IsDebitNote = input.IsDebitNote
+	existing.ApplyTDS = input.ApplyTDS
+	existing.CostCenter = input.CostCenter
+	existing.Project = input.Project
+	existing.ScanBarcode = input.ScanBarcode
+	existing.UpdateStock = input.UpdateStock
+	existing.Currency = input.Currency
+	existing.TaxCategory = input.TaxCategory
+	existing.TaxesAndCharges = input.TaxesAndCharges
+	existing.ShippingRule = input.ShippingRule
+	existing.Incoterm = input.Incoterm
+	existing.TaxRate = input.TaxRate
+	existing.UseCompanyRoundoffCostCenter = input.UseCompanyRoundoffCostCenter
+	existing.TotalAdvance = input.TotalAdvance
+	existing.ApplyDiscountOn = input.ApplyDiscountOn
+	existing.CouponCode = input.CouponCode
+	existing.AdditionalDiscountPercentage = input.AdditionalDiscountPercentage
+	existing.DiscountAmount = input.DiscountAmount
+	existing.IsCashOrNonTradeDiscount = input.IsCashOrNonTradeDiscount
+	existing.AllocateAdvancesAutomatically = input.AllocateAdvancesAutomatically
+	existing.RedeemLoyaltyPoints = input.RedeemLoyaltyPoints
+	existing.LoyaltyProgram = input.LoyaltyProgram
+	existing.CustomerAddress = input.CustomerAddress
+	existing.ContactPerson = input.ContactPerson
+	existing.Territory = input.Territory
+	existing.ShippingAddressName = input.ShippingAddressName
+	existing.DispatchAddressName = input.DispatchAddressName
+	existing.CompanyAddress = input.CompanyAddress
+	existing.PaymentTermsTemplate = input.PaymentTermsTemplate
+	existing.TCName = input.TCName
+	existing.TermsAndConditions = input.TermsAndConditions
+	existing.PONo = input.PONo
+	existing.PODate = input.PODate
+	existing.DebitTo = input.DebitTo
+	existing.SalesPartner = input.SalesPartner
+	existing.AmountEligibleForCommission = input.AmountEligibleForCommission
+	existing.CommissionRate = input.CommissionRate
+	existing.TotalCommission = input.TotalCommission
+	existing.LetterHead = input.LetterHead
+	existing.GroupSameItems = input.GroupSameItems
+	existing.SelectPrintHeading = input.SelectPrintHeading
+	existing.Language = input.Language
+	existing.Subscription = input.Subscription
+	existing.FromDate = input.FromDate
+	existing.ToDate = input.ToDate
+	existing.UTMSource = input.UTMSource
+	existing.UTMMedium = input.UTMMedium
+	existing.UTMCampaign = input.UTMCampaign
+	existing.UTMContent = input.UTMContent
+	existing.Items = input.Items
+	existing.UpdatedAt = time.Now()
 	calculateSalesInvoice(&existing)
 	err = db.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("sales_invoice_id = ?", existing.ID).Delete(&sellingmodel.SalesInvoiceItem{}).Error; err != nil {

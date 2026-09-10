@@ -12,6 +12,10 @@ Saat aplikasi desktop belum memiliki konfigurasi, onboarding akan meminta:
 4. Mode penyimpanan data.
 5. Nama dan password administrator lokal untuk mode offline.
 
+Setelah administrator berhasil dibuat, bootstrap instalasi menjalankan pipeline seeder satu kali. Pipeline memasang role bawaan, template email, struktur organisasi, kategori dan paket awal, UOM, warehouse, Stock Entry Type, serta katalog Print Format. Statusnya disimpan di `installation_seed_states`, sehingga proses yang terputus dapat dilanjutkan dan startup berikutnya tidak membuat data duplikat.
+
+Katalog Printing berisi 35 Print Format awal. Seeder hanya menambahkan data yang belum ada dan tidak menimpa format yang sudah disesuaikan pengguna.
+
 ### Mandiri & Offline
 
 - Backend lokal dimulai otomatis bersama aplikasi.

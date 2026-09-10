@@ -5,12 +5,16 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { deletePrintFormat, listPrintFormats, type PrintFormat } from "../printingApi";
 
 export default function PrintFormatListPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<PrintFormat[]>([]);
   const [query, setQuery] = useState("");
+  const [docType, setDocType] = useState("");
+  const [report, setReport] = useState("");
+  const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
@@ -28,9 +32,17 @@ export default function PrintFormatListPage() {
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    if (!term) return rows;
-    return rows.filter((row) => [row.name, row.doc_type, row.module].some((value) => value.toLowerCase().includes(term)));
-  }, [query, rows]);
+    return rows.filter((row) => {
+      const matchesName = !term || row.name.toLowerCase().includes(term);
+      const matchesDocType = !docType || row.doc_type === docType;
+      const matchesReport = !report || row.report === report;
+      const matchesStatus = !status || (status === "Enabled" ? !row.disabled : row.disabled);
+      return matchesName && matchesDocType && matchesReport && matchesStatus;
+    });
+  }, [docType, query, report, rows, status]);
+
+  const docTypeOptions = useMemo(() => [...new Set(rows.map((row) => row.doc_type).filter(Boolean))].sort(), [rows]);
+  const reportOptions = useMemo(() => [...new Set(rows.map((row) => row.report).filter(Boolean))].sort(), [rows]);
 
   const remove = async (row: PrintFormat) => {
     if (!row.id || !window.confirm(`Hapus Print Format “${row.name}”?`)) return;
@@ -59,12 +71,15 @@ export default function PrintFormatListPage() {
             <Plus className="mr-2 size-4" /> New Print Format
           </Button>
         </div>
-        <div className="flex items-center gap-3 bg-slate-50/70 px-5 py-3 lg:px-6">
-          <div className="relative max-w-md flex-1">
+        <div className="grid gap-2 bg-slate-50/70 px-5 py-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_220px_220px_150px_auto] lg:px-6">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cari nama, DocType, atau module..." className="h-10 rounded-xl border-slate-200 bg-white pl-9" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name — Begin typing for results." className="h-10 rounded-xl border-slate-200 bg-white pl-9" />
           </div>
-          <span className="text-xs text-slate-400">{filtered.length} format</span>
+          <SearchableSelect value={docType} options={[{ value: "", label: "Semua DocType" }, ...docTypeOptions]} onChange={setDocType} placeholder="DocType — Begin typing" searchPlaceholder="Cari DocType..." className="[&_button]:h-10 [&_button]:rounded-xl" />
+          <SearchableSelect value={report} options={[{ value: "", label: "Semua Report" }, ...reportOptions]} onChange={setReport} placeholder="Report — Begin typing" searchPlaceholder="Cari report..." className="[&_button]:h-10 [&_button]:rounded-xl" />
+          <SearchableSelect value={status} options={[{ value: "", label: "Semua Status" }, "Enabled", "Disabled"]} onChange={setStatus} placeholder="Status" className="[&_button]:h-10 [&_button]:rounded-xl" />
+          <span className="self-center whitespace-nowrap text-right text-xs text-slate-400">{filtered.length} of {rows.length}</span>
         </div>
       </header>
 
@@ -72,7 +87,7 @@ export default function PrintFormatListPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-              <tr><th className="px-5 py-3.5">Name</th><th className="px-5 py-3.5">DocType / Report</th><th className="px-5 py-3.5">Module</th><th className="px-5 py-3.5">PDF Generator</th><th className="px-5 py-3.5">Status</th><th className="w-24 px-5 py-3.5 text-right">Aksi</th></tr>
+                <tr><th className="px-5 py-3.5">ID</th><th className="px-5 py-3.5">Status</th><th className="px-5 py-3.5">DocType</th><th className="px-5 py-3.5">Report</th><th className="px-5 py-3.5">PDF Generator</th><th className="w-24 px-5 py-3.5 text-right">Aksi</th></tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
@@ -80,13 +95,13 @@ export default function PrintFormatListPage() {
               ) : filtered.length === 0 ? (
                 <tr><td colSpan={6} className="px-5 py-16 text-center"><span className="mx-auto flex size-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><FileText className="size-5" /></span><p className="mt-4 font-semibold text-slate-700">Belum ada Print Format</p><p className="mt-1 text-xs text-slate-400">Buat format pertama untuk mulai mengatur hasil cetak.</p></td></tr>
               ) : filtered.map((row) => (
-                <tr key={row.id} onClick={() => navigate(`/desk/print-format/${row.id}`)} className="cursor-pointer transition hover:bg-indigo-50/30">
+                <tr key={row.id} onClick={() => navigate(`/desk/print-format/${encodeURIComponent(row.name)}`)} className="cursor-pointer transition hover:bg-indigo-50/30">
                   <td className="px-5 py-4 font-semibold text-slate-900">{row.name}</td>
-                  <td className="px-5 py-4"><span className="block text-slate-700">{row.doc_type}</span><span className="text-[11px] text-slate-400">{row.print_format_for}</span></td>
-                  <td className="px-5 py-4 text-slate-600">{row.module || "—"}</td>
+                  <td className="px-5 py-4"><Badge variant={row.disabled ? "secondary" : "default"} className={row.disabled ? "" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-50"}>{row.disabled ? "Disabled" : "Enabled"}</Badge></td>
+                  <td className="px-5 py-4 text-slate-700">{row.doc_type || "—"}</td>
+                  <td className="px-5 py-4 text-slate-600">{row.report || "—"}</td>
                   <td className="px-5 py-4"><Badge variant="outline" className="font-medium">{row.pdf_generator}</Badge></td>
-                  <td className="px-5 py-4"><Badge variant={row.disabled ? "secondary" : "default"} className={row.disabled ? "" : "bg-emerald-50 text-emerald-700 hover:bg-emerald-50"}>{row.disabled ? "Disabled" : "Active"}</Badge></td>
-                  <td className="px-5 py-4"><div className="flex justify-end gap-1"><button type="button" title="Detail" onClick={(event) => { event.stopPropagation(); navigate(`/desk/print-format/${row.id}`); }} className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><MoreHorizontal className="size-4" /></button><button type="button" title="Hapus" onClick={(event) => { event.stopPropagation(); void remove(row); }} className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="size-4" /></button></div></td>
+                  <td className="px-5 py-4"><div className="flex justify-end gap-1"><button type="button" title="Detail" onClick={(event) => { event.stopPropagation(); navigate(`/desk/print-format/${encodeURIComponent(row.name)}`); }} className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"><MoreHorizontal className="size-4" /></button><button type="button" title="Hapus" onClick={(event) => { event.stopPropagation(); void remove(row); }} className="flex size-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"><Trash2 className="size-4" /></button></div></td>
                 </tr>
               ))}
             </tbody>

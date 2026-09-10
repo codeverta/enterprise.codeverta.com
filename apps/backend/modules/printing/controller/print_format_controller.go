@@ -28,7 +28,7 @@ func (ctrl *PrintFormatController) List(ctx *gin.Context) {
 	query := printingDB(ctx).Where("tenant_id = ?", printingTenant(ctx))
 	if search := strings.TrimSpace(ctx.Query("q")); search != "" {
 		like := "%" + search + "%"
-		query = query.Where("name LIKE ? OR doc_type LIKE ? OR module LIKE ?", like, like, like)
+		query = query.Where("name LIKE ? OR doc_type LIKE ? OR report LIKE ? OR module LIKE ?", like, like, like, like)
 	}
 	if err := query.Order("updated_at desc").Find(&rows).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil Print Format"})
@@ -39,7 +39,8 @@ func (ctrl *PrintFormatController) List(ctx *gin.Context) {
 
 func (ctrl *PrintFormatController) Get(ctx *gin.Context) {
 	var row printingmodel.PrintFormat
-	if err := printingDB(ctx).Where("tenant_id = ? AND id = ?", printingTenant(ctx), ctx.Param("id")).First(&row).Error; err != nil {
+	identifier := ctx.Param("id")
+	if err := printingDB(ctx).Where("tenant_id = ? AND (id = ? OR name = ?)", printingTenant(ctx), identifier, identifier).First(&row).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{"error": "Print Format tidak ditemukan"})
 			return
@@ -57,6 +58,7 @@ func normalizePrintFormat(input *printingmodel.PrintFormat) {
 		input.PrintFormatFor = "DocType"
 	}
 	input.DocType = strings.TrimSpace(input.DocType)
+	input.Report = strings.TrimSpace(input.Report)
 	input.Module = strings.TrimSpace(input.Module)
 	input.DefaultPrintLanguage = strings.TrimSpace(input.DefaultPrintLanguage)
 	if input.DefaultPrintLanguage == "" {
@@ -74,8 +76,11 @@ func validatePrintFormat(input printingmodel.PrintFormat) string {
 	if input.Name == "" {
 		return "Name wajib diisi"
 	}
-	if input.DocType == "" {
+	if input.PrintFormatFor == "DocType" && input.DocType == "" {
 		return "DocType wajib dipilih"
+	}
+	if input.PrintFormatFor == "Report" && input.Report == "" {
+		return "Report wajib dipilih"
 	}
 	return ""
 }

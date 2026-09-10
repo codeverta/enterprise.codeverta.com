@@ -8,6 +8,7 @@ type PrintFormat struct {
 	Name                 string    `gorm:"size:180;not null;uniqueIndex:idx_print_format_tenant_name" json:"name"`
 	PrintFormatFor       string    `gorm:"size:20;not null;default:'DocType'" json:"print_format_for"`
 	DocType              string    `gorm:"size:180;index" json:"doc_type"`
+	Report               string    `gorm:"size:180;index" json:"report"`
 	Module               string    `gorm:"size:120;index" json:"module"`
 	DefaultPrintLanguage string    `gorm:"size:32;default:'id'" json:"default_print_language"`
 	CustomFormat         bool      `gorm:"default:false" json:"custom_format"`

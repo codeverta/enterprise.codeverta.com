@@ -5,6 +5,7 @@ export type PrintFormat = {
   name: string;
   print_format_for: "DocType" | "Report";
   doc_type: string;
+  report: string;
   module: string;
   default_print_language: string;
   custom_format: boolean;
@@ -28,6 +29,7 @@ export const emptyPrintFormat = (): PrintFormat => ({
   name: "",
   print_format_for: "DocType",
   doc_type: "",
+  report: "",
   module: "",
   default_print_language: "id",
   custom_format: false,

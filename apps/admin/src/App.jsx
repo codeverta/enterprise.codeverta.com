@@ -99,6 +99,7 @@ const router = createBrowserRouter([
           { path: "desk/pos-closing-entry/*", element: <SellingModule /> },
           { path: "desk/pos-invoice/*", element: <SellingModule /> },
           { path: "desk/sales-order/*", element: <SellingModule /> },
+          { path: "desk/sales-invoice/*", element: <SellingModule /> },
           { path: "desk/item-price/*", element: <SellingModule /> },
           { path: "desk/price-list/*", element: <SellingModule /> },
           { path: "desk/shipment/*", element: <StockModule /> },

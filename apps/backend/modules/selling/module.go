@@ -78,6 +78,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.POST("/item-prices", priceListHandler.CreateItemPrice)
 		group.PUT("/item-prices/:id", priceListHandler.UpdateItemPrice)
 		group.DELETE("/item-prices/:id", priceListHandler.DeleteItemPrice)
+		group.GET("/sales-invoices/options", salesInvoiceHandler.Options)
 		group.GET("/sales-invoices", salesInvoiceHandler.List)
 		group.POST("/sales-invoices", salesInvoiceHandler.Create)
 		group.GET("/sales-invoices/:id", salesInvoiceHandler.Get)

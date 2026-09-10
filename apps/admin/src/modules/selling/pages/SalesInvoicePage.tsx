@@ -1,101 +1,1627 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
-import { ArrowLeft, Banknote, CheckCircle2, Plus, RotateCcw, Save, Trash2, Warehouse } from "lucide-react";
+import {
+  ArrowLeft,
+  Banknote,
+  CheckCircle2,
+  Plus,
+  RotateCcw,
+  Save,
+  Trash2,
+  Warehouse,
+  FileText,
+  Search,
+  ScanBarcode,
+  Calendar,
+  CreditCard,
+  Building2,
+  MapPin,
+  Clock,
+  ShieldCheck,
+  Tag,
+  DollarSign,
+  Info,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { SearchableSelect, SearchableWarehouseSelect } from "@/components/ui/searchable-select";
+import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { stockApi } from "@/modules/stock/api";
-import { salesInvoiceApi, type SalesInvoice, type SalesInvoiceItem } from "../salesInvoiceApi";
+import {
+  salesInvoiceApi,
+  type SalesInvoice,
+  type SalesInvoiceItem,
+  type SalesInvoiceOptions,
+} from "../salesInvoiceApi";
 
 const today = () => new Date().toISOString().slice(0, 10);
-const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
-const emptyInvoice = (): SalesInvoice => ({
-  status: "Draft", customer: "", company: "PT ZENIT TECHNOLOGY SOLUTION", posting_date: today(),
-  currency: "IDR", is_return: false, net_total: 0, tax_rate: 0, tax_amount: 0, grand_total: 0,
-  outstanding_amount: 0, is_paid: false, refund_status: "Not Applicable",
-  items: [{ item_code: "", item_name: "", quantity: 1, uom: "Nos", rate: 0, amount: 0 }],
+const nowTime = () => new Date().toTimeString().slice(0, 8);
+
+const money = (value?: number) =>
+  new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+
+const emptyItem = (): SalesInvoiceItem => ({
+  item_code: "",
+  item_name: "",
+  warehouse: "Stores - PT ZENIT",
+  quantity: 1,
+  uom: "Nos",
+  rate: 0,
+  amount: 0,
 });
 
-const calculate = (invoice: SalesInvoice): SalesInvoice => {
+const emptyInvoice = (): SalesInvoice => ({
+  status: "Draft",
+  naming_series: "ACC-SINV-.YYYY.-",
+  customer: "",
+  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  posting_date: today(),
+  posting_time: nowTime(),
+  set_posting_time: false,
+  due_date: today(),
+  is_pos: false,
+  is_return: false,
+  is_debit_note: false,
+  apply_tds: false,
+  cost_center: "",
+  project: "",
+  scan_barcode: "",
+  update_stock: false,
+  currency: "IDR",
+  total_qty: 0,
+  net_total: 0,
+  tax_category: "",
+  taxes_and_charges: "",
+  shipping_rule: "",
+  incoterm: "",
+  tax_rate: 0,
+  tax_amount: 0,
+  total_taxes_and_charges: 0,
+  use_company_roundoff_cost_center: false,
+  grand_total: 0,
+  rounding_adjustment: 0,
+  rounded_total: 0,
+  total_advance: 0,
+  outstanding_amount: 0,
+  apply_discount_on: "Grand Total",
+  coupon_code: "",
+  additional_discount_percentage: 0,
+  discount_amount: 0,
+  is_cash_or_non_trade_discount: false,
+  allocate_advances_automatically: false,
+  redeem_loyalty_points: false,
+  loyalty_program: "",
+  customer_address: "",
+  contact_person: "",
+  territory: "",
+  shipping_address_name: "",
+  dispatch_address_name: "",
+  company_address: "",
+  payment_terms_template: "",
+  tc_name: "",
+  terms_and_conditions: "",
+  po_no: "",
+  debit_to: "",
+  sales_partner: "",
+  amount_eligible_for_commission: 0,
+  commission_rate: 0,
+  total_commission: 0,
+  letter_head: "",
+  group_same_items: false,
+  select_print_heading: "Invoice",
+  language: "English",
+  subscription: "",
+  utm_source: "",
+  utm_medium: "",
+  utm_campaign: "",
+  utm_content: "",
+  is_paid: false,
+  refund_status: "Not Applicable",
+  items: [emptyItem()],
+});
+
+const calculateTotals = (invoice: SalesInvoice): SalesInvoice => {
   const sign = invoice.is_return ? -1 : 1;
+  let totalQty = 0;
   const items = invoice.items.map((item) => {
     const quantity = sign * Math.abs(Number(item.quantity) || 0);
-    return { ...item, quantity, amount: quantity * Math.abs(Number(item.rate) || 0) };
+    const amount = quantity * Math.abs(Number(item.rate) || 0);
+    totalQty += Math.abs(quantity);
+    return { ...item, quantity, amount };
   });
+
   const net = items.reduce((sum, item) => sum + item.amount, 0);
-  const tax = net * Math.abs(Number(invoice.tax_rate) || 0) / 100;
-  return { ...invoice, items, net_total: net, tax_amount: tax, grand_total: net + tax };
+
+  // Additional Discount
+  let discount = Math.abs(Number(invoice.discount_amount) || 0);
+  if (invoice.additional_discount_percentage && invoice.additional_discount_percentage > 0) {
+    discount = (net * invoice.additional_discount_percentage) / 100;
+  }
+  const discountedNet = Math.max(0, net - discount);
+
+  // Tax
+  const tax = (discountedNet * Math.abs(Number(invoice.tax_rate) || 0)) / 100;
+  const rawGrand = discountedNet + tax;
+
+  const rounded = invoice.use_company_roundoff_cost_center ? rawGrand : Math.round(rawGrand);
+  const roundingAdj = rounded - rawGrand;
+
+  let outstanding = 0;
+  if (invoice.is_return) {
+    outstanding = 0;
+  } else if (!invoice.is_paid) {
+    outstanding = Math.max(0, rounded - Math.abs(Number(invoice.total_advance) || 0));
+  }
+
+  return {
+    ...invoice,
+    items,
+    total_qty: totalQty,
+    net_total: net,
+    discount_amount: discount,
+    tax_amount: tax,
+    total_taxes_and_charges: tax,
+    grand_total: rawGrand,
+    rounding_adjustment: roundingAdj,
+    rounded_total: rounded,
+    outstanding_amount: outstanding,
+  };
 };
 
+/* =========================================================================
+   LIST PAGE
+   ========================================================================= */
 export function SalesInvoiceListPage() {
   const [rows, setRows] = useState<SalesInvoice[]>([]);
   const [query, setQuery] = useState("");
-  const load = () => salesInvoiceApi.list({ q: query }).then(setRows).catch(() => toast.error("Gagal memuat Sales Invoice"));
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    salesInvoiceApi
+      .list({ q: query })
+      .then(setRows)
+      .catch(() => toast.error("Gagal memuat Sales Invoice"))
+      .finally(() => setLoading(false));
+  };
+
   useEffect(load, []);
-  return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
-    <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div><p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Selling</p><h1 className="text-2xl font-bold">Sales Invoice & Credit Note</h1><p className="mt-1 text-sm text-slate-500">Invoice, refund sebagian, dan audit trail return customer.</p></div>
-      <Button asChild className="bg-blue-600 hover:bg-blue-700"><Link to="/desk/sales-invoice/new"><Plus className="size-4" /> New Sales Invoice</Link></Button>
-    </header>
-    <div className="mb-4 flex gap-2"><Input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => event.key === "Enter" && load()} placeholder="Cari nomor atau customer..." /><Button variant="outline" onClick={load}>Search</Button></div>
-    <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm"><table className="w-full text-left text-sm">
-      <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="p-4">Document</th><th className="p-4">Customer</th><th className="p-4">Date</th><th className="p-4">Total</th><th className="p-4">Status</th><th className="p-4">Settlement</th></tr></thead>
-      <tbody className="divide-y">{rows.map((row) => <tr key={row.id} className="hover:bg-slate-50"><td className="p-4"><Link className="font-semibold text-blue-600 hover:underline" to={`/desk/sales-invoice/${row.id}`}>{row.number}</Link>{row.is_return && <div className="mt-1 text-xs text-amber-600">Credit Note · against {row.return_against_id}</div>}</td><td className="p-4">{row.customer}</td><td className="p-4">{row.posting_date?.slice(0, 10)}</td><td className={`p-4 font-semibold ${row.is_return ? "text-red-600" : ""}`}>{money(row.grand_total)}</td><td className="p-4"><Badge variant={row.status === "Submitted" ? "default" : "secondary"}>{row.status}</Badge></td><td className="p-4">{row.is_return ? row.refund_status : row.is_paid ? "Paid" : "Outstanding"}</td></tr>)}{rows.length === 0 && <tr><td colSpan={6} className="p-14 text-center text-slate-500">Belum ada Sales Invoice.</td></tr>}</tbody>
-    </table></div>
-  </div>;
+
+  return (
+    <div className="mx-auto max-w-screen-2xl p-4 lg:p-7 space-y-5">
+      <header className="flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:bg-slate-950">
+        <div>
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
+            <Link to="/desk/selling" className="hover:text-blue-600">Selling</Link>
+            <span>/</span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">Sales Invoice</span>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Sales Invoice</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Faktur penjualan, kredit nota (Credit Note), dan penyesuaian piutang pelanggan.
+          </p>
+        </div>
+        <Button asChild className="bg-blue-600 hover:bg-blue-700">
+          <Link to="/desk/sales-invoice/new">
+            <Plus className="mr-2 size-4" /> New Sales Invoice
+          </Link>
+        </Button>
+      </header>
+
+      <div className="flex gap-2 rounded-2xl border bg-white p-4 shadow-sm dark:bg-slate-950">
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          onKeyDown={(event) => event.key === "Enter" && load()}
+          placeholder="Cari nomor invoice, customer..."
+          className="max-w-md"
+        />
+        <Button variant="secondary" onClick={load}>
+          <Search className="mr-2 size-4" /> Cari
+        </Button>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-950">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900">
+              <tr>
+                <th className="p-4">Document</th>
+                <th className="p-4">Customer</th>
+                <th className="p-4">Posting Date</th>
+                <th className="p-4 text-right">Grand Total</th>
+                <th className="p-4 text-right">Outstanding</th>
+                <th className="p-4 text-center">Status</th>
+                <th className="p-4">Settlement</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                    Memuat data Sales Invoice...
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                    Belum ada Sales Invoice.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/50">
+                    <td className="p-4 font-semibold">
+                      <Link
+                        className="text-blue-600 hover:underline"
+                        to={`/desk/sales-invoice/${row.id}`}
+                      >
+                        {row.number}
+                      </Link>
+                      {row.is_return && (
+                        <div className="mt-1 text-xs text-amber-600">
+                          Credit Note · against {row.return_against_id}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4 font-medium">{row.customer}</td>
+                    <td className="p-4 text-xs text-slate-600 dark:text-slate-400">
+                      {row.posting_date?.slice(0, 10)}
+                    </td>
+                    <td
+                      className={`p-4 text-right font-bold ${
+                        row.is_return ? "text-red-600" : "text-slate-900 dark:text-slate-100"
+                      }`}
+                    >
+                      {money(row.grand_total)}
+                    </td>
+                    <td className="p-4 text-right font-semibold text-slate-700 dark:text-slate-300">
+                      {money(row.outstanding_amount)}
+                    </td>
+                    <td className="p-4 text-center">
+                      <Badge variant={row.status === "Submitted" ? "default" : "secondary"}>
+                        {row.status}
+                      </Badge>
+                    </td>
+                    <td className="p-4 text-xs">
+                      {row.is_return ? (
+                        <span className="text-amber-600 font-medium">{row.refund_status}</span>
+                      ) : row.is_paid ? (
+                        <span className="text-emerald-600 font-medium">Paid</span>
+                      ) : (
+                        <span className="text-slate-500">Outstanding</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
 }
 
+/* =========================================================================
+   FORM PAGE
+   ========================================================================= */
 export default function SalesInvoiceFormPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const isNew = !id || id === "new";
+  const isNew = !id || id === "new" || id.startsWith("new-sales-invoice");
   const deliveryNoteID = params.get("delivery_note_id") || "";
   const returnAgainst = params.get("return_against") || "";
+
+  const [tab, setTab] = useState<string>("details");
   const [row, setRow] = useState<SalesInvoice>(emptyInvoice());
-  const [loading, setLoading] = useState(!isNew || Boolean(deliveryNoteID || returnAgainst));
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [warehouses, setWarehouses] = useState<string[]>([
+    "Stores - PT ZENIT",
+    "Finished Goods - PT ZENIT",
+    "Stores - MC",
+  ]);
+
+  const [options, setOptions] = useState<SalesInvoiceOptions>({
+    naming_series: ["ACC-SINV-.YYYY.-", "ACC-SINV-RET-.YYYY.-"],
+    companies: ["PT ZENIT TECHNOLOGY SOLUTION", "UD MILLION CANDLES"],
+    warehouses: ["Stores - PT ZENIT", "Finished Goods - PT ZENIT"],
+    customers: ["PT Mitra Niaga Mandiri", "Walk-in Customer"],
+    currencies: ["IDR", "USD", "SGD", "EUR"],
+    tax_categories: ["In State", "Out of State", "Export"],
+    taxes_templates: ["PPN 11%", "PPN 12%", "Exempt Tax"],
+    shipping_rules: ["Standard Delivery", "Express Delivery", "Free Shipping"],
+    incoterms: ["EXW", "FOB", "CIF", "DDP"],
+    apply_discount_on: ["Grand Total", "Net Total"],
+    cost_centers: ["Main - PZTS", "Sales - PZTS"],
+    projects: ["Internal Project", "Customer Delivery"],
+  });
 
   useEffect(() => {
-    if (!isNew && id) {
-      salesInvoiceApi.get(id).then(setRow).catch(() => { toast.error("Sales Invoice tidak ditemukan"); navigate("/desk/sales-invoice"); }).finally(() => setLoading(false));
-      return;
-    }
-    if (returnAgainst) {
-      salesInvoiceApi.get(returnAgainst).then((source) => setRow(calculate({ ...source, id: undefined, number: undefined, status: "Draft", is_return: true, return_against_id: source.id, return_reason: "", is_paid: false, refund_status: source.is_paid ? "Pending Refund" : "Credit Available", posting_date: today(), items: source.items.map((item) => ({ ...item, id: undefined, against_item_id: item.id, quantity: Math.min(1, Math.abs(item.quantity)) })) }))).catch(() => navigate("/desk/sales-invoice")).finally(() => setLoading(false));
-      return;
-    }
-    if (deliveryNoteID) {
-      stockApi.deliveryNoteGet(deliveryNoteID).then((delivery) => setRow(calculate({ ...emptyInvoice(), customer: delivery.customer, company: delivery.company, delivery_note_id: delivery.id, sales_order_id: delivery.sales_order_id, items: delivery.items.map((item) => ({ item_code: item.item_code, item_name: item.item_name, quantity: item.quantity, uom: item.uom, rate: item.rate, amount: item.amount })) }))).catch(() => toast.error("Delivery Note tidak ditemukan")).finally(() => setLoading(false));
-    }
-  }, [id, isNew, deliveryNoteID, returnAgainst, navigate]);
+    const init = async () => {
+      setLoading(true);
+      try {
+        const [opts, compList, whList] = await Promise.all([
+          salesInvoiceApi.options(),
+          warehouseApi.listCompanies(),
+          warehouseApi.list(),
+        ]);
+        if (opts) setOptions(opts);
+        if (compList && compList.length > 0) setCompanies(compList);
+        if (whList && whList.length > 0) setWarehouses(whList.map((w) => w.warehouse_name));
 
-  const update = <K extends keyof SalesInvoice>(key: K, value: SalesInvoice[K]) => setRow((previous) => calculate({ ...previous, [key]: value }));
-  const updateItem = (index: number, patch: Partial<SalesInvoiceItem>) => update("items", row.items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
+        if (!isNew && id) {
+          const loaded = await salesInvoiceApi.get(id);
+          setRow(calculateTotals(loaded));
+        } else if (returnAgainst) {
+          const source = await salesInvoiceApi.get(returnAgainst);
+          setRow(
+            calculateTotals({
+              ...source,
+              id: undefined,
+              number: undefined,
+              status: "Draft",
+              is_return: true,
+              naming_series: "ACC-SINV-RET-.YYYY.-",
+              return_against_id: source.id,
+              return_reason: "",
+              is_paid: false,
+              refund_status: source.is_paid ? "Pending Refund" : "Credit Available",
+              posting_date: today(),
+              posting_time: nowTime(),
+              items: source.items.map((item) => ({
+                ...item,
+                id: undefined,
+                against_item_id: item.id,
+                quantity: Math.min(1, Math.abs(item.quantity)),
+              })),
+            })
+          );
+        } else if (deliveryNoteID) {
+          const delivery = await stockApi.deliveryNoteGet(deliveryNoteID);
+          setRow(
+            calculateTotals({
+              ...emptyInvoice(),
+              customer: delivery.customer,
+              company: delivery.company,
+              delivery_note_id: delivery.id,
+              sales_order_id: delivery.sales_order_id,
+              items: delivery.items.map((item) => ({
+                item_code: item.item_code,
+                item_name: item.item_name,
+                warehouse: item.warehouse || "Finished Goods - PT ZENIT",
+                quantity: item.quantity,
+                uom: item.uom,
+                rate: item.rate,
+                amount: item.amount,
+              })),
+            })
+          );
+        }
+      } catch {
+        toast.error("Gagal memuat form Sales Invoice");
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+  }, [id, isNew, deliveryNoteID, returnAgainst]);
+
+  const update = <K extends keyof SalesInvoice>(key: K, value: SalesInvoice[K]) =>
+    setRow((previous) => calculateTotals({ ...previous, [key]: value }));
+
+  const updateItem = (index: number, patch: Partial<SalesInvoiceItem>) =>
+    update(
+      "items",
+      row.items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      )
+    );
+
+  const addItem = () => update("items", [...row.items, emptyItem()]);
+  const removeItem = (index: number) => {
+    if (row.items.length <= 1) return toast.error("Minimal harus ada 1 item");
+    update("items", row.items.filter((_, i) => i !== index));
+  };
+
+  const isReadonly = row.status !== "Draft";
+
+  const handleBarcodeScan = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const code = (row.scan_barcode || "").trim();
+      if (!code) return;
+      const matchIdx = row.items.findIndex(
+        (it) => it.item_code.toLowerCase() === code.toLowerCase()
+      );
+      if (matchIdx >= 0) {
+        updateItem(matchIdx, { quantity: (row.items[matchIdx].quantity || 0) + 1 });
+        toast.success(`Item ${code} quantity +1`);
+      } else {
+        update("items", [
+          ...row.items,
+          {
+            item_code: code,
+            item_name: code,
+            warehouse: warehouses[0] || "Stores - PT ZENIT",
+            quantity: 1,
+            uom: "Nos",
+            rate: 0,
+            amount: 0,
+          },
+        ]);
+        toast.success(`Item ${code} ditambahkan`);
+      }
+      update("scan_barcode", "");
+    }
+  };
+
   const save = async () => {
-    if (!row.customer.trim() || row.items.some((item) => !item.item_code.trim() || Math.abs(item.quantity) <= 0)) return toast.error("Customer, item, dan quantity wajib diisi");
+    if (!row.customer.trim()) return toast.error("Customer wajib diisi");
+    if (!row.company.trim()) return toast.error("Company wajib diisi");
+    if (row.items.some((it) => !it.item_code.trim() || Math.abs(it.quantity) <= 0)) {
+      return toast.error("Item code dan quantity wajib valid");
+    }
+
     setSaving(true);
     try {
-      const saved = isNew && returnAgainst
-        ? await salesInvoiceApi.createReturn(returnAgainst, { reason: row.return_reason || "", items: row.items.map((item) => ({ against_item_id: item.against_item_id || "", quantity: Math.abs(item.quantity) })) })
-        : isNew ? await salesInvoiceApi.create(row) : await salesInvoiceApi.update(id!, row);
-      setRow(saved); toast.success(saved.is_return ? "Credit Note berhasil dibuat" : "Sales Invoice berhasil disimpan");
+      const payload = calculateTotals(row);
+      const saved =
+        isNew && returnAgainst
+          ? await salesInvoiceApi.createReturn(returnAgainst, {
+              reason: row.return_reason || "",
+              items: row.items.map((item) => ({
+                against_item_id: item.against_item_id || "",
+                quantity: Math.abs(item.quantity),
+              })),
+            })
+          : isNew
+          ? await salesInvoiceApi.create(payload)
+          : await salesInvoiceApi.update(id!, payload);
+
+      setRow(calculateTotals(saved));
+      toast.success(saved.is_return ? "Credit Note berhasil dibuat" : "Sales Invoice berhasil disimpan");
       if (isNew && saved.id) navigate(`/desk/sales-invoice/${saved.id}`, { replace: true });
-    } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal menyimpan Sales Invoice"); }
-    finally { setSaving(false); }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Gagal menyimpan Sales Invoice");
+    } finally {
+      setSaving(false);
+    }
   };
-  const submit = async () => { if (!id) return; try { setRow(await salesInvoiceApi.submit(id)); toast.success("Dokumen Submitted"); } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal submit dokumen"); } };
-  const markPaid = async () => { if (!id) return; try { setRow(await salesInvoiceApi.markPaid(id)); toast.success("Payment Entry dicatat sebagai lunas"); } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal mencatat pembayaran"); } };
-  const refund = async () => { if (!id) return; const reference = window.prompt("Referensi refund bank/payment gateway:", row.refund_reference || ""); if (reference == null) return; try { setRow(await salesInvoiceApi.refund(id, reference)); toast.success("Refund berhasil dicatat"); } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal mencatat refund"); } };
-  const remove = async () => { if (!id || !window.confirm("Hapus draft ini?")) return; try { await salesInvoiceApi.remove(id); navigate("/desk/sales-invoice"); } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal menghapus draft"); } };
-  if (loading) return <div className="p-12 text-center text-slate-500">Memuat Sales Invoice...</div>;
-  return <div className="mx-auto max-w-screen-2xl space-y-6 p-4 lg:p-7">
-    <header className="flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><Button variant="ghost" size="icon" asChild><Link to="/desk/sales-invoice"><ArrowLeft className="size-4" /></Link></Button><div><p className="text-sm text-slate-500">Selling / {row.is_return ? "Credit Note" : "Sales Invoice"}</p><div className="flex flex-wrap items-center gap-2"><h1 className="text-2xl font-bold">{isNew ? row.is_return ? "New Credit Note" : "New Sales Invoice" : row.number}</h1><Badge variant={row.status === "Submitted" ? "default" : "secondary"}>{isNew ? "Not Saved" : row.status}</Badge>{row.is_return && <Badge className="bg-amber-100 text-amber-700">{row.refund_status}</Badge>}</div></div></div>
-      <div className="flex flex-wrap gap-2">{!isNew && row.status === "Submitted" && !row.is_return && <><Button variant="outline" onClick={() => navigate(`/desk/sales-invoice/new?return_against=${row.id}`)}><RotateCcw className="size-4" /> Create Return</Button>{row.delivery_note_id && <Button variant="outline" onClick={() => navigate(`/desk/delivery-note/new?return_against=${row.delivery_note_id}`)}><Warehouse className="size-4" /> Return Stock</Button>}{!row.is_paid && <Button variant="outline" onClick={markPaid}><Banknote className="size-4" /> Mark Paid</Button>}</>}{!isNew && row.status === "Submitted" && row.is_return && row.refund_status === "Pending Refund" && <Button variant="outline" onClick={refund}><Banknote className="size-4" /> Record Refund</Button>}{!isNew && row.status === "Draft" && <><Button variant="outline" onClick={submit}><CheckCircle2 className="size-4" /> Submit</Button><Button variant="outline" onClick={remove}><Trash2 className="size-4 text-red-500" /></Button></>}{(isNew || (row.status === "Draft" && !row.is_return)) && <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700"><Save className="size-4" /> {saving ? "Saving..." : "Save"}</Button>}</div>
-    </header>
-    <section className="rounded-2xl border bg-white p-5 shadow-sm"><div className="grid gap-4 md:grid-cols-3"><label className="text-sm font-medium">Customer<Input className="mt-1" value={row.customer} onChange={(event) => update("customer", event.target.value)} /></label><label className="text-sm font-medium">Posting Date<Input className="mt-1" type="date" value={row.posting_date?.slice(0, 10)} onChange={(event) => update("posting_date", event.target.value)} /></label><label className="text-sm font-medium">Tax Rate (%)<Input className="mt-1" type="number" value={row.tax_rate} onChange={(event) => update("tax_rate", Number(event.target.value))} /></label>{row.is_return && <label className="text-sm font-medium md:col-span-3">Return Against<Input className="mt-1" readOnly value={row.return_against_id || ""} /><span className="mt-3 block">Alasan Return</span><Input className="mt-1" value={row.return_reason || ""} onChange={(event) => update("return_reason", event.target.value)} placeholder="Rusak, bocor, salah item, refund tanpa barang kembali, dll." /></label>}</div></section>
-    <section className="rounded-2xl border bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between"><h2 className="font-bold">Items</h2>{!row.is_return && (isNew || row.status === "Draft") && <Button variant="outline" size="sm" onClick={() => update("items", [...row.items, { item_code: "", item_name: "", quantity: 1, uom: "Nos", rate: 0, amount: 0 }])}><Plus className="size-4" /> Add Item</Button>}</div><div className="overflow-x-auto"><table className="w-full min-w-[750px] text-sm"><thead className="bg-slate-50 text-left text-xs uppercase text-slate-500"><tr><th className="p-3">Item</th><th className="p-3">Qty</th><th className="p-3">UOM</th><th className="p-3">Rate</th><th className="p-3 text-right">Amount</th><th /></tr></thead><tbody>{row.items.map((item, index) => <tr key={item.id || index} className="border-t"><td className="p-3"><Input value={item.item_code} onChange={(event) => updateItem(index, { item_code: event.target.value })} /><Input className="mt-1" value={item.item_name || ""} onChange={(event) => updateItem(index, { item_name: event.target.value })} placeholder="Item name" /></td><td className="p-3"><Input type="number" min="0" value={Math.abs(item.quantity)} onChange={(event) => updateItem(index, { quantity: Number(event.target.value) })} /></td><td className="p-3"><Input value={item.uom} onChange={(event) => updateItem(index, { uom: event.target.value })} /></td><td className="p-3"><Input type="number" min="0" value={item.rate} onChange={(event) => updateItem(index, { rate: Number(event.target.value) })} /></td><td className={`p-3 text-right font-semibold ${row.is_return ? "text-red-600" : ""}`}>{money(item.amount)}</td><td className="p-3">{!row.is_return && row.items.length > 1 && <Button variant="ghost" size="icon" onClick={() => update("items", row.items.filter((_, itemIndex) => itemIndex !== index))}><Trash2 className="size-4 text-red-500" /></Button>}</td></tr>)}</tbody></table></div></section>
-    <section className="ml-auto grid max-w-md grid-cols-2 gap-2 rounded-2xl border bg-white p-5 text-sm shadow-sm"><span>Net Total</span><strong className="text-right">{money(row.net_total)}</strong><span>Tax</span><strong className="text-right">{money(row.tax_amount)}</strong><span className="border-t pt-2">Grand Total</span><strong className={`border-t pt-2 text-right text-lg ${row.is_return ? "text-red-600" : ""}`}>{money(row.grand_total)}</strong></section>
-  </div>;
+
+  const submit = async () => {
+    if (!id) return;
+    try {
+      setRow(calculateTotals(await salesInvoiceApi.submit(id)));
+      toast.success("Sales Invoice Submitted");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Gagal submit dokumen");
+    }
+  };
+
+  const markPaid = async () => {
+    if (!id) return;
+    try {
+      setRow(calculateTotals(await salesInvoiceApi.markPaid(id)));
+      toast.success("Payment Entry dicatat sebagai lunas");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Gagal mencatat pembayaran");
+    }
+  };
+
+  const refund = async () => {
+    if (!id) return;
+    const reference = window.prompt("Referensi refund bank/payment gateway:", row.refund_reference || "");
+    if (reference == null) return;
+    try {
+      setRow(calculateTotals(await salesInvoiceApi.refund(id, reference)));
+      toast.success("Refund berhasil dicatat");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Gagal mencatat refund");
+    }
+  };
+
+  const remove = async () => {
+    if (!id || !window.confirm("Hapus draft ini?")) return;
+    try {
+      await salesInvoiceApi.remove(id);
+      navigate("/desk/sales-invoice");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Gagal menghapus draft");
+    }
+  };
+
+  if (loading) {
+    return <div className="p-12 text-center text-slate-500">Memuat data Sales Invoice...</div>;
+  }
+
+  return (
+    <div className="mx-auto max-w-screen-2xl space-y-6 p-4 lg:p-7">
+      {/* Top Header */}
+      <header className="flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:bg-slate-950">
+        <div>
+          <div className="flex items-center gap-2 text-sm text-slate-500 mb-1">
+            <Link to="/desk/selling" className="hover:text-blue-600">Selling</Link>
+            <span>/</span>
+            <Link to="/desk/sales-invoice" className="hover:text-blue-600">Sales Invoice</Link>
+            <span>/</span>
+            <span className="font-semibold text-slate-900 dark:text-slate-100">
+              {isNew ? (row.is_return ? "New Credit Note" : "New Sales Invoice") : row.number}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {isNew ? (row.is_return ? "New Credit Note" : "New Sales Invoice") : row.number}
+            </h1>
+            <Badge variant={row.status === "Submitted" ? "default" : "secondary"}>
+              {isNew ? "Not Saved" : row.status}
+            </Badge>
+            {row.is_return && (
+              <Badge className="bg-amber-100 text-amber-700">{row.refund_status}</Badge>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/desk/sales-invoice">
+              <ArrowLeft className="mr-2 size-4" /> Kembali
+            </Link>
+          </Button>
+
+          {!isNew && row.status === "Submitted" && !row.is_return && (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/desk/sales-invoice/new?return_against=${row.id}`)}
+              >
+                <RotateCcw className="mr-2 size-4" /> Create Return
+              </Button>
+              {row.delivery_note_id && (
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    navigate(`/desk/delivery-note/new?return_against=${row.delivery_note_id}`)
+                  }
+                >
+                  <Warehouse className="mr-2 size-4" /> Return Stock
+                </Button>
+              )}
+              {!row.is_paid && (
+                <Button variant="outline" onClick={markPaid}>
+                  <Banknote className="mr-2 size-4" /> Mark Paid
+                </Button>
+              )}
+            </>
+          )}
+
+          {!isNew && row.status === "Submitted" && row.is_return && row.refund_status === "Pending Refund" && (
+            <Button variant="outline" onClick={refund}>
+              <Banknote className="mr-2 size-4" /> Record Refund
+            </Button>
+          )}
+
+          {!isNew && row.status === "Draft" && (
+            <>
+              <Button variant="outline" onClick={submit}>
+                <CheckCircle2 className="mr-2 size-4" /> Submit
+              </Button>
+              <Button variant="outline" onClick={remove}>
+                <Trash2 className="size-4 text-red-500" />
+              </Button>
+            </>
+          )}
+
+          {(isNew || (row.status === "Draft" && !row.is_return)) && (
+            <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+              <Save className="mr-2 size-4" /> {saving ? "Saving..." : "Save"}
+            </Button>
+          )}
+        </div>
+      </header>
+
+      {/* Tabs */}
+      <Tabs value={tab} onValueChange={setTab} className="space-y-6">
+        <div className="border-b bg-white px-5 rounded-2xl shadow-sm dark:bg-slate-950">
+          <TabsList className="bg-transparent h-12 gap-6 p-0">
+            <TabsTrigger
+              value="details"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
+            >
+              Details
+            </TabsTrigger>
+            <TabsTrigger
+              value="payments"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
+            >
+              Payments
+            </TabsTrigger>
+            <TabsTrigger
+              value="address"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
+            >
+              Address & Contact
+            </TabsTrigger>
+            <TabsTrigger
+              value="terms"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
+            >
+              Terms
+            </TabsTrigger>
+            <TabsTrigger
+              value="more_info"
+              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
+            >
+              More Info
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* Tab 1: Details */}
+        <TabsContent value="details" className="space-y-6">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-5 dark:bg-slate-950">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Company <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1">
+                  <SearchableSelect
+                    value={row.company}
+                    disabled={isReadonly}
+                    options={(companies.length > 0 ? companies : options.companies.map((name) => ({ name }))).map(
+                      (c) => ({
+                        value: c.name,
+                        label: c.name,
+                        badge: c.abbreviation || undefined,
+                      })
+                    )}
+                    onChange={(val) => update("company", val)}
+                    placeholder="Pilih Company..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Series
+                </label>
+                <select
+                  value={row.naming_series}
+                  disabled={isReadonly}
+                  onChange={(e) => update("naming_series", e.target.value)}
+                  className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                >
+                  {options.naming_series.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Customer <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  value={row.customer}
+                  disabled={isReadonly}
+                  onChange={(e) => update("customer", e.target.value)}
+                  placeholder="Ketik nama customer..."
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Posting Date <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={row.posting_date?.slice(0, 10)}
+                  disabled={isReadonly}
+                  onChange={(e) => update("posting_date", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Posting Time
+                </label>
+                <Input
+                  type="time"
+                  value={row.posting_time || nowTime()}
+                  disabled={isReadonly || !row.set_posting_time}
+                  onChange={(e) => update("posting_time", e.target.value)}
+                  className="mt-1"
+                />
+                <label className="flex items-center gap-1.5 mt-1 text-xs cursor-pointer text-slate-500">
+                  <Checkbox
+                    checked={row.set_posting_time}
+                    disabled={isReadonly}
+                    onCheckedChange={(c) => update("set_posting_time", !!c)}
+                  />
+                  Edit Posting Date and Time
+                </label>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Payment Due Date
+                </label>
+                <Input
+                  type="date"
+                  value={row.due_date ? row.due_date.slice(0, 10) : ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("due_date", e.target.value)}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+
+            {/* Checkboxes */}
+            <div className="grid gap-3 pt-3 sm:grid-cols-4 border-t">
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={row.is_pos}
+                  disabled={isReadonly}
+                  onCheckedChange={(c) => update("is_pos", !!c)}
+                />
+                Include Payment (POS)
+              </label>
+
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={row.is_return}
+                  disabled={isReadonly}
+                  onCheckedChange={(c) => update("is_return", !!c)}
+                />
+                Is Return (Credit Note)
+              </label>
+
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={row.is_debit_note}
+                  disabled={isReadonly}
+                  onCheckedChange={(c) => update("is_debit_note", !!c)}
+                />
+                Is Rate Adjustment Entry (Debit Note)
+              </label>
+
+              <label className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={row.apply_tds}
+                  disabled={isReadonly}
+                  onCheckedChange={(c) => update("apply_tds", !!c)}
+                />
+                Consider for Tax Withholding
+              </label>
+            </div>
+
+            {/* Accounting Dimensions */}
+            <div className="pt-3 border-t grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Cost Center
+                </label>
+                <select
+                  value={row.cost_center || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("cost_center", e.target.value)}
+                  className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                >
+                  <option value="">Pilih Cost Center...</option>
+                  {options.cost_centers.map((cc) => (
+                    <option key={cc} value={cc}>
+                      {cc}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Project
+                </label>
+                <select
+                  value={row.project || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("project", e.target.value)}
+                  className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                >
+                  <option value="">Pilih Project...</option>
+                  {options.projects.map((pr) => (
+                    <option key={pr} value={pr}>
+                      {pr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Items Table */}
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">
+                  Items
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Barang atau jasa yang ditagihkan kepada customer.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer">
+                  <Checkbox
+                    checked={row.update_stock}
+                    disabled={isReadonly}
+                    onCheckedChange={(c) => update("update_stock", !!c)}
+                  />
+                  Update Stock
+                </label>
+                {!isReadonly && (
+                  <Button size="sm" onClick={addItem} className="bg-blue-600 hover:bg-blue-700">
+                    <Plus className="mr-1.5 size-3.5" /> Add Row
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Barcode scanner */}
+            {!isReadonly && (
+              <div className="flex items-center gap-2 max-w-md">
+                <ScanBarcode className="size-4 text-blue-600" />
+                <Input
+                  value={row.scan_barcode || ""}
+                  onChange={(e) => update("scan_barcode", e.target.value)}
+                  onKeyDown={handleBarcodeScan}
+                  placeholder="Scan Barcode / ketik kode item lalu Enter..."
+                  className="text-xs h-8"
+                />
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b bg-slate-50 text-slate-600 font-semibold dark:bg-slate-900">
+                  <tr>
+                    <th className="py-2.5 px-3 w-10 text-center">No.</th>
+                    <th className="py-2.5 px-3 min-w-[200px]">Item Code & Name</th>
+                    <th className="py-2.5 px-3 min-w-[180px]">Warehouse</th>
+                    <th className="py-2.5 px-3 w-24 text-right">Quantity</th>
+                    <th className="py-2.5 px-3 w-20">UOM</th>
+                    <th className="py-2.5 px-3 w-32 text-right">Rate (IDR)</th>
+                    <th className="py-2.5 px-3 w-32 text-right">Amount (IDR)</th>
+                    {!isReadonly && <th className="py-2.5 px-3 w-12 text-center">Aksi</th>}
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {row.items.map((it, idx) => (
+                    <tr key={idx}>
+                      <td className="py-2.5 px-3 text-center text-slate-400">{idx + 1}</td>
+                      <td className="py-2.5 px-3">
+                        <div className="space-y-1">
+                          <Input
+                            value={it.item_code}
+                            disabled={isReadonly}
+                            onChange={(e) => updateItem(idx, { item_code: e.target.value })}
+                            placeholder="Kode item..."
+                            className="h-8 text-xs font-semibold"
+                          />
+                          <Input
+                            value={it.item_name || ""}
+                            disabled={isReadonly}
+                            onChange={(e) => updateItem(idx, { item_name: e.target.value })}
+                            placeholder="Deskripsi..."
+                            className="h-7 text-[11px] text-slate-500"
+                          />
+                        </div>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <SearchableWarehouseSelect
+                          value={it.warehouse || ""}
+                          warehouses={warehouses}
+                          disabled={isReadonly}
+                          onChange={(wh) => updateItem(idx, { warehouse: wh })}
+                        />
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Input
+                          type="number"
+                          step="any"
+                          value={Math.abs(it.quantity)}
+                          disabled={isReadonly}
+                          onChange={(e) =>
+                            updateItem(idx, { quantity: parseFloat(e.target.value) || 0 })
+                          }
+                          className="h-8 text-xs text-right font-medium"
+                        />
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Input
+                          value={it.uom}
+                          disabled={isReadonly}
+                          onChange={(e) => updateItem(idx, { uom: e.target.value })}
+                          className="h-8 text-xs"
+                        />
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <Input
+                          type="number"
+                          step="any"
+                          value={it.rate}
+                          disabled={isReadonly}
+                          onChange={(e) =>
+                            updateItem(idx, { rate: parseFloat(e.target.value) || 0 })
+                          }
+                          className="h-8 text-xs text-right font-medium"
+                        />
+                      </td>
+                      <td className="py-2.5 px-3 text-right font-semibold">
+                        {money(it.amount)}
+                      </td>
+                      {!isReadonly && (
+                        <td className="py-2.5 px-3 text-center">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 text-rose-500 hover:bg-rose-50"
+                            disabled={row.items.length === 1}
+                            onClick={() => removeItem(idx)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t bg-slate-50 font-semibold dark:bg-slate-900/50">
+                    <td colSpan={3} className="py-2.5 px-3 text-right">
+                      Total Quantity: {row.total_qty}
+                    </td>
+                    <td colSpan={3} className="py-2.5 px-3 text-right">
+                      Total Net:
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-bold text-blue-600">
+                      {money(row.net_total)}
+                    </td>
+                    {!isReadonly && <td />}
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* Taxes and Charges & Additional Discount */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Taxes and Charges */}
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+                Taxes and Charges
+              </h3>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Tax Category
+                  </label>
+                  <select
+                    value={row.tax_category || ""}
+                    disabled={isReadonly}
+                    onChange={(e) => update("tax_category", e.target.value)}
+                    className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                  >
+                    <option value="">Pilih Tax Category...</option>
+                    {options.tax_categories.map((tc) => (
+                      <option key={tc} value={tc}>
+                        {tc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Tax Template
+                  </label>
+                  <select
+                    value={row.taxes_and_charges || ""}
+                    disabled={isReadonly}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const rate = val.includes("11") ? 11 : val.includes("12") ? 12 : 0;
+                      setRow((prev) =>
+                        calculateTotals({
+                          ...prev,
+                          taxes_and_charges: val,
+                          tax_rate: rate,
+                        })
+                      );
+                    }}
+                    className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                  >
+                    <option value="">Pilih Template Pajak...</option>
+                    {options.taxes_templates.map((tt) => (
+                      <option key={tt} value={tt}>
+                        {tt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Tax Rate (%)
+                  </label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={row.tax_rate}
+                    disabled={isReadonly}
+                    onChange={(e) => update("tax_rate", parseFloat(e.target.value) || 0)}
+                    className="mt-1 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Total Taxes and Charges (IDR)
+                  </label>
+                  <div className="mt-1 p-2 border rounded-md font-semibold text-xs bg-slate-50 dark:bg-slate-900">
+                    {money(row.tax_amount)}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Shipping Rule
+                  </label>
+                  <select
+                    value={row.shipping_rule || ""}
+                    disabled={isReadonly}
+                    onChange={(e) => update("shipping_rule", e.target.value)}
+                    className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                  >
+                    <option value="">Pilih Shipping Rule...</option>
+                    {options.shipping_rules.map((sr) => (
+                      <option key={sr} value={sr}>
+                        {sr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Incoterm
+                  </label>
+                  <select
+                    value={row.incoterm || ""}
+                    disabled={isReadonly}
+                    onChange={(e) => update("incoterm", e.target.value)}
+                    className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                  >
+                    <option value="">Pilih Incoterm...</option>
+                    {options.incoterms.map((inc) => (
+                      <option key={inc} value={inc}>
+                        {inc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Discount & Totals */}
+            <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+                Additional Discount & Totals
+              </h3>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Apply Discount On
+                  </label>
+                  <select
+                    value={row.apply_discount_on || "Grand Total"}
+                    disabled={isReadonly}
+                    onChange={(e) => update("apply_discount_on", e.target.value)}
+                    className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                  >
+                    <option value="Grand Total">Grand Total</option>
+                    <option value="Net Total">Net Total</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Coupon Code
+                  </label>
+                  <Input
+                    value={row.coupon_code || ""}
+                    disabled={isReadonly}
+                    onChange={(e) => update("coupon_code", e.target.value)}
+                    placeholder="e.g. PROMO2026"
+                    className="mt-1 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Discount Percentage (%)
+                  </label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={row.additional_discount_percentage || 0}
+                    disabled={isReadonly}
+                    onChange={(e) =>
+                      update("additional_discount_percentage", parseFloat(e.target.value) || 0)
+                    }
+                    className="mt-1 text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Discount Amount (IDR)
+                  </label>
+                  <Input
+                    type="number"
+                    step="any"
+                    value={row.discount_amount || 0}
+                    disabled={isReadonly}
+                    onChange={(e) =>
+                      update("discount_amount", parseFloat(e.target.value) || 0)
+                    }
+                    className="mt-1 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Final Totals summary */}
+              <div className="mt-4 rounded-xl bg-slate-50 p-4 space-y-2 border dark:bg-slate-900 text-xs">
+                <div className="flex justify-between text-slate-600">
+                  <span>Net Total:</span>
+                  <span className="font-semibold">{money(row.net_total)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Taxes and Charges:</span>
+                  <span className="font-semibold">{money(row.tax_amount)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Rounding Adjustment:</span>
+                  <span className="font-semibold">{money(row.rounding_adjustment)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-sm text-blue-600 border-t pt-2">
+                  <span>Grand Total:</span>
+                  <span>{money(row.grand_total)}</span>
+                </div>
+                <div className="flex justify-between font-extrabold text-sm border-t pt-2 text-slate-900 dark:text-slate-100">
+                  <span>Outstanding Amount:</span>
+                  <span className={row.outstanding_amount > 0 ? "text-rose-600" : "text-emerald-600"}>
+                    {money(row.outstanding_amount)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: Payments */}
+        <TabsContent value="payments" className="space-y-6">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Advance Payments
+            </h3>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={row.allocate_advances_automatically}
+                disabled={isReadonly}
+                onCheckedChange={(c) => update("allocate_advances_automatically", !!c)}
+              />
+              <span className="text-xs font-semibold">
+                Allocate Advances Automatically (FIFO)
+              </span>
+            </div>
+
+            <div className="rounded-xl border bg-slate-50/50 p-4 text-xs text-slate-500">
+              Tidak ada uang muka (advance payment) pending yang dialokasikan pada invoice ini.
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Loyalty Points Redemption
+            </h3>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={row.redeem_loyalty_points}
+                disabled={isReadonly}
+                onCheckedChange={(c) => update("redeem_loyalty_points", !!c)}
+              />
+              <span className="text-xs font-semibold">Redeem Loyalty Points</span>
+            </div>
+
+            {row.redeem_loyalty_points && (
+              <div className="max-w-md mt-2">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Loyalty Program
+                </label>
+                <Input
+                  value={row.loyalty_program || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("loyalty_program", e.target.value)}
+                  placeholder="Nama program loyalty..."
+                  className="mt-1 text-xs"
+                />
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Tab 3: Address & Contact */}
+        <TabsContent value="address" className="space-y-6">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Billing Address & Contact
+            </h3>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Customer Address
+                </label>
+                <textarea
+                  value={row.customer_address || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("customer_address", e.target.value)}
+                  rows={3}
+                  className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                  placeholder="Alamat penagihan pelanggan..."
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Contact Person
+                </label>
+                <Input
+                  value={row.contact_person || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("contact_person", e.target.value)}
+                  placeholder="Nama kontak PIC..."
+                  className="mt-1 text-xs"
+                />
+
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-3 block">
+                  Territory
+                </label>
+                <Input
+                  value={row.territory || "Indonesia"}
+                  disabled={isReadonly}
+                  onChange={(e) => update("territory", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Shipping & Company Address
+            </h3>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Shipping Address Name
+                </label>
+                <Input
+                  value={row.shipping_address_name || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("shipping_address_name", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Dispatch Address Name
+                </label>
+                <Input
+                  value={row.dispatch_address_name || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("dispatch_address_name", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Company Address
+                </label>
+                <textarea
+                  value={row.company_address || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("company_address", e.target.value)}
+                  rows={2}
+                  placeholder="Gg. Melati 08E Jl Kapten Haryadi, Sleman, Yogyakarta 55581"
+                  className="mt-1 w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+                />
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 4: Terms */}
+        <TabsContent value="terms" className="space-y-6">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Payment Terms
+            </h3>
+
+            <div className="max-w-md">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Payment Terms Template
+              </label>
+              <Input
+                value={row.payment_terms_template || ""}
+                disabled={isReadonly}
+                onChange={(e) => update("payment_terms_template", e.target.value)}
+                placeholder="e.g. Net 30 Days"
+                className="mt-1 text-xs"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Terms and Conditions
+            </h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Terms
+                </label>
+                <Input
+                  value={row.tc_name || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("tc_name", e.target.value)}
+                  placeholder="e.g. Garansi & Pengembalian"
+                  className="mt-1 text-xs max-w-md"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Terms and Conditions Details
+                </label>
+                <textarea
+                  value={row.terms_and_conditions || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("terms_and_conditions", e.target.value)}
+                  rows={4}
+                  placeholder="Detail klausul syarat & ketentuan transaksi..."
+                  className="mt-1 w-full rounded-md border bg-white p-2.5 text-xs dark:bg-slate-900"
+                />
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 5: More Info */}
+        <TabsContent value="more_info" className="space-y-6">
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Customer PO Details & Accounting
+            </h3>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Customer's Purchase Order
+                </label>
+                <Input
+                  value={row.po_no || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("po_no", e.target.value)}
+                  placeholder="PO-2026-XXXX"
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Customer's PO Date
+                </label>
+                <Input
+                  type="date"
+                  value={row.po_date ? row.po_date.slice(0, 10) : ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("po_date", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Debit To
+                </label>
+                <Input
+                  value={row.debit_to || "1310 - Piutang Usaha"}
+                  disabled={isReadonly}
+                  onChange={(e) => update("debit_to", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Commission & Sales Partner
+            </h3>
+
+            <div className="grid gap-4 sm:grid-cols-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Sales Partner
+                </label>
+                <Input
+                  value={row.sales_partner || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("sales_partner", e.target.value)}
+                  placeholder="Mitra Penjualan..."
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Amount Eligible for Commission
+                </label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={row.amount_eligible_for_commission || 0}
+                  disabled={isReadonly}
+                  onChange={(e) =>
+                    update("amount_eligible_for_commission", parseFloat(e.target.value) || 0)
+                  }
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Commission Rate (%)
+                </label>
+                <Input
+                  type="number"
+                  step="any"
+                  value={row.commission_rate || 0}
+                  disabled={isReadonly}
+                  onChange={(e) => update("commission_rate", parseFloat(e.target.value) || 0)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Total Commission
+                </label>
+                <div className="mt-1 p-2 border rounded-md font-semibold text-xs bg-slate-50 dark:bg-slate-900">
+                  {money(
+                    ((row.amount_eligible_for_commission || 0) * (row.commission_rate || 0)) / 100
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+            <h3 className="font-bold text-sm text-slate-800 dark:text-slate-200 border-b pb-2">
+              Print Settings & UTM Analytics
+            </h3>
+
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Letter Head
+                </label>
+                <Input
+                  value={row.letter_head || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("letter_head", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Print Heading
+                </label>
+                <Input
+                  value={row.select_print_heading || "Invoice"}
+                  disabled={isReadonly}
+                  onChange={(e) => update("select_print_heading", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  Print Language
+                </label>
+                <Input
+                  value={row.language || "English"}
+                  disabled={isReadonly}
+                  onChange={(e) => update("language", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  UTM Source
+                </label>
+                <Input
+                  value={row.utm_source || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("utm_source", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  UTM Medium
+                </label>
+                <Input
+                  value={row.utm_medium || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("utm_medium", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  UTM Campaign
+                </label>
+                <Input
+                  value={row.utm_campaign || ""}
+                  disabled={isReadonly}
+                  onChange={(e) => update("utm_campaign", e.target.value)}
+                  className="mt-1 text-xs"
+                />
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
 }

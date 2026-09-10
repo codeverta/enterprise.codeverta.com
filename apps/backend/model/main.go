@@ -76,6 +76,7 @@ func InitDB() error {
 		&Wallet{}, &WalletLedger{}, &Organization{}, &Company{}, &Branch{}, &Department{}, &LetterHead{}, &PlatformFeeConfig{},
 		&Guide{}, &GuideCategory{}, &Notification{},
 		&RoleDefinition{}, &RolePermission{}, &RoleProfile{}, &UserRoleAssignment{}, &UserRoleProfileAssignment{},
+		&InstallationSeedState{},
 	}
 
 	err = db.AutoMigrate(models...)
@@ -111,9 +112,15 @@ func InitDB() error {
 		return fmt.Errorf("default tenant initialization failed: %w", err)
 	}
 
-	SeedUsers(db)
-	SeedEmailTemplates(db)
-	SeedDefaultRoles(db)
+	// The onboarding administrator must exist before dependent module defaults
+	// are installed. The remaining seeders are coordinated by one resumable,
+	// versioned first-run pipeline.
+	if err := SeedUsers(db); err != nil {
+		return fmt.Errorf("administrator initialization failed: %w", err)
+	}
+	if err := SeedInstallationData(db); err != nil {
+		return err
+	}
 
 	return nil
 }
