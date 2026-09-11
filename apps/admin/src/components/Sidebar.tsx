@@ -51,6 +51,8 @@ import { BASE_STORAGE_URL, DEFAULT_APP_LOGO, getStorageUrl } from "@/lib/utils";
 import NotificationBell from "./dashboard/NotificationBell";
 import SystemSettings from "./dashboard/SystemSettings";
 import AppSwitcherMenu from "./AppSwitcherMenu";
+import { useLanguage } from "@/context/LanguageContext";
+import { getNavigationLabel } from "@/lib/navigation-i18n";
 
 // --- MODAL EDIT PROFIL ---
 const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
@@ -161,6 +163,8 @@ const Sidebar = ({
   const { newReportsCount } = useReportStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const { settings, fetchSettings } = useSettingsStore();
+  const { t } = useLanguage();
+  const navigationLabel = (item) => getNavigationLabel(t, item);
 
   useEffect(() => {
     fetchSettings();
@@ -254,7 +258,7 @@ const Sidebar = ({
 
   const rightSidebarItems = [
     {
-      name: "Changelog",
+      name: navigationLabel("Changelog"),
       href: "/dashboard/changelog",
       icon: History,
     },
@@ -348,7 +352,7 @@ const Sidebar = ({
           <div className="mb-3 px-1 flex items-center">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs">
               <Boxes className="size-3.5 text-blue-600" />
-              {moduleLabel}
+              {navigationLabel(moduleLabel)}
             </span>
           </div>
         ) : (
@@ -358,7 +362,12 @@ const Sidebar = ({
                 <Boxes className="size-4" />
               </div>
             </TooltipTrigger>
-            <TooltipContent side="right">Modul: {moduleLabel}</TooltipContent>
+            <TooltipContent side="right">
+              {t("navigation.module", {
+                fallback: "Modul: {name}",
+                values: { name: navigationLabel(moduleLabel) },
+              })}
+            </TooltipContent>
           </Tooltip>
         )}
 
@@ -395,9 +404,9 @@ const Sidebar = ({
                             className={clsx(
                               "min-w-0 flex-1 truncate text-sm font-semibold text-left",
                             )}
-                            title={item.name}
+                            title={navigationLabel(item)}
                           >
-                            {item.name}
+                            {navigationLabel(item)}
                           </span>
                         )}
                         {isOpen && (
@@ -413,7 +422,7 @@ const Sidebar = ({
                     </CollapsibleTrigger>
                   </TooltipTrigger>
                   {!isOpen && (
-                    <TooltipContent side="right">{item.name}</TooltipContent>
+                    <TooltipContent side="right">{navigationLabel(item)}</TooltipContent>
                   )}
                 </Tooltip>
 
@@ -466,9 +475,9 @@ const Sidebar = ({
                               {isOpen && (
                                 <span
                                   className="min-w-0 flex-1 truncate"
-                                  title={subItem.name}
+                                  title={navigationLabel(subItem)}
                                 >
-                                  {subItem.name}
+                                  {navigationLabel(subItem)}
                                 </span>
                               )}
                               {subItem.locked && (
@@ -479,7 +488,7 @@ const Sidebar = ({
                                       ? "ml-auto"
                                       : "absolute ml-5 -mt-4 rounded-full bg-white p-0.5",
                                   )}
-                                  aria-label="Menu terkunci"
+                                  aria-label={t("navigation.locked", { fallback: "Menu terkunci" })}
                                 />
                               )}
                             </div>
@@ -488,7 +497,7 @@ const Sidebar = ({
                       </TooltipTrigger>
                       {(!isOpen || subItem.locked) && (
                         <TooltipContent side="right">
-                          {subItem.locked ? subItem.lockReason : subItem.name}
+                          {subItem.locked ? subItem.lockReason : navigationLabel(subItem)}
                         </TooltipContent>
                       )}
                     </Tooltip>
@@ -539,9 +548,9 @@ const Sidebar = ({
                               "min-w-0 flex-1 truncate font-semibold text-gray-700",
                               item.style || "",
                             )}
-                            title={item.name}
+                            title={navigationLabel(item)}
                           >
-                            {item.name}
+                            {navigationLabel(item)}
                           </span>
                         )}
                         {item.locked && (
@@ -552,7 +561,7 @@ const Sidebar = ({
                                 ? "ml-auto"
                                 : "absolute ml-5 -mt-4 rounded-full bg-white p-0.5",
                             )}
-                            aria-label="Menu terkunci"
+                            aria-label={t("navigation.locked", { fallback: "Menu terkunci" })}
                           />
                         )}
                       </div>
@@ -564,7 +573,7 @@ const Sidebar = ({
                     side="right"
                     className="max-w-xs leading-relaxed"
                   >
-                    {item.locked ? item.lockReason : item.name}
+                    {item.locked ? item.lockReason : navigationLabel(item)}
                   </TooltipContent>
                 )}
               </Tooltip>

@@ -8,12 +8,15 @@ import {
   type ErpWorkspace,
 } from "@/lib/erp-workspaces";
 import { isAdminRole } from "@/lib/erp-desk";
+import { useLanguage } from "@/context/LanguageContext";
+import { getNavigationLabel } from "@/lib/navigation-i18n";
 
 type WorkspaceContentProps = {
   workspace: ErpWorkspace;
 };
 
 function WorkspaceContent({ workspace }: WorkspaceContentProps) {
+  const { t } = useLanguage();
   const location = useLocation();
   const currentItem = flattenWorkspaceNavigation(workspace).find(
     (item) => item.href.split("?")[0] === location.pathname,
@@ -24,7 +27,7 @@ function WorkspaceContent({ workspace }: WorkspaceContentProps) {
   return (
     <div className="mx-auto max-w-screen-xl space-y-8 p-6 lg:p-8">
       <div>
-        <p className="text-sm font-semibold text-blue-600">{workspace.name}</p>
+        <p className="text-sm font-semibold text-blue-600">{getNavigationLabel(t, workspace.name)}</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">
           {isHome
             ? `Area Kerja ${workspace.name}`
@@ -48,7 +51,7 @@ function WorkspaceContent({ workspace }: WorkspaceContentProps) {
                 <span className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <FolderOpen className="size-5" />
                 </span>
-                <h2 className="font-bold text-slate-900">{section.name}</h2>
+                <h2 className="font-bold text-slate-900">{getNavigationLabel(t, section)}</h2>
               </div>
               <div className="space-y-1">
                 {section.items?.slice(0, 8).map((item) => (
@@ -58,7 +61,7 @@ function WorkspaceContent({ workspace }: WorkspaceContentProps) {
                     state={{ workspace: workspace.slug }}
                     className="group flex items-center justify-between rounded-lg px-2 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-blue-600"
                   >
-                    {item.name}
+                    {getNavigationLabel(t, item)}
                     <ArrowRight className="size-3.5 opacity-0 transition group-hover:opacity-100" />
                   </Link>
                 ))}

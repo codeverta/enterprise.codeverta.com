@@ -30,6 +30,8 @@ import { DEFAULT_APP_LOGO, getStorageUrl } from "../lib/utils";
 import SystemSettings from "./dashboard/SystemSettings";
 import { toast } from "sonner";
 import AppSwitcherMenu from "./AppSwitcherMenu";
+import { useLanguage } from "@/context/LanguageContext";
+import { getNavigationLabel } from "@/lib/navigation-i18n";
 
 const Navbar = ({
   user,
@@ -43,6 +45,8 @@ const Navbar = ({
   const resolveHref = (href) => `${basePath}${href}`;
   const { settings, fetchSettings } = useSettingsStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { t } = useLanguage();
+  const navigationLabel = (item) => getNavigationLabel(t, item);
 
   const handleLockedNavigation = (event, item) => {
     if (item.locked && !item.allowWhenLocked) {
@@ -98,7 +102,7 @@ const Navbar = ({
 
   const rightSidebarItems = [
     {
-      name: "Changelog",
+      name: navigationLabel("Changelog"),
       href: "/dashboard/changelog",
       icon: History,
     },
@@ -162,7 +166,7 @@ const Navbar = ({
                       )}
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
-                      {item.name}
+                      {navigationLabel(item)}
                       <ChevronDown className="h-3 w-3 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -189,7 +193,7 @@ const Navbar = ({
                           }
                         >
                           {subItem.icon && <subItem.icon className="h-4 w-4" />}
-                          {subItem.name}
+                          {navigationLabel(subItem)}
                           {subItem.locked && <Lock className="ml-auto h-3.5 w-3.5 text-amber-600" />}
                         </NavLink>
                       </DropdownMenuItem>
@@ -223,7 +227,7 @@ const Navbar = ({
                 }
               >
                 <item.icon className="h-4 w-4 shrink-0" />
-                {item.name}
+                {navigationLabel(item)}
                 {item.locked && <Lock className="h-3.5 w-3.5 text-amber-600" />}
               </NavLink>
             );
@@ -247,7 +251,7 @@ const Navbar = ({
                     .join(" ")}
                   className="gap-1 text-sm font-medium h-9 px-3 transition-colors text-gray-600 hover:text-gray-900"
                 >
-                  Lainnya
+                  {t("navigation.more", { fallback: "Lainnya" })}
                   <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
@@ -270,7 +274,7 @@ const Navbar = ({
                           )}
                         >
                           <item.icon className="h-4 w-4 shrink-0" />
-                          <span>{item.name}</span>
+                          <span>{navigationLabel(item)}</span>
                         </DropdownMenuSubTrigger>
                         <DropdownMenuSubContent className="w-48 z-[55]">
                           {item.items.map((subItem) => (
@@ -295,7 +299,7 @@ const Navbar = ({
                                 }
                               >
                                 {subItem.icon && <subItem.icon className="h-4 w-4" />}
-                                {subItem.name}
+                                {navigationLabel(subItem)}
                                 {subItem.locked && <Lock className="ml-auto h-3.5 w-3.5 text-amber-600" />}
                               </NavLink>
                             </DropdownMenuItem>
@@ -325,7 +329,7 @@ const Navbar = ({
                         )}
                       >
                         <item.icon className="h-4 w-4 shrink-0" />
-                        {item.name}
+                        {navigationLabel(item)}
                         {item.locked && <Lock className="ml-auto h-3.5 w-3.5 text-amber-600" />}
                       </NavLink>
                     </DropdownMenuItem>
@@ -384,7 +388,7 @@ const Navbar = ({
                   <div key={item.name} className="space-y-1 py-1">
                     <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-400 px-3 py-1.5">
                       <item.icon className="h-3.5 w-3.5" />
-                      {item.name}
+                      {navigationLabel(item)}
                     </div>
                     {item.items.map((subItem) => (
                       <NavLink
@@ -413,7 +417,7 @@ const Navbar = ({
                         }
                       >
                         {subItem.icon && <subItem.icon className="h-4 w-4" />}
-                        {subItem.name}
+                        {navigationLabel(subItem)}
                         {subItem.locked && <Lock className="ml-auto h-3.5 w-3.5 text-amber-600" />}
                       </NavLink>
                     ))}
@@ -449,7 +453,7 @@ const Navbar = ({
                   }
                 >
                   <item.icon className="h-4 w-4 shrink-0" />
-                  {item.name}
+                  {navigationLabel(item)}
                   {item.locked && <Lock className="ml-auto h-3.5 w-3.5 text-amber-600" />}
                 </NavLink>
               );

@@ -22,6 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deskModules } from "@/lib/erp-desk";
+import { useLanguage } from "@/context/LanguageContext";
+import { getNavigationLabel } from "@/lib/navigation-i18n";
 
 type AppSwitcherMenuProps = {
   children: React.ReactElement;
@@ -48,6 +50,7 @@ export default function AppSwitcherMenu({
   align = "start",
 }: AppSwitcherMenuProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const toggleFullWidth = () => {
     const enabled = document.documentElement.classList.toggle("erp-full-width");
@@ -76,14 +79,14 @@ export default function AppSwitcherMenu({
           onSelect={() => navigate("/desk")}
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <LayoutGrid className="size-5" /> Dashboard Utama
+          <LayoutGrid className="size-5" /> {t("appSwitcher.dashboard")}
         </DropdownMenuItem>
         <DropdownMenuSub>
           <DropdownMenuSubTrigger className="gap-3 rounded-xl px-3 py-2.5 text-base hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 data-[state=open]:bg-blue-50 data-[state=open]:text-blue-700">
             <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700 transition-colors">
               <MonitorUp className="size-4 text-blue-700" />
             </span>
-            <span className="truncate">Modul & Workspaces</span>
+            <span className="truncate">{t("appSwitcher.modules")}</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent
             sideOffset={10}
@@ -102,8 +105,8 @@ export default function AppSwitcherMenu({
                   >
                     <Icon className="size-4 text-current" />
                   </span>
-                  <span className="min-w-0 flex-1 truncate" title={name}>
-                    {name}
+                  <span className="min-w-0 flex-1 truncate" title={getNavigationLabel(t, name)}>
+                    {getNavigationLabel(t, name)}
                   </span>
                 </DropdownMenuItem>
               ))}
@@ -115,38 +118,38 @@ export default function AppSwitcherMenu({
           }
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <Globe2 className="size-5" /> Situs Web
+          <Globe2 className="size-5" /> {t("appSwitcher.website")}
         </DropdownMenuItem>
         <DropdownMenuSeparator className="my-2" />
         <DropdownMenuItem
           onSelect={() => navigate("/desk/erpnext-settings")}
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <SlidersHorizontal className="size-5" /> Default Sesi
+          <SlidersHorizontal className="size-5" /> {t("appSwitcher.sessionDefaults")}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => window.location.reload()}
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <RotateCcw className="size-5" /> Muat Ulang Tampilan
+          <RotateCcw className="size-5" /> {t("appSwitcher.reload")}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={toggleFullWidth}
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <Maximize2 className="size-5" /> Ubah Lebar Layar
+          <Maximize2 className="size-5" /> {t("appSwitcher.width")}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={toggleTheme}
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <Moon className="size-5" /> Ubah Tema (Gelap/Terang)
+          <Moon className="size-5" /> {t("appSwitcher.theme")}
         </DropdownMenuItem>
         <DropdownMenuItem
           onSelect={() => navigate("/desk/erpnext-settings/system-settings")}
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <CircleHelp className="size-5" /> Pusat Bantuan
+          <CircleHelp className="size-5" /> {t("appSwitcher.help")}
         </DropdownMenuItem>
         <DropdownMenuSeparator className="my-2" />
         <DropdownMenuItem
@@ -154,7 +157,7 @@ export default function AppSwitcherMenu({
           onSelect={onLogout}
           className="gap-3 rounded-xl px-3 py-2.5 text-base"
         >
-          <LogOut className="size-5" /> Keluar Akun
+          <LogOut className="size-5" /> {t("appSwitcher.logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

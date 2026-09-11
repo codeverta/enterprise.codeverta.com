@@ -3,8 +3,10 @@
   "private": true,
   "packageManager": "pnpm@11.3.0",
   "scripts": {
-    "dev": "pnpm -r --parallel dev",
+    "dev": "pnpm --parallel --filter admin-page --filter backend dev",
+    "dev:all": "pnpm -r --parallel dev",
     "dev:admin": "pnpm --filter admin-page dev",
+    "dev:landing": "pnpm --filter tanstack_start_ts dev",
     "dev:desktop": "pnpm --filter admin-page tauri:dev",
     "dev:backend": "pnpm --filter backend dev",
     "build": "pnpm --filter admin-page build",

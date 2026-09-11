@@ -34,6 +34,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLanguage } from "@/context/LanguageContext";
+import { getNavigationLabel } from "@/lib/navigation-i18n";
 
 const normalize = (value: string) => value.trim().toLocaleLowerCase("id-ID");
 
@@ -208,12 +210,14 @@ function buildSearchResults(): SearchResult[] {
 
 function DeskCommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  const navigationLabel = (item: { name: string } | string) => getNavigationLabel(t, item);
   const [query, setQuery] = useState("");
   const searchResults = useMemo(() => buildSearchResults(), []);
   const term = normalize(query);
 
   const matches = (item: SearchResult) =>
-    [item.name, item.moduleName, item.moduleSlug, item.type === "module" ? "modul workspace aplikasi" : "fitur menu laporan dokumen master data transaksi"]
+    [navigationLabel(item.name), navigationLabel(item.moduleName), item.name, item.moduleName, item.moduleSlug, item.type === "module" ? "modul workspace aplikasi" : "fitur menu laporan dokumen master data transaksi"]
       .map(normalize)
       .some((value) => value.includes(term));
 
@@ -280,7 +284,7 @@ function DeskCommandPalette({ open, onOpenChange }: { open: boolean; onOpenChang
                     <span className="flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-violet-600 shadow-xs group-data-[selected=true]:border-violet-200">
                       <Icon className="size-4.5" />
                     </span>
-                    <span className="font-medium">{name}</span>
+                    <span className="font-medium">{navigationLabel(name)}</span>
                     <CommandShortcut className="normal-case tracking-normal text-slate-400">Modul</CommandShortcut>
                   </CommandItem>
                 ))}
@@ -302,8 +306,8 @@ function DeskCommandPalette({ open, onOpenChange }: { open: boolean; onOpenChang
                       <Icon className="size-4.5" />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{name}</span>
-                      <span className="block truncate text-xs text-slate-400">{moduleName}</span>
+                      <span className="block truncate font-medium">{navigationLabel(name)}</span>
+                      <span className="block truncate text-xs text-slate-400">{navigationLabel(moduleName)}</span>
                     </span>
                   </CommandItem>
                 ))}
@@ -386,6 +390,8 @@ const accountingDescriptions: Record<string, string> = {
 
 export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; onSearchOpen: () => void }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
+  const navigationLabel = (item: { name: string } | string) => getNavigationLabel(t, item);
   const [selectedModuleDialog, setSelectedModuleDialog] = useState<string | null>(null);
   const displayName = user?.display_name || user?.username || "Admin";
 
@@ -466,7 +472,7 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
                     <Icon className="size-5.5" strokeWidth={2} />
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col self-stretch">
-                    <span className="pr-5 text-[15px] font-bold leading-snug text-slate-900 transition group-hover:text-violet-700">{name}</span>
+                    <span className="pr-5 text-[15px] font-bold leading-snug text-slate-900 transition group-hover:text-violet-700">{navigationLabel(name)}</span>
                     <span className="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">{moduleDescriptions[slug]}</span>
                     <span className="mt-auto flex items-center gap-1 pt-3 text-xs font-semibold text-slate-400 transition group-hover:text-violet-600">Buka modul <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" /></span>
                   </span>
@@ -519,7 +525,7 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
                     <Icon className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold leading-snug text-slate-900 transition group-hover:text-violet-700">{name}</span>
+                    <span className="block text-sm font-bold leading-snug text-slate-900 transition group-hover:text-violet-700">{navigationLabel(name)}</span>
                     <span className="mt-1 block text-[11px] leading-4.5 text-slate-500">{hrDescriptions[slug]}</span>
                   </span>
                   <ArrowRight className="size-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-violet-500" />
@@ -586,7 +592,7 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
                     <Icon className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold leading-snug text-slate-900 transition group-hover:text-indigo-700">{name}</span>
+                    <span className="block text-sm font-bold leading-snug text-slate-900 transition group-hover:text-indigo-700">{navigationLabel(name)}</span>
                     <span className="mt-1 block text-[11px] leading-4.5 text-slate-500">{frameworkDescriptions[slug]}</span>
                   </span>
                   <ArrowRight className="size-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-indigo-500" />
@@ -653,7 +659,7 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
                     <Icon className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-bold leading-snug text-slate-900 transition group-hover:text-blue-700">{name}</span>
+                    <span className="block text-sm font-bold leading-snug text-slate-900 transition group-hover:text-blue-700">{navigationLabel(name)}</span>
                     <span className="mt-1 block text-[11px] leading-4.5 text-slate-500">{accountingDescriptions[slug]}</span>
                   </span>
                   <ArrowRight className="size-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-500" />
@@ -682,6 +688,7 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
 }
 
 function HRLauncher() {
+  const { t } = useLanguage();
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-10 md:py-14">
       <Link to="/desk" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600">
@@ -701,7 +708,7 @@ function HRLauncher() {
               <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-500 group-hover:text-white">
                 <Icon className="size-6" />
               </span>
-              <span className="font-semibold text-slate-800 group-hover:text-blue-600">{name}</span>
+              <span className="font-semibold text-slate-800 group-hover:text-blue-600">{getNavigationLabel(t, name)}</span>
             </Link>
           ))}
       </div>
@@ -710,6 +717,7 @@ function HRLauncher() {
 }
 
 function AccountingLauncher() {
+  const { t } = useLanguage();
   return (
     <main className="mx-auto w-full max-w-5xl px-6 py-10 md:py-14">
       <Link to="/desk" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600">
@@ -725,7 +733,7 @@ function AccountingLauncher() {
               <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600 group-hover:bg-blue-500 group-hover:text-white">
                 <Icon className="size-6" />
               </span>
-              <span className="font-semibold text-slate-800 group-hover:text-blue-600">{name}</span>
+              <span className="font-semibold text-slate-800 group-hover:text-blue-600">{getNavigationLabel(t, name)}</span>
             </a>
           ))}
       </div>
@@ -734,6 +742,7 @@ function AccountingLauncher() {
 }
 
 function ModulePlaceholder({ slug }: { slug: string }) {
+  const { t } = useLanguage();
   const module = deskModules.find((item) => item.slug === slug);
   if (!module) return <Navigate to="/desk" replace />;
 
@@ -742,7 +751,7 @@ function ModulePlaceholder({ slug }: { slug: string }) {
       <Link to="/desk" className="mb-8 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600">
         <ChevronLeft className="size-4" /> All modules
       </Link>
-      <h1 className="text-3xl font-bold text-slate-900">{module.name}</h1>
+      <h1 className="text-3xl font-bold text-slate-900">{getNavigationLabel(t, module.name)}</h1>
       <p className="mt-2 text-slate-500">This ERP module is ready to be configured.</p>
     </main>
   );

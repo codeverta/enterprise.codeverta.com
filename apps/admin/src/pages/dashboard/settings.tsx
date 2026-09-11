@@ -46,18 +46,23 @@ import {
   PawPrint,
   Sparkles,
 } from "lucide-react";
-import { useLanguage } from "@/context/LanguageContext";
+import {
+  isSupportedLanguage,
+  languageCatalog,
+  type Language,
+  useLanguage,
+} from "@/context/LanguageContext";
 import { PetSettingsCard } from "@/features/pet/PetSettingsCard";
 import { FontSettingsCard } from "@/components/settings/FontSettingsCard";
 
 export function SettingsPage() {
-  const { t, setLanguage: applyLanguage } = useLanguage();
+  const { language: activeLanguage, t, setLanguage: applyLanguage } = useLanguage();
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const userRole = Number(user?.role || 0);
   const isParent = userRole === 10;
   const isMentorExternal = userRole === 30 || userRole === 40;
   const isAdmin = userRole >= 99;
-  const [language, setLanguage] = useState<"id" | "en">("id");
+  const [language, setLanguage] = useState<Language>(activeLanguage);
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -161,7 +166,10 @@ export function SettingsPage() {
       }
 
       if (resMySettings?.data?.data?.language) {
-        setLanguage(resMySettings.data.data.language === "en" ? "en" : "id");
+        const savedLanguage = resMySettings.data.data.language;
+        const supportedLanguage = isSupportedLanguage(savedLanguage) ? savedLanguage : "id";
+        setLanguage(supportedLanguage);
+        applyLanguage(supportedLanguage);
       }
 
       if (resPayout?.data) {
@@ -263,11 +271,10 @@ export function SettingsPage() {
         <div className="sticky top-0 z-10 -mx-4 mb-6 flex flex-col gap-3 border-b bg-background/95 px-4 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:-mx-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:-mx-8 lg:px-8">
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              System Configuration
+              {t("systemConfig.title")}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Kelola konfigurasi umum, akses, notifikasi, dan rekening
-              penarikan.
+              {t("systemConfig.subtitle")}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -276,7 +283,7 @@ export function SettingsPage() {
                 variant="outline"
                 className="border-amber-300 bg-amber-50 text-amber-700"
               >
-                Perubahan belum disimpan
+                {t("systemConfig.unsaved")}
               </Badge>
             )}
             <Button
@@ -287,10 +294,10 @@ export function SettingsPage() {
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Menyimpan...
+                  {t("settings.saving")}
                 </>
               ) : (
-                "Save Configuration"
+                t("settings.save")
               )}
             </Button>
           </div>
@@ -309,32 +316,32 @@ export function SettingsPage() {
               <>
                 <TabsTrigger value="general" className="gap-1.5">
                   <Settings2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">General</span>
+                  <span className="hidden sm:inline">{t("systemConfig.tab.general")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="access" className="gap-1.5">
                   <ShieldAlert className="h-4 w-4" />
-                  <span className="hidden sm:inline">Access</span>
+                  <span className="hidden sm:inline">{t("systemConfig.tab.access")}</span>
                 </TabsTrigger>
               </>
             )}
             <TabsTrigger value="language" className="gap-1.5">
               <Languages className="h-4 w-4" />
-              <span className="hidden sm:inline">Language</span>
+              <span className="hidden sm:inline">{t("systemConfig.tab.language")}</span>
             </TabsTrigger>
             <TabsTrigger value="pet" className="gap-1.5">
               <PawPrint className="h-4 w-4" />
-              <span className="hidden sm:inline">Pet</span>
+              <span className="hidden sm:inline">{t("systemConfig.tab.pet")}</span>
             </TabsTrigger>
             {isAdmin && (
               <TabsTrigger value="webhooks" className="gap-1.5">
                 <Webhook className="h-4 w-4" />
-                <span className="hidden sm:inline">Webhooks</span>
+                <span className="hidden sm:inline">{t("systemConfig.tab.webhooks")}</span>
               </TabsTrigger>
             )}
             {!isParent && (
               <TabsTrigger value="payout" className="gap-1.5">
                 <Wallet className="h-4 w-4" />
-                <span className="hidden sm:inline">Payout</span>
+                <span className="hidden sm:inline">{t("systemConfig.tab.payout")}</span>
               </TabsTrigger>
             )}
           </TabsList>
@@ -512,18 +519,14 @@ export function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid max-w-md grid-cols-2 gap-2 rounded-lg bg-muted p-1">
-                  {(
-                    [
-                      ["id", "Bahasa Indonesia"],
-                      ["en", "English"],
-                    ] as const
-                  ).map(([value, label]) => (
+                  {(Object.entries(languageCatalog) as [Language, (typeof languageCatalog)[Language]][]).map(([value, definition]) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => {
                         setIsDirty(true);
                         setLanguage(value);
+                        applyLanguage(value);
                       }}
                       className={cn(
                         "flex min-h-10 items-center justify-center gap-2 rounded-md px-3 text-sm font-medium transition-colors",
@@ -533,7 +536,7 @@ export function SettingsPage() {
                       )}
                     >
                       {language === value && <Check className="h-4 w-4" />}
-                      {label}
+                      {definition.label}
                     </button>
                   ))}
                 </div>
@@ -736,10 +739,10 @@ export function SettingsPage() {
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Menyimpan...
+                {t("settings.saving")}
               </>
             ) : (
-              "Save Configuration"
+              t("settings.save")
             )}
           </Button>
         </div>
