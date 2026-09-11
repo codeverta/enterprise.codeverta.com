@@ -77,6 +77,8 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		balance:     controller.NewBalanceWithdrawalController(db),
 		walletAdmin: controller.NewWalletAdminController(db),
 		ws:          controller.NewWebSocketController(db),
+		country:     controller.NewCountryController(),
+		currency:    controller.NewCurrencyController(db),
 	}
 
 	// Base API Group and Global Middlewares
@@ -118,6 +120,20 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		projectsmodule.RegisterRoutes(tenantGroup)
 		registerOrganizationRoutes(tenantGroup, db)
 
+		// Countries (loaded directly from embedded countries.json, not DB)
+		tenantGroup.GET("/countries", ctrls.country.List)
+		tenantGroup.GET("/countries/:id", ctrls.country.Get)
+
+		// Currencies (loaded from currencies table, with auto-seed and admin mutations)
+		currencyRoute := tenantGroup.Group("/currencies")
+		{
+			currencyRoute.GET("", ctrls.currency.List)
+			currencyRoute.GET("/:id", ctrls.currency.Get)
+			currencyRoute.POST("", middleware.AdminAuth(), ctrls.currency.Create)
+			currencyRoute.PUT("/:id", middleware.AdminAuth(), ctrls.currency.Update)
+			currencyRoute.DELETE("/:id", middleware.AdminAuth(), ctrls.currency.Delete)
+		}
+
 		// Finance & Payout Settings
 		financeRoute := tenantGroup.Group("/finance")
 		financeRoute.Use(middleware.FinanceAuth())
@@ -157,6 +173,8 @@ type controllerList struct {
 	balance     *controller.BalanceWithdrawalController
 	walletAdmin *controller.WalletAdminController
 	ws          *controller.WebSocketController
+	country     *controller.CountryController
+	currency    *controller.CurrencyController
 }
 
 func registerOrganizationRoutes(rg *gin.RouterGroup, db *gorm.DB) {

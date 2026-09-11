@@ -18,10 +18,12 @@ import {
   History,
   Settings,
   Lock,
+  Search,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import clsx from "clsx";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { useCommandPaletteStore } from "../store/useCommandPaletteStore";
 import { version } from "../../package.json";
 import RightSidebar from "./RightSidebar";
 import NotificationBell from "./dashboard/NotificationBell";
@@ -342,6 +344,16 @@ const Navbar = ({
 
         {/* Right Side: Quick Actions & Profile */}
         <div className="flex items-center gap-1 z-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => useCommandPaletteStore.getState().open()}
+            aria-label="Cari fitur atau modul (⌘K)"
+            title="Cari (⌘K)"
+            className="text-gray-600 hover:text-gray-900"
+          >
+            <Search className="h-4 w-4" />
+          </Button>
           <SystemSettings isSidebarOpen={false}/>
           <NotificationBell isSidebarOpen={false} />
 

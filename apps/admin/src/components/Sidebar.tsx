@@ -35,6 +35,7 @@ import {
   Settings,
   Lock,
   Boxes,
+  Search,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import clsx from "clsx";
@@ -46,6 +47,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { useCommandPaletteStore } from "../store/useCommandPaletteStore";
 import RightSidebar from "./RightSidebar";
 import { BASE_STORAGE_URL, DEFAULT_APP_LOGO, getStorageUrl } from "@/lib/utils";
 import NotificationBell from "./dashboard/NotificationBell";
@@ -348,28 +350,36 @@ const Sidebar = ({
           </AppSwitcherMenu>
         )}
 
-        {isOpen ? (
-          <div className="mb-3 px-1 flex items-center">
-            <span className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 shadow-xs">
-              <Boxes className="size-3.5 text-blue-600" />
-              {navigationLabel(moduleLabel)}
-            </span>
-          </div>
-        ) : (
-          <Tooltip>
+        <div className="mb-2">
+          <Tooltip disableHoverableContent={isOpen}>
             <TooltipTrigger asChild>
-              <div className="mb-3 flex h-8 items-center justify-center rounded-lg border border-blue-100 bg-blue-50 text-blue-600">
-                <Boxes className="size-4" />
-              </div>
+              <button
+                type="button"
+                onClick={() => useCommandPaletteStore.getState().open()}
+                className={clsx(
+                  "flex items-center w-full rounded-lg border border-slate-200 bg-slate-50/80 px-2.5 py-1.5 text-xs text-slate-500 transition hover:border-violet-200 hover:bg-white hover:text-slate-900 shadow-2xs",
+                  !isOpen ? "justify-center px-0 h-9" : "justify-between"
+                )}
+                aria-label="Cari fitur atau modul (⌘K)"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <Search className="size-4 shrink-0 text-slate-400" />
+                  {isOpen && <span className="truncate">{t("navigation.search", { fallback: "Cari..." })}</span>}
+                </div>
+                {isOpen && (
+                  <kbd className="inline-flex items-center gap-0.5 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-slate-400 shadow-2xs">
+                    ⌘K
+                  </kbd>
+                )}
+              </button>
             </TooltipTrigger>
-            <TooltipContent side="right">
-              {t("navigation.module", {
-                fallback: "Modul: {name}",
-                values: { name: navigationLabel(moduleLabel) },
-              })}
-            </TooltipContent>
+            {!isOpen && (
+              <TooltipContent side="right">
+                Cari (⌘K)
+              </TooltipContent>
+            )}
           </Tooltip>
-        )}
+        </div>
 
         <nav className="flex-grow overflow-y-auto pr-2">
           {items.map((item) =>

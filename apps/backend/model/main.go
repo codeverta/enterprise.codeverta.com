@@ -80,6 +80,7 @@ func InitDB() error {
 		&RoleDefinition{}, &RolePermission{}, &RoleProfile{}, &UserRoleAssignment{}, &UserRoleProfileAssignment{},
 		&InstallationSeedState{},
 		&DocumentRevision{},
+		&Currency{},
 	}
 
 	err = db.AutoMigrate(models...)

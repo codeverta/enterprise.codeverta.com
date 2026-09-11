@@ -8,6 +8,7 @@ import (
 	coremodel "gin-template/model"
 	buyingmodel "gin-template/modules/buying/model"
 	"gin-template/services"
+	"gin-template/data"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -163,6 +164,15 @@ func (h *MasterDataController) GroupList(c *gin.Context) {
 	if err := db.Order("parent_group ASC, group_name ASC").Find(&rows).Error; err != nil {
 		masterError(c, err)
 		return
+	}
+	if len(rows) == 0 {
+		defaults := []string{"All Supplier Groups", "Distributor", "Electrical", "Hardware", "Local", "Pharmaceutical", "Raw Material", "Services"}
+		for _, name := range defaults {
+			_ = db.Create(&buyingmodel.SupplierGroup{
+				GroupName: name,
+			}).Error
+		}
+		_ = db.Order("parent_group ASC, group_name ASC").Find(&rows).Error
 	}
 	c.JSON(http.StatusOK, gin.H{"data": rows})
 }
@@ -408,5 +418,22 @@ func (h *MasterDataController) Options(c *gin.Context) {
 	if len(groups) == 0 {
 		groups = []string{"All Supplier Groups", "Distributor", "Electrical", "Hardware", "Local", "Pharmaceutical", "Raw Material", "Services"}
 	}
-	c.JSON(http.StatusOK, gin.H{"supplier_groups": groups, "suppliers": distinct(&buyingmodel.Supplier{}, "supplier_name"), "items": distinct(&buyingmodel.Item{}, "item_code"), "item_groups": []string{"All Item Groups", "Products", "Raw Material", "Services", "Consumable", "Sub Assemblies"}, "countries": []string{"Indonesia", "Singapore", "Malaysia", "China", "United States"}, "currencies": []string{"IDR", "USD", "SGD", "EUR"}, "price_lists": []string{"Standard Buying", "Standard Selling"}, "languages": []string{"English", "Bahasa Indonesia"}, "uoms": []string{"Nos", "Unit", "Pcs", "Box", "Kg", "Gram", "Meter", "Set"}, "weight_uoms": []string{"Kg", "Gram", "Pound"}, "warehouses": distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse")})
+
+	countriesList := data.GetCountries()
+	countries := make([]string, 0, len(countriesList))
+	for _, cnt := range countriesList {
+		countries = append(countries, cnt.CountryName)
+	}
+
+	var currencyRows []coremodel.Currency
+	_ = db.Set("skip_tenant_scope", true).Where("enabled = ?", true).Order("id ASC").Find(&currencyRows).Error
+	currencies := make([]string, 0, len(currencyRows))
+	for _, cur := range currencyRows {
+		currencies = append(currencies, cur.ID)
+	}
+	if len(currencies) == 0 {
+		currencies = []string{"IDR", "USD", "SGD", "EUR"}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"supplier_groups": groups, "suppliers": distinct(&buyingmodel.Supplier{}, "supplier_name"), "items": distinct(&buyingmodel.Item{}, "item_code"), "item_groups": []string{"All Item Groups", "Products", "Raw Material", "Services", "Consumable", "Sub Assemblies"}, "countries": countries, "currencies": currencies, "price_lists": []string{"Standard Buying", "Standard Selling"}, "languages": []string{"English", "Bahasa Indonesia"}, "uoms": []string{"Nos", "Unit", "Pcs", "Box", "Kg", "Gram", "Meter", "Set"}, "weight_uoms": []string{"Kg", "Gram", "Pound"}, "warehouses": distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse")})
 }

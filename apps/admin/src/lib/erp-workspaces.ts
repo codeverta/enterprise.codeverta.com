@@ -666,8 +666,9 @@ const stock = workspace(
 );
 
 const accountingHome = "/desk/accounting";
-const accounting = workspace("Accounting", "accounting", [["Core Finance", "/desk/accounting/finance"]], [
+const accounting = workspace("Accounting", "accounting", [["Core Finance", "/desk/accounting/finance"], ["Currency", "/desk/currency"]], [
   group("Accounting", accountingHome, [
+    link("Currency", "/desk/currency", Coins),
     link("Invoicing", "/desk/invoicing?sidebar=Invoicing"),
     link("Payments", "/desk/dashboard-view/Payments?sidebar=Payments"),
     link("Financial Reports", "/desk/query-report/Balance%20Sheet", PieChart),

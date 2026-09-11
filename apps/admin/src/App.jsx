@@ -28,6 +28,8 @@ import { isTauri } from "@tauri-apps/api/core";
 import DesktopTitleBar from "./components/DesktopTitleBar";
 import { DesktopBootstrap } from "./components/DesktopSetup";
 
+import DeskCommandPalette from "./components/DeskCommandPalette";
+
 const LegacyDashboardHome = () => {
   let user = null;
   try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch { user = null; }
@@ -51,7 +53,12 @@ const ProtectedRoute = () => {
     return () => notifications.disconnectWebSocket();
   }, [authenticated]);
 
-  return authenticated ? <Outlet /> : <Navigate to="/" replace />;
+  return authenticated ? (
+    <>
+      <Outlet />
+      <DeskCommandPalette />
+    </>
+  ) : <Navigate to="/" replace />;
 };
 
 const AppLayout = () => {
@@ -134,6 +141,7 @@ const router = createBrowserRouter([
           { path: "desk/loyalty-program/*", element: <SellingModule /> },
           { path: "desk/loyalty-point-entry/*", element: <SellingModule /> },
           { path: "desk/accounting/finance/*", element: <AccountingModule /> },
+          { path: "desk/currency/*", element: <AccountingModule /> },
           { path: "desk/communication/*", element: <CommunicationModule /> },
           { path: "desk/administration/*", element: <AdministrationModule /> },
           { path: "desk/erpnext-settings/system-settings/*", element: <SettingsModule /> },
