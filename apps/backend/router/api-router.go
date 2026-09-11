@@ -4,13 +4,14 @@ import (
 	"gin-template/common"
 	"gin-template/controller"
 	"gin-template/middleware"
+	accountingmodule "gin-template/modules/accounting"
 	buyingmodule "gin-template/modules/buying"
 	frameworkmodule "gin-template/modules/framework"
 	hrmodule "gin-template/modules/hr"
 	printingmodule "gin-template/modules/printing"
+	projectsmodule "gin-template/modules/projects"
 	sellingmodule "gin-template/modules/selling"
 	stockmodule "gin-template/modules/stock"
-	projectsmodule "gin-template/modules/projects"
 	"gin-template/repository"
 	"gin-template/services"
 	"net/http"
@@ -109,6 +110,7 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		registerCoreRoutes(tenantGroup, ctrls)
 		registerCoreProfileAndMediaRoutes(tenantGroup, ctrls)
 		registerCRMRoutes(tenantGroup)
+		accountingmodule.RegisterRoutes(tenantGroup)
 		buyingmodule.RegisterRoutes(tenantGroup)
 		hrmodule.RegisterRoutes(tenantGroup)
 		if err := frameworkmodule.RegisterRoutes(tenantGroup, db); err != nil {

@@ -15,6 +15,7 @@ import POSClosingFormPage from "./pages/POSClosingFormPage";
 import POSProfileListPage from "./pages/POSProfileListPage";
 import POSProfileFormPage from "./pages/POSProfileFormPage";
 import POSInvoicePage from "./pages/POSInvoicePage";
+import POSInvoiceFormPage from "./pages/POSInvoiceFormPage";
 import SalesOrderFormPage, { SalesOrderListPage } from "./pages/SalesOrderPage";
 import SalesRegisterPage from "./pages/SalesRegisterPage";
 import PriceListPage from "./pages/PriceListPage";
@@ -110,7 +111,11 @@ export default function SellingModule() {
     const isForm = pathname === "/desk/pos-closing-entry/new" || /^\/desk\/pos-closing-entry\/[^/]+$/.test(pathname);
     content = isForm ? <POSClosingFormPage /> : <POSClosingEntryPage />;
   } else if (pathname.startsWith("/desk/pos-invoice")) {
-    content = <POSInvoicePage />;
+    const isForm =
+      pathname === "/desk/pos-invoice/new" ||
+      pathname.includes("/desk/pos-invoice/new-pos-invoice") ||
+      /^\/desk\/pos-invoice\/[^/]+$/.test(pathname);
+    content = isForm ? <POSInvoiceFormPage /> : <POSInvoicePage />;
   } else if (pathname.startsWith("/desk/loyalty-point-entry")) {
     content = <LoyaltyPointEntryListPage />;
   } else if (pathname.startsWith("/desk/loyalty-program")) {

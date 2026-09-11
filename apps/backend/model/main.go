@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"gin-template/common"
 	crmmodel "gin-template/model/crm"
+	accountingmodel "gin-template/modules/accounting/model"
 	buyingmodel "gin-template/modules/buying/model"
 	hrmodel "gin-template/modules/hr/model"
 	printingmodel "gin-template/modules/printing/model"
+	projectsmodel "gin-template/modules/projects/model"
 	sellingmodel "gin-template/modules/selling/model"
 	stockmodel "gin-template/modules/stock/model"
-	projectsmodel "gin-template/modules/projects/model"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -88,6 +89,9 @@ func InitDB() error {
 		return fmt.Errorf("auto migration failed: %w", err)
 	}
 	if err := crmmodel.Migrate(db); err != nil {
+		return err
+	}
+	if err := accountingmodel.Migrate(db); err != nil {
 		return err
 	}
 	if err := buyingmodel.Migrate(db); err != nil {

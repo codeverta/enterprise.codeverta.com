@@ -681,6 +681,43 @@ const accounting = workspace("Accounting", "accounting", [["Core Finance", "/des
   ], Landmark),
 ]);
 
+const accountsSetupHome = "/desk/account?sidebar=Accounts%20Setup";
+const accountsSetup = workspace(
+  "Accounts Setup",
+  "accounts-setup",
+  [],
+  [
+    group("Setup", accountsSetupHome, [
+      link("Chart of Accounts", "/desk/account"),
+      link("Chart of Cost Centers", "/desk/cost-center"),
+      link("Account Category", "/desk/account-category"),
+      link("Accounting Dimension", "/desk/accounting-dimension"),
+      link("Currency", "/desk/currency"),
+      link("Currency Exchange", "/desk/currency-exchange"),
+      link("Finance Book", "/desk/finance-book"),
+      link("Mode of Payment", "/desk/mode-of-payment"),
+      link("Payment Term", "/desk/payment-term"),
+      link("Journal Entry Template", "/desk/journal-entry-template"),
+      link("Terms and Conditions", "/desk/terms-and-conditions"),
+      link("Company", "/desk/company"),
+      link("Fiscal Year", "/desk/fiscal-year"),
+      link("Sales Taxes", "/desk/sales-taxes-and-charges-template"),
+    ], Sliders),
+    group("Opening & Closing", accountsSetupHome, [
+      link("COA Importer", "/desk/chart-of-accounts-importer/Chart%20of%20Accounts%20Importer"),
+      link("Opening Invoice Tool", "/desk/opening-invoice-creation-tool/Opening%20Invoice%20Creation%20Tool"),
+      link("Accounting Period", "/desk/accounting-period"),
+      link("FX Revaluation", "/desk/exchange-rate-revaluation"),
+      link("Period Closing Voucher", "/desk/period-closing-voucher"),
+    ], Clock),
+    group("Settings", accountsSetupHome, [
+      link("Accounts Settings", "/desk/accounts-settings/Accounts%20Settings"),
+      link("Currency Exchange Settings", "/desk/currency-exchange-settings/Currency%20Exchange%20Settings"),
+      link("Repost Accounting Ledger Settings", "/desk/repost-accounting-ledger-settings/Repost%20Accounting%20Ledger%20Settings"),
+    ], Settings2),
+  ],
+);
+
 const assetsHome = "/desk/assets";
 const assets = workspace("Assets", "assets", ["Asset", "Asset Movement", "Asset Repair", "Asset Capitalization"], [
   group("Maintenance", assetsHome, documentLinks(["Asset Maintenance", "Asset Maintenance Log"]), Hammer),
@@ -1089,6 +1126,8 @@ export const erpWorkspaces: Record<string, ErpWorkspace> = {
   communication,
   organization,
   accounting,
+  "accounts-setup": accountsSetup,
+  "account-setup": accountsSetup,
   assets,
   buying,
   manufacturing,
@@ -1106,6 +1145,8 @@ export const getWorkspaceFromPath = (
 ): ErpWorkspace | undefined => {
   const normalizedPreferred = preferredSlug?.toLowerCase();
   if (normalizedPreferred && erpWorkspaces[normalizedPreferred]) return erpWorkspaces[normalizedPreferred];
+  const slugifiedPreferred = preferredSlug ? slugify(preferredSlug) : undefined;
+  if (slugifiedPreferred && erpWorkspaces[slugifiedPreferred]) return erpWorkspaces[slugifiedPreferred];
   const directSlug = pathname.split("/").filter(Boolean)[1]?.toLowerCase();
   if (directSlug && erpWorkspaces[directSlug]) return erpWorkspaces[directSlug];
 

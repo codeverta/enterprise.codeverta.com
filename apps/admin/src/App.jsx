@@ -141,6 +141,7 @@ const router = createBrowserRouter([
           { path: "desk/loyalty-program/*", element: <SellingModule /> },
           { path: "desk/loyalty-point-entry/*", element: <SellingModule /> },
           { path: "desk/accounting/finance/*", element: <AccountingModule /> },
+          { path: "desk/account/*", element: <AccountingModule /> },
           { path: "desk/currency/*", element: <AccountingModule /> },
           { path: "desk/communication/*", element: <CommunicationModule /> },
           { path: "desk/administration/*", element: <AdministrationModule /> },

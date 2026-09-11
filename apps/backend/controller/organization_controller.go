@@ -3,6 +3,7 @@ package controller
 import (
 	"gin-template/common"
 	"gin-template/model"
+	accountingmodel "gin-template/modules/accounting/model"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -59,7 +60,15 @@ func (oc *OrganizationController) CreateCompany(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := db.Create(&req).Error; err != nil {
+	if err := db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&req).Error; err != nil {
+			return err
+		}
+		return accountingmodel.SeedDefaultAccountsForCompany(tx, accountingmodel.CompanySeedInput{
+			ID: req.ID.String(), TenantID: req.TenantID.String(), Name: req.Name,
+			Abbreviation: req.Abbreviation, Currency: req.Currency,
+		})
+	}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
