@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import {
   timesheetApi,
   type Timesheet,
@@ -48,7 +49,7 @@ export function TimesheetFormPage() {
     employee_id: "",
     employee_name: "",
     employee_email: "",
-    company: "CODEVERTA ENTERPRISE",
+    company: "",
     customer: "",
     currency: "IDR",
     exchange_rate: 1,
@@ -421,23 +422,12 @@ export function TimesheetFormPage() {
                 <label className="text-xs font-semibold text-slate-700">
                   Company <span className="text-rose-500">*</span>
                 </label>
-                <select
-                  aria-label="Company"
+                <CompanySelect
+                  value={form.company}
                   disabled={isLocked}
-                  value={form.company || ""}
-                  onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 disabled:bg-slate-50"
-                >
-                  {(options?.companies || [
-                    "CODEVERTA ENTERPRISE",
-                    "PT ZENIT TECHNOLOGY SOLUTION",
-                    "UD MILLION CANDLES",
-                  ]).map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(company) => setForm((current) => ({ ...current, company }))}
+                  className="mt-1 [&_button]:h-10 [&_button]:rounded-xl [&_button]:text-sm"
+                />
               </div>
 
               <div>

@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ERPSelectOption } from "@/components/ui/erp-select";
 import {
@@ -61,7 +62,7 @@ const emptyReceipt = (): PurchaseReceipt => {
     posting_date: now.toISOString().slice(0, 10),
     posting_time: timeStr,
     set_posting_time: false,
-    company: "PT ZENIT TECHNOLOGY SOLUTION",
+    company: "",
     apply_putaway_rule: false,
     is_return: false,
     cost_center: "",
@@ -245,13 +246,13 @@ export default function PurchaseReceiptFormPage() {
   const [saving, setSaving] = useState(false);
   const [options, setOptions] = useState<PurchaseReceiptOptions>({
     naming_series: ["MAT-PRE-.YYYY.-", "MAT-PR-RET-.YYYY.-"],
-    companies: ["PT ZENIT TECHNOLOGY SOLUTION", "PT Codeverta Enterprise"],
+    companies: [],
     suppliers: ["PT Mitra Logam Abadi", "PT Elektronika Komponen Indonesia"],
     warehouses: [
-      "Stores - PT ZENIT",
-      "Finished Goods - PT ZENIT",
-      "Work In Progress - PT ZENIT",
-      "Goods In Transit - PT ZENIT",
+      "",
+      "",
+      "",
+      "",
     ],
     currencies: ["IDR", "USD", "SGD", "EUR"],
     price_lists: ["Standard Buying", "Local Supplier Rate"],
@@ -851,19 +852,12 @@ export default function PurchaseReceiptFormPage() {
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Company <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  list="pr-companies-list"
+                <CompanySelect
                   value={row.company}
                   disabled={isReadonly}
-                  onChange={(e) => updateField("company", e.target.value)}
-                  placeholder="Begin typing for results."
+                  onChange={(company) => updateField("company", company)}
                   className="mt-1"
                 />
-                <datalist id="pr-companies-list">
-                  {options.companies.map((c) => (
-                    <ERPSelectOption key={c} value={c} />
-                  ))}
-                </datalist>
               </div>
             </div>
 

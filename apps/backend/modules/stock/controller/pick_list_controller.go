@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	crmmodel "gin-template/model/crm"
 	coremodel "gin-template/model"
+	crmmodel "gin-template/model/crm"
 	buyingmodel "gin-template/modules/buying/model"
 	stockmodel "gin-template/modules/stock/model"
 
@@ -330,18 +330,6 @@ func (ctrl *PickListController) Options(ctx *gin.Context) {
 			Abbreviation: c.Abbreviation,
 		})
 	}
-	if len(companyNames) == 0 {
-		companyNames = []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
-			"PT Codeverta Utama (PZTS)",
-			"PT Codeverta Mandiri (MC)",
-		}
-		companyOptions = []CompanyOptionItem{
-			{ID: "cmp-pzts", Name: "PT ZENIT TECHNOLOGY SOLUTION", Abbreviation: "PZTS"},
-			{ID: "cmp-utama", Name: "PT Codeverta Utama (PZTS)", Abbreviation: "PZTS"},
-			{ID: "cmp-mandiri", Name: "PT Codeverta Mandiri (MC)", Abbreviation: "MC"},
-		}
-	}
 
 	// Warehouses
 	var warehouses []stockmodel.Warehouse
@@ -350,23 +338,15 @@ func (ctrl *PickListController) Options(ctx *gin.Context) {
 	for _, w := range warehouses {
 		warehouseNames = append(warehouseNames, w.WarehouseName)
 	}
-	if len(warehouseNames) == 0 {
-		warehouseNames = []string{
-			"Stores - PT ZENIT",
-			"Finished Goods - PT ZENIT",
-			"Work In Progress - PT ZENIT",
-			"Goods In Transit - PT ZENIT",
-		}
-	}
 
 	// Items
 	var items []buyingmodel.Item
 	_ = db.Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Find(&items)
 	type ItemOption struct {
-		ItemCode string  `json:"item_code"`
-		ItemName string  `json:"item_name"`
-		UOM      string  `json:"uom"`
-		Barcode  string  `json:"barcode"`
+		ItemCode string `json:"item_code"`
+		ItemName string `json:"item_name"`
+		UOM      string `json:"uom"`
+		Barcode  string `json:"barcode"`
 	}
 	var itemOptions []ItemOption
 	for _, itm := range items {
@@ -434,7 +414,7 @@ func (ctrl *PickListController) GetItemLocations(ctx *gin.Context) {
 	}
 	_ = q.Find(&warehouses)
 
-	defaultWarehouse := "Stores - PT ZENIT"
+	defaultWarehouse := ""
 	if len(warehouses) > 0 {
 		defaultWarehouse = warehouses[0].WarehouseName
 	}
@@ -480,17 +460,21 @@ func (ctrl *PickListController) GetItemLocations(ctx *gin.Context) {
 }
 
 type PendingReference struct {
-	DocumentType string                  `json:"document_type"`
-	DocumentNo   string                  `json:"document_no"`
-	Customer     string                  `json:"customer,omitempty"`
-	Date         string                  `json:"date"`
-	Status       string                  `json:"status"`
+	DocumentType string                    `json:"document_type"`
+	DocumentNo   string                    `json:"document_no"`
+	Customer     string                    `json:"customer,omitempty"`
+	Date         string                    `json:"date"`
+	Status       string                    `json:"status"`
 	Items        []stockmodel.PickListItem `json:"items"`
 }
 
 func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 	purpose := strings.TrimSpace(ctx.Query("purpose"))
 	db, tenant := stockDB(ctx), stockTenant(ctx)
+	var defaultWarehouse string
+	db.Model(&stockmodel.Warehouse{}).
+		Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).
+		Order("warehouse_name asc").Limit(1).Pluck("warehouse_name", &defaultWarehouse)
 
 	var results []PendingReference
 
@@ -508,7 +492,7 @@ func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 				items = append(items, stockmodel.PickListItem{
 					ItemCode:       item.ItemCode,
 					ItemName:       item.ItemName,
-					Warehouse:      "Finished Goods - PT ZENIT",
+					Warehouse:      defaultWarehouse,
 					Qty:            float64(item.Quantity),
 					StockQty:       float64(item.Quantity),
 					UOM:            "Nos",
@@ -521,7 +505,7 @@ func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 					{
 						ItemCode:       "FG-PRD-001",
 						ItemName:       "Assembled Industrial Motor 5HP",
-						Warehouse:      "Finished Goods - PT ZENIT",
+						Warehouse:      defaultWarehouse,
 						Qty:            5,
 						StockQty:       5,
 						UOM:            "Nos",
@@ -552,7 +536,7 @@ func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 						{
 							ItemCode:       "FG-PRD-001",
 							ItemName:       "Assembled Industrial Motor 5HP",
-							Warehouse:      "Finished Goods - PT ZENIT",
+							Warehouse:      defaultWarehouse,
 							Qty:            3,
 							StockQty:       3,
 							UOM:            "Nos",
@@ -562,7 +546,7 @@ func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 						{
 							ItemCode:       "SP-CMP-001",
 							ItemName:       "Bearing 6204",
-							Warehouse:      "Stores - PT ZENIT",
+							Warehouse:      defaultWarehouse,
 							Qty:            10,
 							StockQty:       10,
 							UOM:            "Nos",
@@ -581,7 +565,7 @@ func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 						{
 							ItemCode:       "RAW-MTL-002",
 							ItemName:       "Copper Wiring 50m",
-							Warehouse:      "Stores - PT ZENIT",
+							Warehouse:      defaultWarehouse,
 							Qty:            4,
 							StockQty:       4,
 							UOM:            "Roll",
@@ -601,22 +585,22 @@ func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 				Status:       "In Progress",
 				Items: []stockmodel.PickListItem{
 					{
-						ItemCode:   "RAW-MTL-001",
-						ItemName:   "Raw Material Steel Plate",
-						Warehouse:  "Stores - PT ZENIT",
-						Qty:        15,
-						StockQty:   15,
-						UOM:        "Nos",
-						WorkOrder:  "MFG-WO-2026-00001",
+						ItemCode:  "RAW-MTL-001",
+						ItemName:  "Raw Material Steel Plate",
+						Warehouse: defaultWarehouse,
+						Qty:       15,
+						StockQty:  15,
+						UOM:       "Nos",
+						WorkOrder: "MFG-WO-2026-00001",
 					},
 					{
-						ItemCode:   "SP-CMP-001",
-						ItemName:   "Bearing 6204",
-						Warehouse:  "Stores - PT ZENIT",
-						Qty:        8,
-						StockQty:   8,
-						UOM:        "Nos",
-						WorkOrder:  "MFG-WO-2026-00001",
+						ItemCode:  "SP-CMP-001",
+						ItemName:  "Bearing 6204",
+						Warehouse: defaultWarehouse,
+						Qty:       8,
+						StockQty:  8,
+						UOM:       "Nos",
+						WorkOrder: "MFG-WO-2026-00001",
 					},
 				},
 			},
@@ -632,7 +616,7 @@ func (ctrl *PickListController) GetPendingReferences(ctx *gin.Context) {
 					{
 						ItemCode:            "RAW-MTL-001",
 						ItemName:            "Raw Material Steel Plate",
-						Warehouse:           "Stores - PT ZENIT",
+						Warehouse:           defaultWarehouse,
 						Qty:                 10,
 						StockQty:            10,
 						UOM:                 "Nos",

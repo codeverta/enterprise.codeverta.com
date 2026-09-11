@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ERPSelectOption } from "@/components/ui/erp-select";
 import {
@@ -71,7 +72,7 @@ const emptyEntry = (): StockEntry => {
     stock_entry_type: "Material Transfer",
     purpose: "Material Transfer",
     company_id: "",
-    company: "PT ZENIT TECHNOLOGY SOLUTION",
+    company: "",
     posting_date: now.toISOString().slice(0, 10),
     posting_time: timeStr,
     set_posting_time: false,
@@ -245,13 +246,8 @@ export default function StockEntryFormPage() {
       "Repack",
     ],
     naming_series: ["MAT-STE-.YYYY.-"],
-    companies: ["PT ZENIT TECHNOLOGY SOLUTION", "PT Codeverta Enterprise"],
-    warehouses: [
-      "Stores - PT ZENIT",
-      "Finished Goods - PT ZENIT",
-      "Work In Progress - PT ZENIT",
-      "Goods In Transit - PT ZENIT",
-    ],
+    companies: [],
+    warehouses: [],
     items: [],
   });
 
@@ -317,7 +313,7 @@ export default function StockEntryFormPage() {
         const initialCompany = compOptions.length > 0 ? compOptions[0] : null;
         setRow((prev) => ({
           ...prev,
-          company: prev.company || (initialCompany ? initialCompany.name : "PT ZENIT TECHNOLOGY SOLUTION"),
+          company: prev.company || initialCompany?.name || "",
           company_id: prev.company_id || (initialCompany?.id ? initialCompany.id : ""),
           from_warehouse: opts?.warehouses?.length ? opts.warehouses[0] : prev.from_warehouse,
           to_warehouse: opts?.warehouses && opts.warehouses.length >= 2 ? opts.warehouses[1] : prev.to_warehouse,
@@ -765,23 +761,10 @@ export default function StockEntryFormPage() {
                   Company <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1">
-                  <SearchableSelect
+                  <CompanySelect
                     value={row.company}
                     disabled={isReadonly}
-                    options={(companies.length > 0
-                      ? companies
-                      : (options.companies || []).map((name) => ({ name }))
-                    ).map((c) => ({
-                      value: c.name,
-                      label: c.name,
-                      badge: c.abbreviation || undefined,
-                      sublabel: c.id ? `ID: ${c.id}` : undefined,
-                    }))}
                     onChange={(val) => handleSelectCompany(val)}
-                    placeholder="Pilih Company..."
-                    searchPlaceholder="Cari nama company atau singkatan..."
-                    addNewLabel="+ Tambah Company"
-                    addNewHref="/desk/company"
                   />
                 </div>
                 {row.company_id && (
@@ -835,7 +818,7 @@ export default function StockEntryFormPage() {
                     onChange={(val) => handleSelectStockEntryType(val)}
                     placeholder="Pilih Stock Entry Type..."
                     searchPlaceholder="Cari tipe atau purpose..."
-                    addNewLabel="+ Tambah Stock Entry Type"
+                    addNewLabel="Tambah Stock Entry Type"
                     addNewHref="/desk/stock-entry-type/new"
                   />
                 </div>

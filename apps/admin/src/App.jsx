@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation, useNavigate } from "react-router";
 import { LanguageProvider } from "./context/LanguageContext";
+import { CompanyProvider } from "./context/CompanyContext";
 import { setNavigate } from "./lib/navigation";
 import { useNotificationStore } from "./store/useNotificationStore";
 
@@ -54,10 +55,10 @@ const ProtectedRoute = () => {
   }, [authenticated]);
 
   return authenticated ? (
-    <>
+    <CompanyProvider>
       <Outlet />
       <DeskCommandPalette />
-    </>
+    </CompanyProvider>
   ) : <Navigate to="/" replace />;
 };
 
@@ -107,9 +108,15 @@ const router = createBrowserRouter([
           { path: "desk/selling/orders/*", element: <SellingModule /> },
           { path: "desk/selling/subscriptions/*", element: <SellingModule /> },
           { path: "desk/selling/promotions/*", element: <SellingModule /> },
+          { path: "desk/point-of-sale", element: <SellingModule /> },
           { path: "desk/point-of-sale/*", element: <SellingModule /> },
+          { path: "desk/pos-profile", element: <SellingModule /> },
+          { path: "desk/pos-profile/*", element: <SellingModule /> },
+          { path: "desk/pos-opening-entry", element: <SellingModule /> },
           { path: "desk/pos-opening-entry/*", element: <SellingModule /> },
+          { path: "desk/pos-closing-entry", element: <SellingModule /> },
           { path: "desk/pos-closing-entry/*", element: <SellingModule /> },
+          { path: "desk/pos-invoice", element: <SellingModule /> },
           { path: "desk/pos-invoice/*", element: <SellingModule /> },
           { path: "desk/payroll-entry/*", element: <HRModule /> },
           { path: "desk/attendance/*", element: <HRModule /> },
@@ -143,6 +150,7 @@ const router = createBrowserRouter([
           { path: "desk/accounting/finance/*", element: <AccountingModule /> },
           { path: "desk/account/*", element: <AccountingModule /> },
           { path: "desk/currency/*", element: <AccountingModule /> },
+          { path: "desk/gl-entry/*", element: <AccountingModule /> },
           { path: "desk/communication/*", element: <CommunicationModule /> },
           { path: "desk/administration/*", element: <AdministrationModule /> },
           { path: "desk/erpnext-settings/system-settings/*", element: <SettingsModule /> },

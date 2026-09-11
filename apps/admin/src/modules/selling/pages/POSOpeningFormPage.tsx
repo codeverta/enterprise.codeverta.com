@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { CompanySelect } from "@/components/CompanySelect";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { posProfileApi, type POSProfile } from "../posProfileApi";
 import { posApi, type PaymentBalance, type POSOpeningEntry } from "../posApi";
@@ -34,8 +35,8 @@ export default function POSOpeningFormPage() {
   const [form, setForm] = useState({
     period_start_date: localDateTime(),
     posting_date: new Date().toISOString().slice(0, 10),
-    company: "UD MILLION CANDLES",
-    pos_profile: "Usaha Jualan Lilin",
+    company: "",
+    pos_profile: "",
     user: "Administrator",
   });
 
@@ -77,6 +78,21 @@ export default function POSOpeningFormPage() {
             setBalances(entry.balance_details || []);
           }
         } else {
+          const defaultComp = compList?.[0]?.name || "";
+          const defaultProfile = profilesData?.[0]?.name || "";
+          setForm((prev) => ({
+            ...prev,
+            company: prev.company || defaultComp,
+            pos_profile: prev.pos_profile || defaultProfile,
+          }));
+          if (profilesData?.[0]?.payments?.length) {
+            setBalances(
+              profilesData[0].payments.map((p) => ({
+                mode_of_payment: p.mode_of_payment,
+                opening_amount: 0,
+              }))
+            );
+          }
           // If creating new, check if active opening exists
           const current = await posApi.currentOpening();
           if (current?.data) {
@@ -230,23 +246,11 @@ export default function POSOpeningFormPage() {
               Company <span className="text-red-500">*</span>
             </label>
             <div className="mt-1">
-              <SearchableSelect
+              <CompanySelect
                 value={form.company}
                 disabled={isReadonly}
-                options={(companies.length > 0
-                  ? companies
-                  : [
-                      { name: "UD MILLION CANDLES", abbreviation: "MC" },
-                      { name: "PT ZENIT TECHNOLOGY SOLUTION", abbreviation: "PZTS" },
-                    ]
-                ).map((c) => ({
-                  value: c.name,
-                  label: c.name,
-                  badge: c.abbreviation || undefined,
-                }))}
-                onChange={(val) => setForm({ ...form, company: val })}
+                onChange={(company) => setForm((current) => ({ ...current, company }))}
                 placeholder="Pilih Company..."
-                searchPlaceholder="Cari Company..."
               />
             </div>
           </div>
@@ -270,7 +274,7 @@ export default function POSOpeningFormPage() {
                 onChange={(val) => handleSelectPOSProfile(val)}
                 placeholder="Pilih POS Profile..."
                 searchPlaceholder="Cari POS Profile..."
-                addNewLabel="+ Buat POS Profile Baru"
+                addNewLabel="Buat POS Profile Baru"
                 addNewHref="/desk/pos-profile/new"
               />
             </div>

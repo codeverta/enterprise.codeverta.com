@@ -614,10 +614,10 @@ func (ctrl *PurchaseReceiptController) Options(ctx *gin.Context) {
 
 	if len(warehouseNames) == 0 {
 		warehouseNames = []string{
-			"Stores - PT ZENIT",
-			"Finished Goods - PT ZENIT",
-			"Work In Progress - PT ZENIT",
-			"Goods In Transit - PT ZENIT",
+			"",
+			"",
+			"",
+			"",
 		}
 	}
 
@@ -627,7 +627,7 @@ func (ctrl *PurchaseReceiptController) Options(ctx *gin.Context) {
 			"MAT-PR-RET-.YYYY.-",
 		},
 		"companies": []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
+			"",
 			"PT Codeverta Enterprise",
 		},
 		"suppliers":        supplierNames,

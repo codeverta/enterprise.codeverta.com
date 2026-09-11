@@ -177,12 +177,12 @@ func (c *LoyaltyProgramController) Options(ctx *gin.Context) {
 			"5110 - Sales Expenses",
 		},
 		"companies": []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
+			"",
 		},
 		"cost_centers": []string{
-			"Main - PT ZENIT TECHNOLOGY SOLUTION",
-			"Sales - PT ZENIT TECHNOLOGY SOLUTION",
-			"Marketing - PT ZENIT TECHNOLOGY SOLUTION",
+			"",
+			"",
+			"",
 		},
 		"projects": []string{
 			"General Marketing 2026", "Customer Retention Q3",

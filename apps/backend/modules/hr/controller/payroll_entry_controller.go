@@ -95,7 +95,8 @@ func (ctrl *PayrollEntryController) Create(ctx *gin.Context) {
 		input.ExchangeRate = 1.0
 	}
 	if input.Company == "" {
-		input.Company = "PT ZENIT TECHNOLOGY SOLUTION"
+		userID, _ := ctx.Get("id")
+		input.Company = model.ResolveActiveCompanyName(db, userID)
 	}
 	if input.PayrollFrequency == "" {
 		input.PayrollFrequency = "Monthly"
@@ -355,12 +356,19 @@ func (ctrl *PayrollEntryController) Options(ctx *gin.Context) {
 		})
 	}
 
+	// Fetch companies
+	var companies []model.Company
+	_ = db.Order("name asc").Find(&companies).Error
+
+	companyOptions := make([]string, 0, len(companies))
+	for _, c := range companies {
+		if c.Name != "" {
+			companyOptions = append(companyOptions, c.Name)
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"companies": []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
-			"UD MILLION CANDLES",
-			"CODEVERTA ENTERPRISE",
-		},
+		"companies": companyOptions,
 		"departments": []string{
 			"All Departments",
 			"Human Resources",

@@ -7,6 +7,7 @@ import { SearchableWarehouseSelect } from "@/components/ui/searchable-select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import { toast } from "sonner";
 import {
   Search,
@@ -32,7 +33,7 @@ export default function StockLedgerPage() {
   const defaultFromDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const [filters, setFilters] = useState({
-    company: "PT ZENIT TECHNOLOGY SOLUTION",
+    company: "",
     from_date: defaultFromDate,
     to_date: defaultToDate,
     warehouse: "",
@@ -59,7 +60,7 @@ export default function StockLedgerPage() {
   const [loading, setLoading] = useState(true);
 
   const [options, setOptions] = useState<StockLedgerOptions>({
-    companies: ["PT ZENIT TECHNOLOGY SOLUTION"],
+    companies: [],
     warehouses: [],
     items: [],
     item_groups: [],
@@ -399,11 +400,10 @@ export default function StockLedgerPage() {
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-5">
           <div>
             <label className="text-xs font-medium text-slate-500 block mb-1">Company</label>
-            <SearchableSelect
+            <CompanySelect
               placeholder="Pilih Company..."
               value={filters.company}
               onChange={(val) => setFilters({ ...filters, company: val })}
-              options={options.companies.map((c) => ({ value: c, label: c }))}
             />
           </div>
 

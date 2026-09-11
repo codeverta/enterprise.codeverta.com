@@ -24,6 +24,7 @@ import { stockApi, type DeliveryNote, type DeliveryNoteItem, type DeliveryNoteTa
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { CompanySelect } from "@/components/CompanySelect";
 
 type Tab = "details" | "address" | "terms" | "more";
 type SalesOrderSource = { id: string; customer: string; currency?: string; items?: Array<{ item_code: string; item_name?: string; quantity: number; rate: number; amount: number }> };
@@ -52,7 +53,7 @@ const emptyNote = (): DeliveryNote => {
     posting_date: now.toISOString().slice(0, 10),
     posting_time: now.toTimeString().slice(0, 8),
     set_posting_time: false,
-    company: "PT ZENIT TECHNOLOGY SOLUTION",
+    company: "",
     is_return: false,
 
     cost_center: "",
@@ -61,7 +62,7 @@ const emptyNote = (): DeliveryNote => {
     selling_price_list: "Standard Selling",
     ignore_pricing_rule: false,
 
-    set_warehouse: "Stores - PT ZENIT",
+    set_warehouse: "",
     tax_category: "In State",
     taxes_and_charges: "PPN 11%",
     shipping_rule: "Standard Delivery",
@@ -79,7 +80,7 @@ const emptyNote = (): DeliveryNote => {
     additional_discount_percentage: 0,
     additional_discount_amount: 0,
 
-    items: [{ item_code: "", item_name: "", quantity: 1, uom: "Nos", rate: 0, amount: 0, warehouse: "Stores - PT ZENIT" }],
+    items: [{ item_code: "", item_name: "", quantity: 1, uom: "Nos", rate: 0, amount: 0, warehouse: "" }],
     taxes: [],
   };
 };
@@ -95,10 +96,10 @@ export default function DeliveryNoteFormPage() {
   const [row, setRow] = useState<DeliveryNote>(emptyNote());
   const [options, setOptions] = useState<DeliveryNoteOptions>({
     naming_series: ["MAT-DN-.YYYY.-", "MAT-DN-RET-.YYYY.-"],
-    companies: ["PT ZENIT TECHNOLOGY SOLUTION"],
+    companies: [],
     currencies: ["IDR", "USD", "SGD", "EUR"],
     price_lists: ["Standard Selling"],
-    warehouses: ["Stores - PT ZENIT", "Finished Goods - PT ZENIT"],
+    warehouses: [],
     tax_categories: ["In State", "Out of State", "Export"],
     taxes_templates: ["PPN 11%", "PPN 12%", "Exempt Tax"],
     shipping_rules: ["Standard Delivery", "Express Delivery", "Free Shipping"],
@@ -477,7 +478,7 @@ export default function DeliveryNoteFormPage() {
 
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-500">Company</label>
-                <OptionInput value={row.company} values={options.companies} onChange={(value) => update("company", value)} />
+                <CompanySelect value={row.company} fallbackOptions={options.companies} onChange={(value) => update("company", value)} />
                 <SystemName>company</SystemName>
               </div>
 

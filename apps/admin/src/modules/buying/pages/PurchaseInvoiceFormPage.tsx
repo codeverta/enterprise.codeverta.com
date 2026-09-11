@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CompanySelect } from "@/components/CompanySelect";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import {
 buyingApi,
@@ -60,7 +61,7 @@ const emptyInvoice = (): PurchaseInvoice => ({
   naming_series: "ACC-PINV-.YYYY.-",
   status: "draft",
   supplier: "",
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
   posting_date: localDate(),
   posting_time: localTime(),
   set_posting_time: false,
@@ -115,7 +116,7 @@ const emptyInvoice = (): PurchaseInvoice => ({
 });
 
 const initialOptions: PurchaseInvoiceOptions = {
-  companies: ["PT ZENIT TECHNOLOGY SOLUTION"],
+  companies: [],
   suppliers: [],
   warehouses: [],
   items: [],
@@ -490,9 +491,8 @@ export default function PurchaseInvoiceFormPage() {
                       />
                     </Field>
                     <Field label="Company" name="company" required>
-                      <Combo
+                      <CompanySelect
                         value={invoice.company}
-                        values={options.companies}
                         onChange={(v) => update("company", v)}
                       />
                     </Field>

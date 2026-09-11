@@ -9,6 +9,32 @@ import (
 	"gorm.io/gorm"
 )
 
+// ResolveActiveCompanyName resolves a company default from the current user's
+// preference without relying on an installation-specific company name.
+func ResolveActiveCompanyName(db *gorm.DB, rawUserID interface{}) string {
+	var userID uuid.UUID
+	switch value := rawUserID.(type) {
+	case uuid.UUID:
+		userID = value
+	case string:
+		userID, _ = uuid.Parse(value)
+	}
+	if userID != uuid.Nil {
+		var preference UserAppPreference
+		if db.Where("user_id = ?", userID).First(&preference).Error == nil && preference.ActiveCompanyID != nil {
+			var preferred Company
+			if db.Where("id = ? AND is_active = ?", *preference.ActiveCompanyID, true).First(&preferred).Error == nil {
+				return preferred.Name
+			}
+		}
+	}
+	var first Company
+	if db.Where("is_active = ?", true).Order("name asc").First(&first).Error == nil {
+		return first.Name
+	}
+	return ""
+}
+
 type Organization struct {
 	ID           uuid.UUID      `json:"id" gorm:"type:char(36);primaryKey"`
 	Name         string         `json:"name" gorm:"type:varchar(200);not null"`

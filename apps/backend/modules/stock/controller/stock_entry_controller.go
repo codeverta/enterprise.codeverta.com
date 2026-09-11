@@ -541,10 +541,10 @@ func (ctrl *StockEntryController) Options(ctx *gin.Context) {
 
 	if len(warehouseNames) == 0 {
 		warehouseNames = []string{
-			"Stores - PT ZENIT",
-			"Finished Goods - PT ZENIT",
-			"Work In Progress - PT ZENIT",
-			"Goods In Transit - PT ZENIT",
+			"",
+			"",
+			"",
+			"",
 		}
 	}
 
@@ -588,19 +588,6 @@ func (ctrl *StockEntryController) Options(ctx *gin.Context) {
 			Name:         c.Name,
 			Abbreviation: c.Abbreviation,
 		})
-	}
-
-	if len(companyNames) == 0 {
-		companyNames = []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
-			"PT Codeverta Utama (PZTS)",
-			"PT Codeverta Mandiri (MC)",
-		}
-		companyOptions = []CompanyOptionItem{
-			{ID: "cmp-pzts", Name: "PT ZENIT TECHNOLOGY SOLUTION", Abbreviation: "PZTS"},
-			{ID: "cmp-utama", Name: "PT Codeverta Utama (PZTS)", Abbreviation: "PZTS"},
-			{ID: "cmp-mandiri", Name: "PT Codeverta Mandiri (MC)", Abbreviation: "MC"},
-		}
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{

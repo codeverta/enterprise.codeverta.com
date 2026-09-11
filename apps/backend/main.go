@@ -236,7 +236,7 @@ func getPort() string {
 func printBanner() {
 	banner := `
 ╔═══════════════════════════════════════╗
-║   PT ZENIT TECHNOLOGY SOLUTION'S      ║
+║       CODEVERTA ENTERPRISE SYSTEM     ║
 ║                                       ║
 ║  Version: %-28s.                      ║
 ╚═══════════════════════════════════════╝

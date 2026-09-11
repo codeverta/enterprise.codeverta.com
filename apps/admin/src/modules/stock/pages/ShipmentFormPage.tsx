@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -36,7 +37,7 @@ import api from "@/lib/api";
 const emptyShipment = (): Shipment => ({
   status: "Draft",
   pickup_from_type: "Company",
-  pickup_company: "PT ZENIT TECHNOLOGY SOLUTION",
+  pickup_company: "",
   pickup_address_name: "Head Office",
   pickup_address: "Gg. Melati 08E Jl Kapten Haryadi, Sleman Yogyakarta 55581 - Email: contact@codeverta.com",
   pickup_contact_person: "Administrator",
@@ -79,7 +80,7 @@ export default function ShipmentFormPage() {
 
   const [row, setRow] = useState<Shipment>(emptyShipment());
   const [options, setOptions] = useState<StockMasterOptions>({
-    companies: ["PT ZENIT TECHNOLOGY SOLUTION"],
+    companies: [],
     incoterms: ["EXW", "FOB", "CIF", "DDP"],
     service_providers: ["JNE", "J&T Express", "SiCepat", "DHL"],
     parcel_templates: ["Small Box (20x15x10 cm)", "Medium Box (30x20x15 cm)", "Large Box (40x30x20 cm)"],
@@ -389,15 +390,10 @@ export default function ShipmentFormPage() {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-500">Pickup Company / Sender</label>
-              <SearchableSelect
+              <CompanySelect
                 value={row.pickup_company}
-                options={initialCompanies}
-                onSearch={searchCompaniesFromDB}
                 onChange={(val) => update("pickup_company", val)}
                 placeholder="Pilih / cari perusahaan di database..."
-                searchPlaceholder="Ketik untuk mencari perusahaan di DB..."
-                addNewLabel="+ Tambah Company Baru"
-                addNewHref="/desk/company"
               />
             </div>
           </div>
@@ -425,7 +421,7 @@ export default function ShipmentFormPage() {
                 }}
                 placeholder="Pilih / cari user di database..."
                 searchPlaceholder="Ketik nama atau email user di DB..."
-                addNewLabel="+ Tambah User Baru"
+                addNewLabel="Tambah User Baru"
                 addNewHref="/desk/user"
               />
             </div>
@@ -478,7 +474,7 @@ export default function ShipmentFormPage() {
                 onChange={(val) => update("delivery_customer", val)}
                 placeholder="Pilih / cari customer di database..."
                 searchPlaceholder="Ketik nama customer untuk mencari di DB..."
-                addNewLabel="+ Tambah Customer Baru"
+                addNewLabel="Tambah Customer Baru"
                 addNewHref="/desk/customer/new"
               />
             </div>
@@ -664,7 +660,7 @@ export default function ShipmentFormPage() {
                         onChange={(val) => updateDNRow(i, "delivery_note", val)}
                         placeholder="Pilih / cari nomor Surat Jalan di database..."
                         searchPlaceholder="Ketik nomor surat jalan / nama customer..."
-                        addNewLabel="+ Buat Delivery Note Baru"
+                        addNewLabel="Buat Delivery Note Baru"
                         addNewHref="/desk/delivery-note/new"
                       />
                     </td>

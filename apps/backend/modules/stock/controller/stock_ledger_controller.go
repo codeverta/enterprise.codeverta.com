@@ -371,9 +371,6 @@ func (ctrl *StockLedgerController) Options(ctx *gin.Context) {
 	_ = db.Model(&model.Company{}).
 		Where("(tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL) AND is_active = ?", tenant, true).
 		Pluck("name", &companies).Error
-	if len(companies) == 0 {
-		companies = []string{"PT ZENIT TECHNOLOGY SOLUTION"}
-	}
 
 	// Warehouses
 	var warehouses []string

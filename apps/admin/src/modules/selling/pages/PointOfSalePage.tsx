@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   AlertTriangle,
@@ -90,6 +90,8 @@ export default function PointOfSalePage() {
   const [closingAmounts, setClosingAmounts] = useState<Record<string, number>>({});
   const [closingSubmitting, setClosingSubmitting] = useState(false);
 
+  const warnedRef = useRef(false);
+
   useEffect(() => {
     posApi
       .currentOpening()
@@ -99,9 +101,13 @@ export default function PointOfSalePage() {
         setIsOutdated(outdated);
         if (data && outdated) {
           setCloseShiftOpen(true);
-          toast.warning(
-            "Opening shift sudah lebih dari 12 jam. Selesaikan transaksi lalu tutup shift.",
-          );
+          if (!warnedRef.current) {
+            warnedRef.current = true;
+            toast.warning(
+              "Opening shift sudah lebih dari 12 jam. Selesaikan transaksi lalu tutup shift.",
+              { id: "pos-opening-outdated-warning" },
+            );
+          }
         }
       })
       .finally(() => setLoading(false));
@@ -651,7 +657,7 @@ export default function PointOfSalePage() {
                     onChange={(val) => setGroup(val || "All Item Groups")}
                     placeholder="Pilih Item Group..."
                     searchPlaceholder="Cari item group..."
-                    addNewLabel="+ Tambah Item Group"
+                    addNewLabel="Tambah Item Group"
                     addNewHref="/desk/item-group/new"
                     buttonClassName="h-10 rounded-lg bg-slate-100 border-0 text-sm font-medium"
                   />
@@ -737,7 +743,7 @@ export default function PointOfSalePage() {
                 onSearch={searchCustomers}
                 placeholder="Pilih atau cari customer..."
                 searchPlaceholder="Cari customer (nama, phone, email)..."
-                addNewLabel="+ Tambah Customer Baru"
+                addNewLabel="Tambah Customer Baru"
                 addNewHref="/desk/customer/new"
                 buttonClassName="h-11 rounded-lg bg-slate-100 border-0 text-sm font-medium"
               />

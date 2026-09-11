@@ -23,6 +23,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SearchableSelect, SearchableWarehouseSelect } from "@/components/ui/searchable-select";
@@ -39,7 +40,7 @@ import { toast } from "sonner";
 const emptyItem = (): PickListItem => ({
   item_code: "",
   item_name: "",
-  warehouse: "Stores - PT ZENIT",
+  warehouse: "",
   qty: 1,
   stock_qty: 1,
   picked_qty: 0,
@@ -50,7 +51,7 @@ const emptyItem = (): PickListItem => ({
 const emptyPickList = (): PickList => ({
   naming_series: "STO-PICK-.YYYY.-",
   purpose: "Delivery",
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
   company_id: "",
   status: "Draft",
   parent_warehouse: "",
@@ -80,9 +81,9 @@ export default function PickListFormPage() {
     naming_series: ["STO-PICK-.YYYY.-"],
     purposes: ["Delivery", "Material Transfer for Manufacture", "Material Transfer"],
     warehouses: [
-      "Stores - PT ZENIT",
-      "Finished Goods - PT ZENIT",
-      "Work In Progress - PT ZENIT",
+      "",
+      "",
+      "",
     ],
     companies: [],
     items: [],
@@ -223,7 +224,7 @@ export default function PickListFormPage() {
           const newItem: PickListItem = {
             item_code: matchOpt.item_code,
             item_name: matchOpt.item_name,
-            warehouse: row.parent_warehouse || "Finished Goods - PT ZENIT",
+            warehouse: row.parent_warehouse || "",
             qty: 1,
             stock_qty: 1,
             picked_qty: 1,
@@ -535,21 +536,10 @@ export default function PickListFormPage() {
                   Company <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1">
-                  <SearchableSelect
+                  <CompanySelect
                     value={row.company}
                     disabled={isReadonly}
-                    options={(companies.length > 0
-                      ? companies
-                      : (options.companies || []).map((name) => ({ name }))
-                    ).map((c) => ({
-                      value: c.name,
-                      label: c.name,
-                      badge: c.abbreviation || undefined,
-                      sublabel: c.id ? `ID: ${c.id}` : undefined,
-                    }))}
                     onChange={(val) => handleSelectCompany(val)}
-                    placeholder="Pilih Company..."
-                    searchPlaceholder="Cari nama company..."
                   />
                 </div>
                 {row.company_id && (

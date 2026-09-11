@@ -24,7 +24,7 @@ type PurchaseReceipt struct {
 	PostingDate          time.Time `json:"posting_date"`
 	PostingTime          string    `gorm:"size:32" json:"posting_time"`
 	SetPostingTime       bool      `gorm:"default:false" json:"set_posting_time"`
-	Company              string    `gorm:"size:180;not null;default:'PT ZENIT TECHNOLOGY SOLUTION'" json:"company"`
+	Company              string    `gorm:"size:180;not null" json:"company"`
 	ApplyPutawayRule     bool      `gorm:"default:false" json:"apply_putaway_rule"`
 	IsReturn             bool      `gorm:"default:false" json:"is_return"`
 	ReturnAgainstID      string    `gorm:"size:64;index" json:"return_against_id"`
@@ -34,15 +34,15 @@ type PurchaseReceipt struct {
 	Project    string `gorm:"size:180" json:"project"`
 
 	// Currency & Price List
-	Currency           string `gorm:"size:8;default:'IDR'" json:"currency"`
-	BuyingPriceList    string `gorm:"size:180;default:'Standard Buying'" json:"buying_price_list"`
-	IgnorePricingRule  bool   `gorm:"default:false" json:"ignore_pricing_rule"`
+	Currency          string `gorm:"size:8;default:'IDR'" json:"currency"`
+	BuyingPriceList   string `gorm:"size:180;default:'Standard Buying'" json:"buying_price_list"`
+	IgnorePricingRule bool   `gorm:"default:false" json:"ignore_pricing_rule"`
 
 	// Items Header Defaults
-	ScanBarcode        string `gorm:"size:120" json:"scan_barcode"`
-	SetWarehouse       string `gorm:"size:180" json:"set_warehouse"`
-	RejectedWarehouse  string `gorm:"size:180" json:"rejected_warehouse"`
-	IsSubcontracted    bool   `gorm:"default:false" json:"is_subcontracted"`
+	ScanBarcode       string `gorm:"size:120" json:"scan_barcode"`
+	SetWarehouse      string `gorm:"size:180" json:"set_warehouse"`
+	RejectedWarehouse string `gorm:"size:180" json:"rejected_warehouse"`
+	IsSubcontracted   bool   `gorm:"default:false" json:"is_subcontracted"`
 
 	// Taxes & Charges Header
 	TaxCategory     string `gorm:"size:120" json:"tax_category"`
@@ -51,18 +51,18 @@ type PurchaseReceipt struct {
 	Incoterm        string `gorm:"size:32" json:"incoterm"`
 
 	// Totals
-	TotalQty                     float64 `gorm:"type:decimal(18,2);default:0" json:"total_qty"`
-	Total                        float64 `gorm:"type:decimal(18,2);default:0" json:"total"`
-	BaseTaxesAndChargesAdded     float64 `gorm:"type:decimal(18,2);default:0" json:"base_taxes_and_charges_added"`
-	BaseTaxesAndChargesDeducted  float64 `gorm:"type:decimal(18,2);default:0" json:"base_taxes_and_charges_deducted"`
-	BaseTotalTaxesAndCharges     float64 `gorm:"type:decimal(18,2);default:0" json:"base_total_taxes_and_charges"`
-	TaxesAndChargesAdded         float64 `gorm:"type:decimal(18,2);default:0" json:"taxes_and_charges_added"`
-	TaxesAndChargesDeducted      float64 `gorm:"type:decimal(18,2);default:0" json:"taxes_and_charges_deducted"`
-	TotalTaxesAndCharges         float64 `gorm:"type:decimal(18,2);default:0" json:"total_taxes_and_charges"`
-	GrandTotal                   float64 `gorm:"type:decimal(18,2);default:0" json:"grand_total"`
-	DisableRoundedTotal          bool    `gorm:"default:false" json:"disable_rounded_total"`
-	RoundingAdjustment           float64 `gorm:"type:decimal(18,2);default:0" json:"rounding_adjustment"`
-	RoundedTotal                 float64 `gorm:"type:decimal(18,2);default:0" json:"rounded_total"`
+	TotalQty                    float64 `gorm:"type:decimal(18,2);default:0" json:"total_qty"`
+	Total                       float64 `gorm:"type:decimal(18,2);default:0" json:"total"`
+	BaseTaxesAndChargesAdded    float64 `gorm:"type:decimal(18,2);default:0" json:"base_taxes_and_charges_added"`
+	BaseTaxesAndChargesDeducted float64 `gorm:"type:decimal(18,2);default:0" json:"base_taxes_and_charges_deducted"`
+	BaseTotalTaxesAndCharges    float64 `gorm:"type:decimal(18,2);default:0" json:"base_total_taxes_and_charges"`
+	TaxesAndChargesAdded        float64 `gorm:"type:decimal(18,2);default:0" json:"taxes_and_charges_added"`
+	TaxesAndChargesDeducted     float64 `gorm:"type:decimal(18,2);default:0" json:"taxes_and_charges_deducted"`
+	TotalTaxesAndCharges        float64 `gorm:"type:decimal(18,2);default:0" json:"total_taxes_and_charges"`
+	GrandTotal                  float64 `gorm:"type:decimal(18,2);default:0" json:"grand_total"`
+	DisableRoundedTotal         bool    `gorm:"default:false" json:"disable_rounded_total"`
+	RoundingAdjustment          float64 `gorm:"type:decimal(18,2);default:0" json:"rounding_adjustment"`
+	RoundedTotal                float64 `gorm:"type:decimal(18,2);default:0" json:"rounded_total"`
 
 	// Additional Discount
 	ApplyDiscountOn              string  `gorm:"size:32;default:'grand_total'" json:"apply_discount_on"`
@@ -71,8 +71,8 @@ type PurchaseReceipt struct {
 
 	Remarks string `gorm:"type:text" json:"remarks"`
 
-	Items         []PurchaseReceiptItem        `gorm:"foreignKey:PurchaseReceiptID;constraint:OnDelete:CASCADE" json:"items"`
-	Taxes         []PurchaseReceiptTax         `gorm:"foreignKey:PurchaseReceiptID;constraint:OnDelete:CASCADE" json:"taxes"`
+	Items         []PurchaseReceiptItem         `gorm:"foreignKey:PurchaseReceiptID;constraint:OnDelete:CASCADE" json:"items"`
+	Taxes         []PurchaseReceiptTax          `gorm:"foreignKey:PurchaseReceiptID;constraint:OnDelete:CASCADE" json:"taxes"`
 	SuppliedItems []PurchaseReceiptSuppliedItem `gorm:"foreignKey:PurchaseReceiptID;constraint:OnDelete:CASCADE" json:"supplied_items"`
 
 	CreatedAt time.Time `json:"created_at"`

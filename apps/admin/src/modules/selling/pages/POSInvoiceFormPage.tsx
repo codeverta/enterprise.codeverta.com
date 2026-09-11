@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -104,7 +105,7 @@ export type FullPOSInvoiceData = {
   paid_amount: number;
 };
 
-const emptyItem = (defaultWarehouse = "Stores - PT ZENIT"): POSInvoiceFormItem => ({
+const emptyItem = (defaultWarehouse = ""): POSInvoiceFormItem => ({
   item_code: "",
   item_name: "",
   warehouse: defaultWarehouse,
@@ -121,7 +122,7 @@ const defaultInvoice = (): FullPOSInvoiceData => ({
   pos_profile: "",
   is_pos: true,
   is_return: false,
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
   posting_date: today(),
   posting_time: nowTime(),
   set_posting_time: false,
@@ -368,8 +369,8 @@ export default function POSInvoiceFormPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [posProfiles, setPOSProfiles] = useState<POSProfile[]>([]);
   const [warehouses, setWarehouses] = useState<string[]>([
-    "Stores - PT ZENIT",
-    "Finished Goods - PT ZENIT",
+    "",
+    "",
     "Stores - MC",
   ]);
   const [itemOptions, setItemOptions] = useState<SalesInvoiceItemOption[]>([]);
@@ -477,7 +478,7 @@ export default function POSInvoiceFormPage() {
                 items: found.items.map((it) => ({
                   item_code: it.item_code,
                   item_name: it.item_name,
-                  warehouse: warehouses[0] || "Stores - PT ZENIT",
+                  warehouse: warehouses[0] || "",
                   quantity: it.quantity,
                   uom: "Nos",
                   rate: it.rate,
@@ -509,7 +510,7 @@ export default function POSInvoiceFormPage() {
 
   const addItem = () => {
     setForm((prev) => {
-      const defWarehouse = prev.items[0]?.warehouse || warehouses[0] || "Stores - PT ZENIT";
+      const defWarehouse = prev.items[0]?.warehouse || warehouses[0] || "";
       return calculatePOSInvoice({ ...prev, items: [...prev.items, emptyItem(defWarehouse)] });
     });
   };
@@ -545,7 +546,7 @@ export default function POSInvoiceFormPage() {
         updateItem(matchIdx, { quantity: (form.items[matchIdx].quantity || 0) + 1 });
         toast.success(`Item ${itemCodeToMatch} quantity +1`);
       } else {
-        const defWarehouse = form.items[0]?.warehouse || warehouses[0] || "Stores - PT ZENIT";
+        const defWarehouse = form.items[0]?.warehouse || warehouses[0] || "";
         setForm((prev) =>
           calculatePOSInvoice({
             ...prev,
@@ -781,7 +782,7 @@ export default function POSInvoiceFormPage() {
                   onChange={(val) => update("customer", val)}
                   placeholder="Begin typing for results."
                   searchPlaceholder="Cari customer..."
-                  addNewLabel="+ Buat Customer Baru"
+                  addNewLabel="Buat Customer Baru"
                   addNewHref="/desk/customer/new"
                 />
               </div>
@@ -805,7 +806,7 @@ export default function POSInvoiceFormPage() {
                   onChange={handlePOSProfileSelect}
                   placeholder="Begin typing for results."
                   searchPlaceholder="Cari POS Profile..."
-                  addNewLabel="+ Tambah POS Profile"
+                  addNewLabel="Tambah POS Profile"
                   addNewHref="/desk/pos-profile/new"
                 />
               </div>
@@ -818,23 +819,9 @@ export default function POSInvoiceFormPage() {
                 <span className="text-slate-400 font-normal">(company)</span>
               </label>
               <div className="mt-1">
-                <SearchableSelect
+                <CompanySelect
                   value={form.company}
                   disabled={isReadonly}
-                  options={
-                    companies.length > 0
-                      ? companies.map((c) => ({
-                          value: c.name,
-                          label: c.name,
-                          badge: c.abbreviation || undefined,
-                        }))
-                      : [
-                          {
-                            value: "PT ZENIT TECHNOLOGY SOLUTION",
-                            label: "PT ZENIT TECHNOLOGY SOLUTION",
-                          },
-                        ]
-                  }
                   onChange={(val) => update("company", val)}
                   placeholder="Begin typing for results."
                 />

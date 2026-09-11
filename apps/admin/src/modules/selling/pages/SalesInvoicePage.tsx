@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -61,7 +62,7 @@ const money = (value?: number) =>
 const emptyItem = (): SalesInvoiceItem => ({
   item_code: "",
   item_name: "",
-  warehouse: "Stores - PT ZENIT",
+  warehouse: "",
   quantity: 1,
   uom: "Nos",
   rate: 0,
@@ -72,7 +73,7 @@ const emptyInvoice = (): SalesInvoice => ({
   status: "Draft",
   naming_series: "ACC-SINV-.YYYY.-",
   customer: "",
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
   posting_date: today(),
   posting_time: nowTime(),
   set_posting_time: false,
@@ -481,14 +482,14 @@ export default function SalesInvoiceFormPage() {
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [warehouses, setWarehouses] = useState<string[]>([
-    "Stores - PT ZENIT",
-    "Finished Goods - PT ZENIT",
+    "",
+    "",
     "Stores - MC",
   ]);
 
   const [options, setOptions] = useState<SalesInvoiceOptions>({
     naming_series: ["ACC-SINV-.YYYY.-", "ACC-SINV-RET-.YYYY.-"],
-    companies: [""],
+    companies: [],
     warehouses: [""],
     customers: [""],
     currencies: ["IDR", "USD", "SGD", "EUR"],
@@ -567,7 +568,7 @@ export default function SalesInvoiceFormPage() {
               items: delivery.items.map((item) => ({
                 item_code: item.item_code,
                 item_name: item.item_name,
-                warehouse: item.warehouse || "Finished Goods - PT ZENIT",
+                warehouse: item.warehouse || "",
                 quantity: item.quantity,
                 uom: item.uom,
                 rate: item.rate,
@@ -657,7 +658,7 @@ export default function SalesInvoiceFormPage() {
           {
             item_code: itemCodeToMatch,
             item_name: foundOpt ? foundOpt.item_name : code,
-            warehouse: warehouses[0] || "Stores - PT ZENIT",
+            warehouse: warehouses[0] || "",
             quantity: 1,
             uom: foundOpt?.uom || "Nos",
             rate: foundOpt?.rate || 0,
@@ -883,16 +884,9 @@ export default function SalesInvoiceFormPage() {
                   Company <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-1">
-                  <SearchableSelect
+                  <CompanySelect
                     value={row.company}
                     disabled={isReadonly}
-                    options={(companies.length > 0 ? companies : options.companies.map((name) => ({ name }))).map(
-                      (c) => ({
-                        value: c.name,
-                        label: c.name,
-                        badge: c.abbreviation || undefined,
-                      })
-                    )}
                     onChange={(val) => update("company", val)}
                     placeholder="Pilih Company..."
                   />
@@ -950,7 +944,7 @@ export default function SalesInvoiceFormPage() {
                     onChange={(val) => handleCustomerSelect(val)}
                     placeholder="Pilih Customer..."
                     searchPlaceholder="Cari customer dari database..."
-                    addNewLabel="+ Buat Customer Baru"
+                    addNewLabel="Buat Customer Baru"
                     addNewHref="/desk/customer/new"
                   />
                 </div>

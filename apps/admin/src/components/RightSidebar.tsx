@@ -228,41 +228,41 @@ function RightSidebar({
         <DrawerTrigger asChild>
           <div
             className={clsx(
-              "p-3 bg-gray-100 rounded-lg flex items-center transition-all duration-300 cursor-pointer hover:bg-gray-200",
-              !isOpen && "p-2 justify-center"
+              "p-2 bg-gray-100 rounded-lg flex items-center transition-all duration-300 cursor-pointer hover:bg-gray-200",
+              !isOpen && "p-1.5 justify-center"
             )}
             title={user?.active_subscription ? `Plan: ${user.active_subscription}` : "Pengaturan Akun"}
           >
-            <Avatar className="h-7 w-7 shrink-0 border border-gray-200">
+            <Avatar className="h-6 w-6 shrink-0 border border-gray-200">
               <AvatarImage src={avatarURL} alt={localDisplayName || "User"} />
-              <AvatarFallback className="bg-white text-[10px] font-semibold text-gray-600">
+              <AvatarFallback className="bg-white text-[9px] font-semibold text-gray-600">
                 {initials(localDisplayName)}
               </AvatarFallback>
             </Avatar>
             {isOpen && (
               <>
-                <div className="flex-grow ml-3 overflow-hidden text-left">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <p className="font-semibold text-sm text-gray-800 truncate max-w-[90px]">
+                <div className="flex-grow ml-2.5 overflow-hidden text-left">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <p className="font-semibold text-xs text-gray-800 truncate max-w-[85px]">
                       {localDisplayName}
                     </p>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] h-5 px-1.5 py-0 font-medium border ${roleInfo.color}`}
+                      className={`text-[9px] h-4 px-1 py-0 font-medium border ${roleInfo.color}`}
                     >
                       {roleInfo.label}
                     </Badge>
                   </div>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-[10px] text-gray-500 truncate">
                     {user?.email}
                   </p>
                   {user?.active_subscription && (
-                    <p className="text-[10px] text-blue-600 font-semibold truncate mt-0.5" title={user.active_subscription}>
+                    <p className="text-[9px] text-blue-600 font-semibold truncate mt-0.5" title={user.active_subscription}>
                       Plan: {user.active_subscription}
                     </p>
                   )}
                 </div>
-                <MoreHorizontal className="h-5 w-5 text-gray-500 ml-2 flex-shrink-0" />
+                <MoreHorizontal className="h-4 w-4 text-gray-500 ml-1.5 flex-shrink-0" />
               </>
             )}
           </div>

@@ -67,6 +67,7 @@ export type POSInvoice = {
   invoice_number?: string;
   opening_entry_id: string;
   customer: string;
+  company?: string;
   net_total?: number;
   tax_total: number;
   grand_total?: number;
@@ -138,7 +139,7 @@ function openingSeed(): POSOpeningEntry[] {
       id: `POS-OPEN-${started.toISOString().slice(0, 10).replaceAll("-", "")}-001`,
       period_start_date: started.toISOString(),
       posting_date: started.toISOString(),
-      company: "PT ZENIT TECHNOLOGY SOLUTION",
+      company: "",
       pos_profile: "Usaha Jualan Lilin",
       user: "Administrator",
       status: "Open",

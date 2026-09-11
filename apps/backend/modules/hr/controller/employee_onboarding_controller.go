@@ -93,14 +93,21 @@ func (ctrl *EmployeeOnboardingController) Options(ctx *gin.Context) {
 		},
 	}
 
+	// Fetch companies
+	var companies []model.Company
+	_ = db.Order("name asc").Find(&companies).Error
+
+	companyOptions := make([]string, 0, len(companies))
+	for _, c := range companies {
+		if c.Name != "" {
+			companyOptions = append(companyOptions, c.Name)
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"job_applicants": jobApplicants,
 		"employees":      employeeOptions,
-		"companies": []string{
-			"Codeverta Enterprise",
-			"PT ZENIT TECHNOLOGY SOLUTION",
-			"UD MILLION CANDLES",
-		},
+		"companies":      companyOptions,
 		"departments": []string{
 			"Human Resources",
 			"Engineering & IT",
@@ -194,7 +201,8 @@ func (ctrl *EmployeeOnboardingController) Create(ctx *gin.Context) {
 	}
 
 	if strings.TrimSpace(input.Company) == "" {
-		input.Company = "Codeverta Enterprise"
+		userID, _ := ctx.Get("id")
+		input.Company = model.ResolveActiveCompanyName(db, userID)
 	}
 	if strings.TrimSpace(input.Status) == "" {
 		input.Status = "Pending"

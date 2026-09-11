@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
+import { CompanySelect } from "@/components/CompanySelect";
 import { customerApi, type Customer } from "../customerApi";
 import { buyingApi, type Supplier } from "@/modules/buying/api";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
@@ -24,7 +25,7 @@ const blankPlan = (): SubscriptionPlanItem => ({
 const defaultSubscription = (): Subscription => ({
   party_type: "Customer",
   party: "",
-  company: "Codeverta Enterprise",
+  company: "",
   start_date: today(),
   end_date: "",
   trial_period_start: "",
@@ -126,9 +127,6 @@ export default function SubscriptionPage() {
         label: c.name || c.company_name || "",
       }))
       .filter((c) => Boolean(c.value));
-    if (!list.some((item) => item.value === "Codeverta Enterprise")) {
-      list.unshift({ value: "Codeverta Enterprise", label: "Codeverta Enterprise" });
-    }
     return list;
   }, [companies]);
 
@@ -333,7 +331,7 @@ export default function SubscriptionPage() {
                       : "Begin typing for supplier results..."
                   }
                   addNewHref={sub.party_type === "Customer" ? "/desk/customer/new" : "/desk/supplier/new"}
-                  addNewLabel={sub.party_type === "Customer" ? "+ Buat Customer Baru" : "+ Buat Supplier Baru"}
+                  addNewLabel={sub.party_type === "Customer" ? "Buat Customer Baru" : "Buat Supplier Baru"}
                 />
               </div>
 
@@ -342,10 +340,10 @@ export default function SubscriptionPage() {
                 <Label htmlFor="company" className="text-xs font-semibold uppercase text-slate-600">
                   Company
                 </Label>
-                <SearchableSelect
+                <CompanySelect
                   value={sub.company}
                   onChange={(val) => setSub((prev) => ({ ...prev, company: val }))}
-                  options={companyOptions}
+                  fallbackOptions={companyOptions.map((company) => company.value)}
                   placeholder="Begin typing for results."
                 />
               </div>

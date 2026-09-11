@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { CompanySelect } from "@/components/CompanySelect";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import { payrollApi, type PayrollEntry, type PayrollEntryEmployee, type PayrollEntryOptions } from "../api";
 
@@ -41,7 +42,7 @@ const lastDayOfMonthStr = () => {
 const defaultEntry = (): Partial<PayrollEntry> => ({
   posting_date: todayStr(),
   payroll_frequency: "Monthly",
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
   department: "All Departments",
   start_date: firstDayOfMonthStr(),
   end_date: lastDayOfMonthStr(),
@@ -397,18 +398,12 @@ export function PayrollEntryFormPage() {
 
           <div>
             <label className="text-xs font-semibold text-slate-700">Company</label>
-            <ERPSelect
+            <CompanySelect
               disabled={isSubmitted}
-              value={entry.company || "PT ZENIT TECHNOLOGY SOLUTION"}
-              onChange={(e) => updateField("company", e.target.value)}
-              className="mt-1 h-10 rounded-xl"
-            >
-              {(options?.companies || ["PT ZENIT TECHNOLOGY SOLUTION", "UD MILLION CANDLES", "CODEVERTA ENTERPRISE"]).map((c) => (
-                <ERPSelectOption key={c} value={c}>
-                  {c}
-                </ERPSelectOption>
-              ))}
-            </ERPSelect>
+              value={entry.company}
+              onChange={(company) => updateField("company", company)}
+              className="mt-1 [&_button]:h-10 [&_button]:rounded-xl"
+            />
           </div>
 
           <div>

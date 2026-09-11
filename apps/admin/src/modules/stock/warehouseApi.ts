@@ -48,9 +48,7 @@ export const warehouseApi = {
       const res = await api.get("/organization/companies");
       return (unwrap(res) || []) as CompanyOption[];
     } catch {
-      return [
-        { name: "PT ZENIT TECHNOLOGY SOLUTION", abbreviation: "PZTS" },
-      ];
+      return [];
     }
   },
 };

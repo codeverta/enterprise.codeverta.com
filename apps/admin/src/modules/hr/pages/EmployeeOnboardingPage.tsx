@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
+import { CompanySelect } from "@/components/CompanySelect";
 import {
   onboardingApi,
   type EmployeeOnboarding,
@@ -80,7 +81,7 @@ const defaultOnboarding = (): EmployeeOnboarding => ({
   applicant_phone: "",
   employee: "",
   employee_name: "",
-  company: "Codeverta Enterprise",
+  company: "",
   department: "Human Resources",
   designation: "Software Engineer",
   employee_grade: "Grade C (Mid-Level)",
@@ -105,7 +106,7 @@ export default function EmployeeOnboardingPage() {
   const [options, setOptions] = useState<OnboardingOptions>({
     job_applicants: [],
     employees: [],
-    companies: ["Codeverta Enterprise", "PT ZENIT TECHNOLOGY SOLUTION", "UD MILLION CANDLES"],
+    companies: [],
     departments: ["Human Resources", "Engineering & IT", "Finance & Accounting", "Sales & Marketing", "Operations & Logistics"],
     designations: ["Software Engineer", "HR Manager", "Accountant", "Sales Executive", "Operations Staff", "Product Designer"],
     employee_grades: ["Grade A (Executive)", "Grade B (Senior / Lead)", "Grade C (Mid-Level)", "Grade D (Junior / Associate)", "Grade E (Intern / Trainee)"],
@@ -565,10 +566,9 @@ export default function EmployeeOnboardingPage() {
                 <Label htmlFor="company" className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   Company
                 </Label>
-                <SearchableSelect
+                <CompanySelect
                   value={formData.company}
-                  options={options.companies.map((c) => ({ value: c, label: c }))}
-                  onChange={(val) => setFormData({ ...formData, company: val })}
+                  onChange={(company) => setFormData((current) => ({ ...current, company }))}
                   placeholder="Begin typing for results."
                 />
                 <span className="text-[11px] text-slate-400">company</span>

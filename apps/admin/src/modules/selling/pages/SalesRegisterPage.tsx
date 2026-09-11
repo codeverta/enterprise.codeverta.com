@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { posApi, type POSInvoice } from "../posApi";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { useCompanies } from "@/context/CompanyContext";
 
 type SaleRow = {
   id: string;
@@ -99,6 +100,8 @@ function SelectFilter({
 }
 
 export default function SalesRegisterPage() {
+  const { activeCompany, recordCompanySelection } = useCompanies();
+  const companyDefaultApplied = useRef(false);
   const [rows, setRows] = useState<SaleRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [ledger, setLedger] = useState(false);
@@ -107,7 +110,7 @@ export default function SalesRegisterPage() {
     to: date(),
     customer: "",
     customerGroup: "",
-    company: "PT ZENIT TECHNOLOGY SOLUTION",
+    company: "",
     payment: "",
     owner: "",
     costCenter: "",
@@ -116,6 +119,12 @@ export default function SalesRegisterPage() {
     itemGroup: "",
     itemCode: "",
   });
+  useEffect(() => {
+    if (!companyDefaultApplied.current && activeCompany?.name) {
+      companyDefaultApplied.current = true;
+      setFilters((current) => ({ ...current, company: activeCompany.name }));
+    }
+  }, [activeCompany?.name]);
   const load = async () => {
     setLoading(true);
     try {
@@ -135,7 +144,7 @@ export default function SalesRegisterPage() {
             voucher: invoice.invoice_number || invoice.id || "POS Invoice",
             customer: invoice.customer || "Walk-in Customer",
             customerGroup: "",
-            company: "PT ZENIT TECHNOLOGY SOLUTION",
+            company: invoice.company || "",
             payment: invoice.mode_of_payment || "",
             owner: "",
             costCenter: "",
@@ -157,7 +166,7 @@ export default function SalesRegisterPage() {
           voucher: order.order_number || order.id || "Sales Order",
           customer: order.customer || "",
           customerGroup: order.customer_group || "",
-          company: order.company || "PT ZENIT TECHNOLOGY SOLUTION",
+          company: order.company || "",
           payment: "",
           owner: order.owner || "",
           costCenter: order.cost_center || "",
@@ -292,7 +301,7 @@ export default function SalesRegisterPage() {
             <SelectFilter
               label="Company"
               value={filters.company}
-              onChange={(v) => setFilter("company", v)}
+              onChange={(v) => { setFilter("company", v); if (v) void recordCompanySelection(v); }}
               values={values("company")}
             />
             <SelectFilter

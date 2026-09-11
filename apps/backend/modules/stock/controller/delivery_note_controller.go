@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	model "gin-template/model"
 	crmmodel "gin-template/model/crm"
 	stockmodel "gin-template/modules/stock/model"
 
@@ -437,12 +438,16 @@ func (ctrl *DeliveryNoteController) StockBalances(ctx *gin.Context) {
 }
 
 func (ctrl *DeliveryNoteController) Options(ctx *gin.Context) {
+	db, tenant := stockDB(ctx), stockTenant(ctx)
+	var companies, warehouses []string
+	db.Model(&model.Company{}).Where("(tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL) AND is_active = ?", tenant, true).Order("name asc").Pluck("name", &companies)
+	db.Model(&stockmodel.Warehouse{}).Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Order("warehouse_name asc").Pluck("warehouse_name", &warehouses)
 	ctx.JSON(http.StatusOK, gin.H{
 		"naming_series":   []string{"MAT-DN-.YYYY.-", "MAT-DN-RET-.YYYY.-"},
-		"companies":       []string{"PT ZENIT TECHNOLOGY SOLUTION", "PT Codeverta Enterprise"},
+		"companies":       companies,
 		"currencies":      []string{"IDR", "USD", "SGD", "EUR"},
 		"price_lists":     []string{"Standard Selling"},
-		"warehouses":      []string{"Stores - PT ZENIT", "Finished Goods - PT ZENIT", "Work In Progress - PT ZENIT"},
+		"warehouses":      warehouses,
 		"tax_categories":  []string{"In State", "Out of State", "Export"},
 		"taxes_templates": []string{"PPN 11%", "PPN 12%", "Exempt Tax"},
 		"shipping_rules":  []string{"Standard Delivery", "Express Delivery", "Free Shipping"},

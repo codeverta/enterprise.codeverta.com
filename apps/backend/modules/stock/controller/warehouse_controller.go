@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"gin-template/model"
 	"net/http"
 	"strings"
 
@@ -153,7 +154,8 @@ func (ctrl *WarehouseController) Create(ctx *gin.Context) {
 	input.ParentWarehouse = strings.TrimSpace(input.ParentWarehouse)
 	input.Company = strings.TrimSpace(input.Company)
 	if input.Company == "" {
-		input.Company = "PT ZENIT TECHNOLOGY SOLUTION"
+		userID, _ := ctx.Get("id")
+		input.Company = model.ResolveActiveCompanyName(db, userID)
 	}
 
 	// Check duplicate warehouse name in same tenant & company

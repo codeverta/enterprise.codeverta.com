@@ -23,7 +23,7 @@ type DeliveryNote struct {
 	PostingDate      time.Time `json:"posting_date"`
 	PostingTime      string    `gorm:"size:32" json:"posting_time"`
 	SetPostingTime   bool      `gorm:"default:false" json:"set_posting_time"`
-	Company          string    `gorm:"size:180;not null;default:'PT ZENIT TECHNOLOGY SOLUTION'" json:"company"`
+	Company          string    `gorm:"size:180;not null" json:"company"`
 	IsReturn         bool      `gorm:"default:false" json:"is_return"`
 	ReturnAgainstID  string    `gorm:"size:64;index" json:"return_against_id"`
 	ReturnReason     string    `gorm:"type:text" json:"return_reason"`

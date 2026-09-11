@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import api from "@/lib/api";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
+import { CompanySelect } from "@/components/CompanySelect";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { customerApi, type Customer } from "../customerApi";
 import { salesInvoiceApi, type SalesInvoiceItemOption } from "../salesInvoiceApi";
@@ -25,7 +26,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 const dateForInput = (value?: string) => value ? String(value).slice(0, 10) : "";
 const key = "erp.sales-orders.details";
 const blankItem = (): Item => ({ item_code: "", delivery_date: today(), quantity: 1, rate: 0, amount: 0 });
-const empty = (): Order => ({ status: "draft", naming_series: "SAL-ORD-.YYYY.-", company: "PT ZENIT TECHNOLOGY SOLUTION", customer: "", order_type: "Sales", transaction_date: today(), delivery_date: "", is_subcontracted: false, cost_center: "", project: "", currency: "IDR", selling_price_list: "Standard Selling", ignore_pricing_rule: false, set_warehouse: "", tax_category: "", taxes_and_charges: "", shipping_rule: "", incoterm: "", total_qty: 0, total: 0, base_total_taxes_and_charges: 0, total_taxes_and_charges: 0, grand_total: 0, rounding_adjustment: 0, rounded_total: 0, advance_paid: 0, apply_discount_on: "grand_total", coupon_code: "", additional_discount_percentage: 0, additional_discount_amount: 0, items: [blankItem()], taxes: [] });
+const empty = (): Order => ({ status: "draft", naming_series: "SAL-ORD-.YYYY.-", company: "", customer: "", order_type: "Sales", transaction_date: today(), delivery_date: "", is_subcontracted: false, cost_center: "", project: "", currency: "IDR", selling_price_list: "Standard Selling", ignore_pricing_rule: false, set_warehouse: "", tax_category: "", taxes_and_charges: "", shipping_rule: "", incoterm: "", total_qty: 0, total: 0, base_total_taxes_and_charges: 0, total_taxes_and_charges: 0, grand_total: 0, rounding_adjustment: 0, rounded_total: 0, advance_paid: 0, apply_discount_on: "grand_total", coupon_code: "", additional_discount_percentage: 0, additional_discount_amount: 0, items: [blankItem()], taxes: [] });
 const round = (n: number) => Math.round((Number(n) || 0) * 100) / 100;
 const money = (n: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n || 0);
 const readCache = (): Record<string, Order> => { try { return JSON.parse(localStorage.getItem(key) || "{}"); } catch { return {}; } };
@@ -330,10 +331,7 @@ export default function SalesOrderFormPage() { const params = useParams(); const
         badge: c.abbreviation || undefined,
       }));
     }
-    return [
-      { value: "PT ZENIT TECHNOLOGY SOLUTION", label: "PT ZENIT TECHNOLOGY SOLUTION", badge: "PZTS" },
-      { value: "UD MILLION CANDLES", label: "UD MILLION CANDLES", badge: "MC" },
-    ];
+    return [];
   }, [companyList]);
 
   const customerOptions = useMemo<SearchableSelectOption[]>(() => {
@@ -381,7 +379,7 @@ export default function SalesOrderFormPage() { const params = useParams(); const
     });
   };
  const save = async () => { if (!order.company.trim() || !order.customer.trim()) return toast.error("Company dan Customer wajib diisi"); if (order.items.some(i => !i.item_code.trim() || i.quantity <= 0)) return toast.error("Lengkapi Item Code dan Quantity"); setSaving(true); const payload = calculate(order); try { const res = isNew ? await api.post<Order>("/crm/sales-orders", { order_number: `${order.naming_series.replace(".YYYY.", new Date().getFullYear().toString())}${Date.now().toString().slice(-5)}`, total_amount: payload.grand_total, status: "processing" }) : await api.patch<Order>(`/crm/sales-orders/${id}`, { total_amount: payload.grand_total, status: payload.status }); const savedId = id || res.data.id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: res.data.order_number || payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order berhasil disimpan"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } catch (e: any) { const savedId = id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order disimpan di browser"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } finally { setSaving(false); } };
- const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["PT ZENIT TECHNOLOGY SOLUTION", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (loading) return <div className="p-12 text-center text-slate-500">Memuat detail Sales Order...</div>; if (loadError) return <div className="mx-auto max-w-xl p-12 text-center"><p className="font-semibold text-red-600">{loadError}</p><div className="mt-4 flex justify-center gap-2"><Button variant="outline" onClick={() => nav("/desk/sales-order")}>Kembali ke daftar</Button><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div></div>;
+ const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (loading) return <div className="p-12 text-center text-slate-500">Memuat detail Sales Order...</div>; if (loadError) return <div className="mx-auto max-w-xl p-12 text-center"><p className="font-semibold text-red-600">{loadError}</p><div className="mt-4 flex justify-center gap-2"><Button variant="outline" onClick={() => nav("/desk/sales-order")}>Kembali ke daftar</Button><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div></div>;
  return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
 <header className="mb-5 flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
 <div className="flex items-start gap-3">
@@ -426,14 +424,10 @@ export default function SalesOrderFormPage() { const params = useParams(); const
 <h2 className="text-sm font-bold">Details</h2>
 <div className="grid gap-4 md:grid-cols-3">
 <Field label="Company" name="company">
-<SearchableSelect
+<CompanySelect
   value={order.company}
-  options={companyOptions}
   onChange={(val) => update("company", val)}
   placeholder="Pilih Company..."
-  searchPlaceholder="Cari company..."
-  addNewLabel="+ Tambah Company"
-  addNewHref="/desk/company/new"
 />
 </Field>
 <Field label="Series" name="naming_series">
@@ -446,7 +440,7 @@ export default function SalesOrderFormPage() { const params = useParams(); const
   onChange={handleCustomerChange}
   placeholder="Pilih Customer..."
   searchPlaceholder="Cari customer..."
-  addNewLabel="+ Tambah Customer"
+  addNewLabel="Tambah Customer"
   addNewHref="/desk/customer/new"
 />
 </Field>
@@ -544,7 +538,7 @@ export default function SalesOrderFormPage() { const params = useParams(); const
       }}
       placeholder="Pilih Item Code..."
       searchPlaceholder="Cari kode atau nama item..."
-      addNewLabel="+ Tambah Item Baru"
+      addNewLabel="Tambah Item Baru"
       addNewHref="/desk/item/new"
     />
     {item.item_name && (

@@ -29,6 +29,7 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -63,7 +64,7 @@ const emptyWarehouse: Warehouse = {
   warehouse_name: "",
   is_group: false,
   parent_warehouse: "",
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
   warehouse_type: "Stores",
   address_line_1: "",
   city: "",
@@ -74,7 +75,7 @@ const emptyWarehouse: Warehouse = {
 export default function WarehousePage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"tree" | "list">("tree");
-  const [selectedCompany, setSelectedCompany] = useState<string>("PT ZENIT TECHNOLOGY SOLUTION");
+  const [selectedCompany, setSelectedCompany] = useState<string>("");
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [treeData, setTreeData] = useState<WarehouseTreeNode[]>([]);
@@ -103,10 +104,7 @@ export default function WarehousePage() {
       if (res && res.length > 0) {
         setCompanies(res);
         // keep default or pick first
-        const hasZenit = res.some((c) => c.name === "PT ZENIT TECHNOLOGY SOLUTION");
-        if (!hasZenit && res[0].name) {
-          setSelectedCompany(res[0].name);
-        }
+        setSelectedCompany((prev) => prev || res[0]?.name || "");
       }
     });
   }, []);
@@ -162,7 +160,7 @@ export default function WarehousePage() {
     setEditingWarehouse(null);
     setFormData({
       ...emptyWarehouse,
-      company: selectedCompany || "PT ZENIT TECHNOLOGY SOLUTION",
+      company: selectedCompany || "",
       parent_warehouse: parentGroup || (groupWarehouses[0]?.warehouse_name ?? ""),
       is_group: false,
       warehouse_type: "Stores",
@@ -730,20 +728,11 @@ export default function WarehousePage() {
                   <ExternalLink className="size-2.5" />
                 </Link>
               </div>
-              <select
-                required
+              <CompanySelect
                 value={formData.company}
-                onChange={(e) =>
-                  setFormData({ ...formData, company: e.target.value })
-                }
-                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-              >
-                {companies.map((c) => (
-                  <option key={c.name} value={c.name}>
-                    {c.name} {c.abbreviation ? `(${c.abbreviation})` : ""}
-                  </option>
-                ))}
-              </select>
+                onChange={(company) => setFormData((current) => ({ ...current, company }))}
+                className="[&_button]:h-10 [&_button]:rounded-xl [&_button]:text-sm"
+              />
               <p className="text-[11px] font-mono text-slate-400">company</p>
             </div>
 

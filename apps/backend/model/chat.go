@@ -175,6 +175,7 @@ func ChatModels() []interface{} {
 		&ChatConversationUserState{},
 		&ChatMessage{},
 		&UserAppPreference{},
+		&UserCompanyUsage{},
 		&AIChatDailyUsage{},
 		&RAGDocument{},
 		&RAGDocumentChunk{},

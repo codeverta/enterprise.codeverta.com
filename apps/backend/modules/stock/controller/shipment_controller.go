@@ -255,7 +255,7 @@ func (ctrl *ShipmentController) Options(ctx *gin.Context) {
 	}
 	if len(companyNames) == 0 {
 		companyNames = []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
+			"",
 			"PT Codeverta Enterprise",
 		}
 	}

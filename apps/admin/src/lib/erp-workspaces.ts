@@ -592,8 +592,6 @@ const selling = workspace(
   "selling",
   [
     "Quotation", "Sales Order", "Sales Invoice", 
-    ["Item Price", "/desk/item-price"],
-    ["Subscriptions", "/desk/selling/subscriptions"],
     ["Promotions", "/desk/selling/promotions"],
     ["Loyalty Program", "/desk/loyalty-program"],
   ],
@@ -666,8 +664,9 @@ const stock = workspace(
 );
 
 const accountingHome = "/desk/accounting";
-const accounting = workspace("Accounting", "accounting", [["Core Finance", "/desk/accounting/finance"], ["Currency", "/desk/currency"]], [
+const accounting = workspace("Accounting", "accounting", [["Core Finance", "/desk/accounting/finance"], ["Currency", "/desk/currency"], ["GL Entry", "/desk/gl-entry"]], [
   group("Accounting", accountingHome, [
+    link("GL Entry", "/desk/gl-entry", BookOpen),
     link("Currency", "/desk/currency", Coins),
     link("Invoicing", "/desk/invoicing?sidebar=Invoicing"),
     link("Payments", "/desk/dashboard-view/Payments?sidebar=Payments"),

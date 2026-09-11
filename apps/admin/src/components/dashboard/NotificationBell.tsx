@@ -45,21 +45,21 @@ export default function NotificationBell({ isSidebarOpen }: { isSidebarOpen: boo
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <button
-          className={`flex items-center w-full my-1 text-sm h-10 px-3 rounded-md transition-all duration-200 text-gray-600 hover:bg-gray-100 relative ${
-            !isSidebarOpen && "justify-center"
+          className={`flex items-center w-full my-0.5 text-xs h-7.5 px-2 rounded-md transition-all duration-200 text-gray-600 hover:bg-gray-100 relative ${
+            !isSidebarOpen && "justify-center px-0"
           }`}
           title="Notifikasi"
         >
           <div className="relative flex items-center justify-center">
             <Bell className="h-4 w-4 text-gray-600" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white shadow-sm animate-pulse">
+              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm animate-pulse">
                 {unreadCount}
               </span>
             )}
           </div>
           {isSidebarOpen && (
-            <span className="ml-3 font-semibold text-gray-700 flex-1 text-left">
+            <span className="ml-2 font-semibold text-gray-700 flex-1 text-left text-xs">
               Notifikasi
             </span>
           )}

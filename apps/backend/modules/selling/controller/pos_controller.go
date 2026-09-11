@@ -440,7 +440,8 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 
 	company := opening.Company
 	if company == "" {
-		company = "PT ZENIT TECHNOLOGY SOLUTION"
+		userID, _ := ctx.Get("id")
+		company = model.ResolveActiveCompanyName(posDB(ctx), userID)
 	}
 	customerName := input.Customer
 	if customerName == "" {

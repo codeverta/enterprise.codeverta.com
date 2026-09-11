@@ -70,15 +70,31 @@ func (c *POSProfileController) List(ctx *gin.Context) {
 
 func seedDefaultPOSProfile(db *gorm.DB, tenant string) *sellingmodel.POSProfile {
 	now := time.Now()
+	var comp coremodel.Company
+	companyName := ""
+	if err := db.Order("name asc").First(&comp).Error; err == nil {
+		companyName = comp.Name
+	}
+
+	warehouseName := ""
+	if db.Migrator().HasTable("warehouses") {
+		var wh struct {
+			WarehouseName string `gorm:"column:warehouse_name"`
+		}
+		if err := db.Table("warehouses").Order("warehouse_name asc").First(&wh).Error; err == nil {
+			warehouseName = wh.WarehouseName
+		}
+	}
+
 	profile := sellingmodel.POSProfile{
 		ID:                          "posp-" + uuid.New().String()[:8],
 		TenantID:                    tenant,
 		Name:                        "Usaha Jualan Lilin",
-		Company:                     "UD MILLION CANDLES",
+		Company:                     companyName,
 		Customer:                    "Walk-in Customer",
 		Country:                     "Indonesia",
 		Disabled:                    false,
-		Warehouse:                   "Stores - MC",
+		Warehouse:                   warehouseName,
 		HideImages:                  false,
 		HideUnavailableItems:        false,
 		AutoAddItemToCart:           false,
@@ -377,19 +393,15 @@ func (c *POSProfileController) Delete(ctx *gin.Context) {
 
 func (c *POSProfileController) Options(ctx *gin.Context) {
 	db := posDB(ctx)
-	tenant := tenantString(ctx)
 
 	// Companies
 	var companies []coremodel.Company
-	_ = db.Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Find(&companies)
+	_ = db.Order("name asc").Find(&companies)
 	compNames := make([]string, 0, len(companies))
 	for _, comp := range companies {
 		if comp.Name != "" {
 			compNames = append(compNames, comp.Name)
 		}
-	}
-	if len(compNames) == 0 {
-		compNames = []string{"UD MILLION CANDLES", "PT ZENIT TECHNOLOGY SOLUTION"}
 	}
 
 	// Users / Cashiers

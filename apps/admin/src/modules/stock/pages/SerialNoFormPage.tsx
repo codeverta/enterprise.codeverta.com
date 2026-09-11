@@ -5,6 +5,7 @@ import api from "@/lib/api";
 import { warehouseApi } from "../warehouseApi";
 import { SearchableSelect, SearchableOption } from "@/components/ui/searchable-select";
 import { SearchableWarehouseSelect } from "@/components/ui/searchable-select";
+import { CompanySelect } from "@/components/CompanySelect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -467,17 +468,10 @@ export default function SerialNoFormPage() {
                 Company (Perusahaan)
               </label>
               <div className="mt-1">
-                <SearchableSelect
+                <CompanySelect
                   placeholder="Pilih Perusahaan..."
                   value={formData.company || ""}
-                  onChange={(val) => setFormData({ ...formData, company: val })}
-                  onSearch={searchCompaniesFromDB}
-                  options={(options.companies || []).map((c) => ({
-                    value: c.name,
-                    label: c.name,
-                  }))}
-                  actionLabel="+ Tambah Company"
-                  actionHref="/desk/company"
+                  onChange={(company) => setFormData((current) => ({ ...current, company }))}
                 />
               </div>
             </div>

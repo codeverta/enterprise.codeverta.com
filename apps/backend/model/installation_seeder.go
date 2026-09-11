@@ -11,7 +11,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const InstallationSeedVersion = 3
+const InstallationSeedVersion = 4
 
 type InstallationSeedState struct {
 	Key         string    `gorm:"primaryKey;size:64" json:"key"`
@@ -49,6 +49,7 @@ func SeedInstallationData(db *gorm.DB) error {
 		{"stock entry types", func() error { return stockmodel.SeedStockEntryTypes(db, DefaultTenantIDString) }},
 		{"print formats", func() error { return printingmodel.SeedPrintFormats(db, DefaultTenantIDString) }},
 		{"currencies", func() error { return SeedCurrencies(db) }},
+		{"gl entries", func() error { return accountingmodel.SeedGLEntries(db, DefaultTenantIDString) }},
 	}
 
 	for _, step := range steps {

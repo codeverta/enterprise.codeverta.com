@@ -235,7 +235,7 @@ export function PayrollEntryListPage() {
                     <td className="p-4">
                       <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                         <Building2 className="size-3.5 text-slate-400" />
-                        {row.company || "PT ZENIT TECHNOLOGY SOLUTION"}
+                        {row.company || ""}
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {row.department || "All Departments"}

@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { CompanySelect } from "@/components/CompanySelect";
 import {
   loyaltyApi,
   type CollectionRule,
@@ -34,8 +35,8 @@ const emptyProgram = (): LoyaltyProgram => ({
   conversion_factor: 1,
   expiry_duration: 365,
   expense_account: "5112 - Loyalty Program Expense",
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
-  cost_center: "Marketing - PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
+  cost_center: "",
   project: "",
 });
 
@@ -474,9 +475,8 @@ export default function LoyaltyProgramFormPage() {
             </Field>
 
             <Field label="Company" name="company">
-              <Combo
+              <CompanySelect
                 value={program.company}
-                values={options.companies}
                 onChange={(v) => update("company", v)}
               />
             </Field>

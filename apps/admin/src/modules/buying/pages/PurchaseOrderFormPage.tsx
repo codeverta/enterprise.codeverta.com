@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CompanySelect } from "@/components/CompanySelect";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import {
   buyingApi,
@@ -39,7 +40,7 @@ const blankTax = (): PurchaseOrderTax => ({
 
 const emptyOrder = (): PurchaseOrder => ({
   naming_series: "PUR-ORD-.YYYY.-", status: "draft", supplier: "",
-  transaction_date: today(), schedule_date: today(), company: "PT ZENIT TECHNOLOGY SOLUTION",
+  transaction_date: today(), schedule_date: today(), company: "",
   is_subcontracted: false, cost_center: "", project: "", currency: "IDR",
   buying_price_list: "Standard Buying", ignore_pricing_rule: false, set_warehouse: "",
   tax_category: "", taxes_and_charges: "", shipping_rule: "", incoterm: "",
@@ -52,7 +53,7 @@ const emptyOrder = (): PurchaseOrder => ({
 });
 
 const initialOptions: BuyingOptions = {
-  companies: ["PT ZENIT TECHNOLOGY SOLUTION"], suppliers: [], warehouses: [], items: [],
+  companies: [], suppliers: [], warehouses: [], items: [],
   cost_centers: [], projects: [], currencies: ["IDR", "USD", "SGD", "EUR"],
   price_lists: ["Standard Buying"], uoms: ["Unit", "Pcs", "Box", "Kg", "Meter", "Set"],
 };
@@ -300,10 +301,9 @@ export default function PurchaseOrderFormPage() {
                     />
                   </Field>
                   <Field label="Company" name="company" required>
-                    <Combo
+                    <CompanySelect
                       value={order.company}
                       onChange={(value) => update("company", value)}
-                      values={options.companies}
                     />
                   </Field>
                   <label className="flex items-center gap-2 self-center pt-5 text-sm">

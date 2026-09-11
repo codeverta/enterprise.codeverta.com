@@ -186,9 +186,6 @@ func (h *PurchaseOrderController) Options(c *gin.Context) {
 		return values
 	}
 	companies := distinct(&buyingmodel.PurchaseOrder{}, "company")
-	if len(companies) == 0 {
-		companies = []string{"PT ZENIT TECHNOLOGY SOLUTION"}
-	}
 	c.JSON(http.StatusOK, gin.H{
 		"companies": companies, "suppliers": merge(distinct(&buyingmodel.Supplier{}, "supplier_name"), distinct(&buyingmodel.PurchaseOrder{}, "supplier")),
 		"warehouses": distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse"), "items": merge(distinct(&buyingmodel.Item{}, "item_code"), distinct(&buyingmodel.PurchaseOrderItem{}, "item_code")),

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
+import { CompanySelect } from "@/components/CompanySelect";
 import { customerApi, type Customer } from "../customerApi";
 import { posApi, type POSItem } from "../posApi";
 import { taxCategoryApi, type TaxCategory } from "../taxCategoryApi";
@@ -41,7 +42,7 @@ const defaultQuotation = (): Quotation => ({
   transaction_date: today(),
   valid_till: "",
   order_type: "Sales",
-  company: "PT ZENIT TECHNOLOGY SOLUTION",
+  company: "",
   currency: "IDR",
   selling_price_list: "Standard Selling",
   scan_barcode: "",
@@ -319,9 +320,6 @@ export function QuotationFormPage() {
   }, [taxCategories]);
 
   const companyOptions: SearchableSelectOption[] = useMemo(() => {
-    if (!companies.length) {
-      return [{ value: "PT ZENIT TECHNOLOGY SOLUTION", label: "PT ZENIT TECHNOLOGY SOLUTION" }];
-    }
     return companies.map((c) => {
       const name = c.name || (c as any).company_name || "";
       return { value: name, label: name };
@@ -514,7 +512,7 @@ export function QuotationFormPage() {
                   }}
                   placeholder="Begin typing for results."
                   searchPlaceholder="Cari customer..."
-                  addNewLabel="+ Tambah Customer Baru"
+                  addNewLabel="Tambah Customer Baru"
                   addNewHref="/desk/customer/new"
                 />
               </Field>
@@ -548,12 +546,10 @@ export function QuotationFormPage() {
               </Field>
 
               <Field label="Company" name="company">
-                <SearchableSelect
+                <CompanySelect
                   value={quotation.company}
-                  options={companyOptions}
                   onChange={(val) => updateField("company", val)}
                   placeholder="Begin typing for results."
-                  searchPlaceholder="Cari company..."
                 />
               </Field>
             </div>
@@ -629,7 +625,7 @@ export function QuotationFormPage() {
                           onChange={(val) => handleItemCodeChange(idx, val)}
                           placeholder="Pilih item code..."
                           searchPlaceholder="Cari item code..."
-                          addNewLabel="+ Tambah Item Baru"
+                          addNewLabel="Tambah Item Baru"
                           addNewHref="/desk/item/new"
                         />
                         {it.item_name && (
@@ -702,7 +698,7 @@ export function QuotationFormPage() {
                   onChange={(val) => updateField("tax_category", val)}
                   placeholder="Begin typing for results."
                   searchPlaceholder="Cari Tax Category..."
-                  addNewLabel="+ Tambah Tax Category"
+                  addNewLabel="Tambah Tax Category"
                   addNewHref="/desk/tax-category/new"
                 />
               </Field>

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	coremodel "gin-template/model"
 	buyingmodel "gin-template/modules/buying/model"
 	sellingmodel "gin-template/modules/selling/model"
 	stockmodel "gin-template/modules/stock/model"
@@ -96,7 +97,7 @@ func calculateSalesInvoice(invoice *sellingmodel.SalesInvoice) {
 	}
 }
 
-func prepareSalesInvoice(invoice *sellingmodel.SalesInvoice, tenant string) {
+func prepareSalesInvoice(invoice *sellingmodel.SalesInvoice, tenant, defaultCompany string) {
 	now := time.Now()
 	invoice.ID = "sinv-" + uuid.NewString()[:8]
 	invoice.TenantID = tenant
@@ -108,7 +109,7 @@ func prepareSalesInvoice(invoice *sellingmodel.SalesInvoice, tenant string) {
 		invoice.Currency = "IDR"
 	}
 	if invoice.Company == "" {
-		invoice.Company = "PT ZENIT TECHNOLOGY SOLUTION"
+		invoice.Company = defaultCompany
 	}
 	if invoice.DueDate == nil || invoice.DueDate.IsZero() {
 		due := now.AddDate(0, 0, 7)
@@ -136,15 +137,9 @@ func (ctrl *SalesInvoiceController) Options(ctx *gin.Context) {
 	db, tenant := posDB(ctx), tenantString(ctx)
 	var companies []string
 	db.Table("companies").Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Pluck("name", &companies)
-	if len(companies) == 0 {
-		companies = []string{"PT ZENIT TECHNOLOGY SOLUTION", "UD MILLION CANDLES"}
-	}
 
 	var warehouses []string
 	db.Table("warehouses").Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Pluck("warehouse_name", &warehouses)
-	if len(warehouses) == 0 {
-		warehouses = []string{"Stores - PT ZENIT", "Finished Goods - PT ZENIT", "Stores - MC"}
-	}
 
 	var customers []string
 	db.Table("selling_customers").Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Pluck("customer_name", &customers)
@@ -267,6 +262,12 @@ func syncPOSInvoicesToSalesInvoices(db *gorm.DB, tenant string) {
 			if cust == "" {
 				cust = "Walk-in Customer"
 			}
+			var opening sellingmodel.POSOpeningEntry
+			db.Select("company").Where("id = ?", posInv.OpeningEntryID).First(&opening)
+			company := opening.Company
+			if company == "" {
+				company = coremodel.ResolveActiveCompanyName(db, nil)
+			}
 			sinv := sellingmodel.SalesInvoice{
 				ID:                 sinvID,
 				TenantID:           tenant,
@@ -274,7 +275,7 @@ func syncPOSInvoicesToSalesInvoices(db *gorm.DB, tenant string) {
 				NamingSeries:       "ACC-SINV-.YYYY.-",
 				Status:             sellingmodel.SalesInvoiceStatusSubmitted,
 				Customer:           cust,
-				Company:            "PT ZENIT TECHNOLOGY SOLUTION",
+				Company:            company,
 				PostingDate:        now,
 				PostingTime:        now.Format("15:04:05"),
 				IsPOS:              true,
@@ -369,7 +370,8 @@ func (ctrl *SalesInvoiceController) Create(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Customer dan item wajib diisi"})
 		return
 	}
-	prepareSalesInvoice(&input, tenant)
+	userID, _ := ctx.Get("id")
+	prepareSalesInvoice(&input, tenant, coremodel.ResolveActiveCompanyName(db, userID))
 	if err := db.Create(&input).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat Sales Invoice"})
 		return
@@ -532,7 +534,8 @@ func (ctrl *SalesInvoiceController) CreateReturn(ctx *gin.Context) {
 			Quantity: requested.Quantity, UOM: sourceItem.UOM, Rate: sourceItem.Rate,
 		})
 	}
-	prepareSalesInvoice(&result, tenant)
+	userID, _ := ctx.Get("id")
+	prepareSalesInvoice(&result, tenant, coremodel.ResolveActiveCompanyName(db, userID))
 	if err := db.Create(&result).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat Credit Note"})
 		return

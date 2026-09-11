@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import {
   Building2,
@@ -32,6 +32,7 @@ import { Label } from "@/components/ui/label";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { useCompanies } from "@/context/CompanyContext";
 import { accountApi, type Account, type AccountInput, type CompanyOption } from "../accountApi";
 
 const emptyAccount = (companyId = "", currency = "IDR"): AccountInput => ({
@@ -144,6 +145,8 @@ function AccountTreeRow({
 }
 
 export default function AccountSetupPage() {
+  const { activeCompany, recordCompanySelection } = useCompanies();
+  const companyChangedByUser = useRef(false);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [companyId, setCompanyId] = useState("");
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -197,6 +200,15 @@ export default function AccountSetupPage() {
       });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (!activeCompany || companyChangedByUser.current) return;
+    const preferred = companies.find((company) => company.id === activeCompany.id || company.name === activeCompany.name);
+    if (preferred && preferred.id !== companyId) {
+      setCompanyId(preferred.id);
+      void loadAccounts(preferred.id);
+    }
+  }, [activeCompany, companies, companyId]);
 
   const childrenByParent = useMemo(() => {
     const result = new Map<string, Account[]>();
@@ -314,7 +326,7 @@ export default function AccountSetupPage() {
             <SearchableSelect
               value={companyId}
               options={companies.map((company) => ({ value: company.id, label: company.name, sublabel: company.abbreviation, badge: company.currency }))}
-              onChange={(value) => { setCompanyId(value); setSearch(""); setExpanded(new Set()); void loadAccounts(value); }}
+              onChange={(value) => { const selected = companies.find((company) => company.id === value); companyChangedByUser.current = true; setCompanyId(value); setSearch(""); setExpanded(new Set()); void loadAccounts(value); if (selected) void recordCompanySelection(selected.name); }}
               placeholder="Pilih company..."
               searchPlaceholder="Cari company..."
               buttonClassName="h-10 text-sm"

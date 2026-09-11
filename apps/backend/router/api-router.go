@@ -187,10 +187,17 @@ func registerOrganizationRoutes(rg *gin.RouterGroup, db *gorm.DB) {
 		org.POST("/seed", oc.Seed)
 
 		org.GET("/companies", oc.ListCompanies)
+		org.GET("/company-context", oc.GetCompanyContext)
+		org.POST("/company-context/select", oc.SelectCompany)
 		org.POST("/companies", oc.CreateCompany)
 		org.GET("/companies/:id", oc.GetCompany)
 		org.PUT("/companies/:id", oc.UpdateCompany)
 		org.DELETE("/companies/:id", oc.DeleteCompany)
+		org.GET("/companies/:id/addresses", oc.ListCompanyAddresses)
+
+		// Direct aliases for /companies and /companies/:id/addresses
+		rg.GET("/companies", oc.ListCompanies)
+		rg.GET("/companies/:id/addresses", oc.ListCompanyAddresses)
 
 		org.GET("/branches", oc.ListBranches)
 		org.POST("/branches", oc.CreateBranch)

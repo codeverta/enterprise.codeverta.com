@@ -24,6 +24,8 @@ export interface SearchableSelectProps {
   addNewLabel?: string;
   addNewHref?: string;
   onAddNewClick?: () => void;
+  emptyText?: string;
+  "aria-label"?: string;
 }
 
 export function SearchableSelect({
@@ -39,6 +41,8 @@ export function SearchableSelect({
   addNewLabel,
   addNewHref,
   onAddNewClick,
+  emptyText = "Tidak ada opsi ditemukan di database",
+  "aria-label": ariaLabel,
 }: SearchableSelectProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -133,6 +137,7 @@ export function SearchableSelect({
           <button
             type="button"
             disabled={disabled}
+            aria-label={ariaLabel}
             aria-expanded={open}
             aria-haspopup="listbox"
             className={cn(
@@ -191,7 +196,7 @@ export function SearchableSelect({
                 <span>Mencari di database...</span>
               </div>
             ) : displayOptions.length === 0 ? (
-              <div className="px-3 py-2 text-xs text-slate-400">Tidak ada opsi ditemukan di database</div>
+              <div className="px-3 py-2 text-xs text-slate-400">{emptyText}</div>
             ) : (
               displayOptions.map((opt) => (
                 <button
@@ -236,7 +241,7 @@ export function SearchableSelect({
                   className="flex items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                 >
                   <Plus className="size-3.5" />
-                  <span>{addNewLabel || "+ Tambah Baru"}</span>
+                  <span>{addNewLabel || "Tambah Baru"}</span>
                   <ExternalLink className="ml-auto size-3 opacity-60" />
                 </a>
               ) : (
@@ -249,7 +254,7 @@ export function SearchableSelect({
                   className="flex w-full items-center gap-1.5 rounded px-2.5 py-1.5 text-xs font-semibold text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800"
                 >
                   <Plus className="size-3.5" />
-                  <span>{addNewLabel || "+ Tambah Baru"}</span>
+                  <span>{addNewLabel || "Tambah Baru"}</span>
                 </button>
               )}
             </div>
@@ -287,7 +292,7 @@ export function SearchableWarehouseSelect({
       placeholder={placeholder}
       searchPlaceholder="Cari nama gudang di DB..."
       className={className}
-      addNewLabel="+ Tambah Warehouse Baru"
+      addNewLabel="Tambah Warehouse Baru"
       addNewHref="/desk/warehouse?action=new"
     />
   );

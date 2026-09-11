@@ -405,16 +405,23 @@ func (ctrl *TimesheetController) Options(ctx *gin.Context) {
 		activityNames = []string{"Communication", "Planning", "Development", "Design", "Testing", "Review", "Deployment", "Support"}
 	}
 
+	// Fetch companies
+	var companies []model.Company
+	_ = db.Order("name asc").Find(&companies).Error
+
+	companyOptions := make([]string, 0, len(companies))
+	for _, c := range companies {
+		if c.Name != "" {
+			companyOptions = append(companyOptions, c.Name)
+		}
+	}
+
 	ctx.JSON(http.StatusOK, gin.H{
-		"employees": employeeOptions,
-		"projects":  projectOptions,
-		"tasks":     taskOptions,
+		"employees":      employeeOptions,
+		"projects":       projectOptions,
+		"tasks":          taskOptions,
 		"activity_types": activityNames,
-		"companies": []string{
-			"PT ZENIT TECHNOLOGY SOLUTION",
-			"UD MILLION CANDLES",
-			"CODEVERTA ENTERPRISE",
-		},
+		"companies":      companyOptions,
 		"customers": []string{
 			"PT Pelanggan Indonesia",
 			"PT Maju Bersama",

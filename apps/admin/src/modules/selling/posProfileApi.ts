@@ -114,4 +114,126 @@ export const posProfileApi = {
     const res = await api.get("/selling/pos-profiles/options");
     return unwrap(res);
   },
+
+  listCompanies: async (): Promise<{ id?: string; name: string; abbreviation?: string; address?: string }[]> => {
+    try {
+      const res = await api.get("/companies");
+      const list = unwrap(res);
+      if (Array.isArray(list) && list.length > 0) return list;
+    } catch {}
+    try {
+      const res = await api.get("/organization/companies");
+      const list = unwrap(res);
+      if (Array.isArray(list) && list.length > 0) return list;
+    } catch {}
+    return [];
+  },
+
+  listCompanyAddresses: async (companyIdOrName: string): Promise<{ id?: string; address_title?: string; address_line1?: string; city?: string }[]> => {
+    if (!companyIdOrName) return [];
+    try {
+      const res = await api.get(`/companies/${encodeURIComponent(companyIdOrName)}/addresses`);
+      const list = unwrap(res);
+      if (Array.isArray(list)) return list;
+    } catch {}
+    try {
+      const res = await api.get(`/organization/companies/${encodeURIComponent(companyIdOrName)}/addresses`);
+      const list = unwrap(res);
+      if (Array.isArray(list)) return list;
+    } catch {}
+    return [];
+  },
+
+  listCustomers: async (): Promise<{ id?: string; customer_name: string }[]> => {
+    try {
+      const res = await api.get("/selling/customers");
+      return unwrap(res) || [];
+    } catch {
+      return [{ customer_name: "Walk-in Customer" }];
+    }
+  },
+
+  listUsers: async (): Promise<{ id?: string; username: string; display_name?: string }[]> => {
+    try {
+      const res = await api.get("/users");
+      const list = unwrap(res);
+      if (Array.isArray(list) && list.length > 0) return list;
+    } catch {}
+    return [{ username: "Administrator", display_name: "Administrator" }];
+  },
+
+  listCurrencies: async (): Promise<{ name: string; symbol?: string; enabled?: boolean }[]> => {
+    try {
+      const res = await api.get("/currencies");
+      return unwrap(res) || [];
+    } catch {
+      return [{ name: "IDR", symbol: "Rp", enabled: true }, { name: "USD", symbol: "$", enabled: true }];
+    }
+  },
+
+  listPriceLists: async (): Promise<string[]> => {
+    try {
+      const res = await api.get("/selling/price-lists");
+      const list = unwrap(res);
+      if (Array.isArray(list)) {
+        return list.map((item: any) => item.price_list_name || item.name || String(item)).filter(Boolean);
+      }
+    } catch {}
+    return ["Standard Selling"];
+  },
+
+  listItemGroups: async (): Promise<string[]> => {
+    try {
+      const res = await api.get("/selling/item-groups");
+      const list = unwrap(res);
+      if (Array.isArray(list)) {
+        return list.map((item: any) => item.item_group_name || item.name || String(item)).filter(Boolean);
+      }
+    } catch {}
+    return ["All Item Groups", "Products", "Raw Material", "Services"];
+  },
+
+  listCustomerGroups: async (): Promise<string[]> => {
+    try {
+      const res = await api.get("/selling/customer-groups");
+      const list = unwrap(res);
+      if (Array.isArray(list)) {
+        return list.map((item: any) => item.group_name || item.name || String(item)).filter(Boolean);
+      }
+    } catch {}
+    return ["All Customer Groups", "Individual", "Commercial", "Non Profit"];
+  },
+
+  listLetterHeads: async (): Promise<string[]> => {
+    try {
+      const res = await api.get("/organization/letter-heads");
+      const list = unwrap(res);
+      if (Array.isArray(list)) {
+        return list.map((item: any) => item.name || String(item)).filter(Boolean);
+      }
+    } catch {}
+    return ["Standard", "Kop Surat Resmi"];
+  },
+
+  listTaxCategories: async (): Promise<string[]> => {
+    try {
+      const res = await api.get("/selling/tax-categories");
+      const list = unwrap(res);
+      if (Array.isArray(list)) {
+        return list.map((item: any) => item.title || item.name || String(item)).filter(Boolean);
+      }
+    } catch {}
+    return [];
+  },
+
+  listProjects: async (): Promise<string[]> => {
+    try {
+      const res = await api.get("/projects");
+      const list = unwrap(res);
+      if (Array.isArray(list)) {
+        return list.map((item: any) => item.project_name || item.name || String(item)).filter(Boolean);
+      }
+    } catch {}
+    return [];
+  },
 };
