@@ -7,9 +7,14 @@ import CurrencyFormPage from "./pages/CurrencyFormPage";
 import AccountSetupPage from "./pages/AccountSetupPage";
 import GLEntryListPage from "./pages/GLEntryListPage";
 import GLEntryFormPage from "./pages/GLEntryFormPage";
+import BankingMasterPage from "./pages/BankingMasterPage";
 
 export default function AccountingModule() {
   const { pathname } = useLocation();
+
+  if (pathname.startsWith("/desk/bank") || pathname.startsWith("/desk/bank-account")) {
+    return <WorkspaceModuleLayout slug="banking"><BankingMasterPage /></WorkspaceModuleLayout>;
+  }
 
   let content: React.ReactNode;
   if (pathname.startsWith("/desk/account") && !pathname.startsWith("/desk/accounting")) {
@@ -28,7 +33,5 @@ export default function AccountingModule() {
     content = <FinanceDashboard />;
   }
 
-  return (
-    <WorkspaceModuleLayout slug="accounting">{content}</WorkspaceModuleLayout>
-  );
+  return <WorkspaceModuleLayout slug="accounting">{content}</WorkspaceModuleLayout>;
 }

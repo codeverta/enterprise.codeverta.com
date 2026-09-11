@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+	"time"
 
 	"gin-template/model"
 	sellingmodel "gin-template/modules/selling/model"
@@ -29,6 +30,12 @@ func priceListTenant(ctx *gin.Context) string {
 
 func (ctrl *PriceListController) ListPriceLists(ctx *gin.Context) {
 	db, tenant := priceListDB(ctx), priceListTenant(ctx)
+	var count int64
+	db.Model(&sellingmodel.PriceList{}).Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant).Count(&count)
+	if count == 0 {
+		_ = sellingmodel.SeedPriceLists(db, tenant)
+	}
+
 	var priceLists []sellingmodel.PriceList
 	query := db.Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", tenant)
 	if search := strings.TrimSpace(ctx.Query("q")); search != "" {
@@ -40,6 +47,15 @@ func (ctrl *PriceListController) ListPriceLists(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": priceLists})
+}
+
+func (ctrl *PriceListController) Seed(ctx *gin.Context) {
+	db, tenant := priceListDB(ctx), priceListTenant(ctx)
+	if err := sellingmodel.SeedPriceLists(db, tenant); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal seeding Price List"})
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "Price List default berhasil di-seed"})
 }
 
 func (ctrl *PriceListController) GetPriceList(ctx *gin.Context) {
@@ -141,34 +157,108 @@ func (ctrl *PriceListController) GetItemPrice(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, itemPrice)
 }
 
+type ItemPriceRequest struct {
+	ItemCode      string      `json:"item_code"`
+	ItemName      string      `json:"item_name"`
+	PriceList     string      `json:"price_list"`
+	PriceListRate float64     `json:"price_list_rate"`
+	Currency      string      `json:"currency"`
+	UOM           string      `json:"uom"`
+	PackingUnit   float64     `json:"packing_unit"`
+	BatchNo       string      `json:"batch_no"`
+	Buying        bool        `json:"buying"`
+	Selling       bool        `json:"selling"`
+	LeadTimeDays  int         `json:"lead_time_days"`
+	ValidFrom     interface{} `json:"valid_from"`
+	ValidUpto     interface{} `json:"valid_upto"`
+	Note          string      `json:"note"`
+	Reference     string      `json:"reference"`
+	IsActive      *bool       `json:"is_active"`
+}
+
+func parseFlexibleDate(val interface{}) *time.Time {
+	if val == nil {
+		return nil
+	}
+	s, ok := val.(string)
+	if !ok {
+		return nil
+	}
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	formats := []string{
+		"2006-01-02",
+		time.RFC3339,
+		"2006-01-02T15:04:05Z07:00",
+		"2006-01-02T15:04:05",
+		"2006-01-02 15:04:05",
+	}
+	for _, layout := range formats {
+		if t, err := time.Parse(layout, s); err == nil {
+			return &t
+		}
+	}
+	return nil
+}
+
 func (ctrl *PriceListController) CreateItemPrice(ctx *gin.Context) {
-	var input sellingmodel.ItemPrice
-	if err := ctx.ShouldBindJSON(&input); err != nil || strings.TrimSpace(input.ItemCode) == "" || strings.TrimSpace(input.PriceList) == "" {
+	var input ItemPriceRequest
+	if err := ctx.ShouldBindJSON(&input); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Item Price tidak valid: " + err.Error()})
+		return
+	}
+	if strings.TrimSpace(input.ItemCode) == "" || strings.TrimSpace(input.PriceList) == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Item Code dan Price List wajib diisi"})
 		return
 	}
 	db, tenant := priceListDB(ctx), priceListTenant(ctx)
-	input.ID = "ip-" + uuid.NewString()[:8]
-	input.TenantID = tenant
-	if input.Currency == "" {
-		input.Currency = "IDR"
+	itemPrice := sellingmodel.ItemPrice{
+		ID:            "ip-" + uuid.NewString()[:8],
+		TenantID:      tenant,
+		ItemCode:      strings.TrimSpace(input.ItemCode),
+		ItemName:      strings.TrimSpace(input.ItemName),
+		PriceList:     strings.TrimSpace(input.PriceList),
+		PriceListRate: input.PriceListRate,
+		Currency:      strings.TrimSpace(input.Currency),
+		UOM:           strings.TrimSpace(input.UOM),
+		PackingUnit:   input.PackingUnit,
+		BatchNo:       strings.TrimSpace(input.BatchNo),
+		Buying:        input.Buying,
+		Selling:       input.Selling,
+		LeadTimeDays:  input.LeadTimeDays,
+		ValidFrom:     parseFlexibleDate(input.ValidFrom),
+		ValidUpto:     parseFlexibleDate(input.ValidUpto),
+		Note:          strings.TrimSpace(input.Note),
+		Reference:     strings.TrimSpace(input.Reference),
+		IsActive:      true,
 	}
-	if input.PackingUnit <= 0 {
-		input.PackingUnit = 1
+	if itemPrice.Currency == "" {
+		itemPrice.Currency = "IDR"
 	}
-	input.IsActive = true
-	if err := db.Create(&input).Error; err != nil {
+	if itemPrice.PackingUnit <= 0 {
+		itemPrice.PackingUnit = 1
+	}
+	if input.IsActive != nil {
+		itemPrice.IsActive = *input.IsActive
+	}
+	if err := db.Create(&itemPrice).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat Item Price"})
 		return
 	}
-	ctx.JSON(http.StatusCreated, input)
+	ctx.JSON(http.StatusCreated, itemPrice)
 }
 
 func (ctrl *PriceListController) UpdateItemPrice(ctx *gin.Context) {
 	id := ctx.Param("id")
-	var input sellingmodel.ItemPrice
+	var input ItemPriceRequest
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Item Price tidak valid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Item Price tidak valid: " + err.Error()})
+		return
+	}
+	if strings.TrimSpace(input.ItemCode) == "" || strings.TrimSpace(input.PriceList) == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Item Code dan Price List wajib diisi"})
 		return
 	}
 	db, tenant := priceListDB(ctx), priceListTenant(ctx)
@@ -183,19 +273,20 @@ func (ctrl *PriceListController) UpdateItemPrice(ctx *gin.Context) {
 	existing.PriceListRate = input.PriceListRate
 	existing.Currency = strings.TrimSpace(input.Currency)
 	existing.UOM = strings.TrimSpace(input.UOM)
-	existing.PackingUnit = input.PackingUnit
-	if existing.PackingUnit <= 0 {
-		existing.PackingUnit = 1
+	if input.PackingUnit > 0 {
+		existing.PackingUnit = input.PackingUnit
 	}
 	existing.BatchNo = strings.TrimSpace(input.BatchNo)
 	existing.Buying = input.Buying
 	existing.Selling = input.Selling
 	existing.LeadTimeDays = input.LeadTimeDays
-	existing.ValidFrom = input.ValidFrom
-	existing.ValidUpto = input.ValidUpto
+	existing.ValidFrom = parseFlexibleDate(input.ValidFrom)
+	existing.ValidUpto = parseFlexibleDate(input.ValidUpto)
 	existing.Note = strings.TrimSpace(input.Note)
 	existing.Reference = strings.TrimSpace(input.Reference)
-	existing.IsActive = input.IsActive
+	if input.IsActive != nil {
+		existing.IsActive = *input.IsActive
+	}
 	if err := db.Save(&existing).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal memperbarui Item Price"})
 		return

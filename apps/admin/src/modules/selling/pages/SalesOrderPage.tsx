@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ChevronDown, Info, Plus, Save, Search, Trash2, Truck } from "lucide-react";
+import { ArrowLeft, ChevronDown, FileText, Info, Plus, Receipt, Save, Search, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -399,13 +399,22 @@ export default function SalesOrderFormPage() { const params = useParams(); const
 </div>
 <div className="flex flex-wrap gap-2">
   {!isNew && (
-    <Button
-      variant="outline"
-      onClick={() => nav(`/desk/delivery-note/new?sales_order_id=${encodeURIComponent(order.id || "")}`)}
-      className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-900"
-    >
-      <Truck className="mr-1 size-4" /> Create Delivery Note
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        onClick={() => nav(`/desk/delivery-note/new?sales_order_id=${encodeURIComponent(order.id || "")}`)}
+        className="border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-slate-900"
+      >
+        <Truck className="mr-1 size-4" /> Create Delivery Note
+      </Button>
+      <Button
+        variant="outline"
+        onClick={() => nav(`/desk/sales-invoice/new?sales_order_id=${encodeURIComponent(order.id || "")}`)}
+        className="border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:bg-slate-900"
+      >
+        <Receipt className="mr-1 size-4" /> Create Sales Invoice
+      </Button>
+    </>
   )}
   {!isNew && <Button variant="outline" onClick={remove}><Trash2 className="size-4" /> Delete</Button>}
   {editable && <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700"><Save className="size-4" /> {saving ? "Saving..." : "Save"}</Button>}

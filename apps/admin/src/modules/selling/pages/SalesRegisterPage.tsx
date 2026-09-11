@@ -204,7 +204,9 @@ export default function SalesRegisterPage() {
           (!filters.customer || row.customer === filters.customer) &&
           (!filters.customerGroup ||
             row.customerGroup === filters.customerGroup) &&
-          (!filters.company || row.company === filters.company) &&
+          // Keep legacy POS invoices without a persisted company visible;
+          // newly created invoices are matched to the active company exactly.
+          (!filters.company || !row.company || row.company === filters.company) &&
           (!filters.payment || row.payment === filters.payment) &&
           (!filters.owner || row.owner === filters.owner) &&
           (!filters.costCenter || row.costCenter === filters.costCenter) &&

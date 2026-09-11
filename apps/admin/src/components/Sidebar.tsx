@@ -34,12 +34,10 @@ import {
   History,
   Settings,
   Lock,
-  Boxes,
   Search,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router";
 import clsx from "clsx";
-import { Badge } from "../components/ui/badge";
 import { version } from "../../package.json";
 import { Helmet } from "react-helmet";
 import useReportStore from "../store/useReportStore";
@@ -129,8 +127,9 @@ const EditProfileModal = ({ user, isOpen, onClose, onSave }) => {
 
 const AppVersion = () => {
   return (
-    <div>
-      <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 font-normal">v{version}</Badge>
+    <div className="rounded-md border border-slate-200 bg-white/95 px-2.5 py-1.5 text-right leading-tight shadow-sm">
+      <p className="text-[10px] font-semibold text-slate-700">Built by Codeverta</p>
+      <p className="text-[9px] text-slate-500">v{version} · {new Date().getFullYear()}</p>
     </div>
   );
 };
@@ -320,7 +319,7 @@ const Sidebar = ({
 
                 {isOpen && (
                   <>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h2 className="text-sm font-semibold text-gray-800 truncate">
                         {settings.app_name}
                       </h2>
@@ -329,9 +328,10 @@ const Sidebar = ({
                           settings?.banner_text ||
                           "Future of Homeschooling"}
                       </p>
+                      <p className="mt-1 truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-blue-600" title={moduleLabel}>
+                        {moduleLabel}
+                      </p>
                     </div>
-
-                    <AppVersion />
                   </>
                 )}
               </div>
@@ -602,6 +602,9 @@ const Sidebar = ({
           isOpen={isOpen}
           onEditProfile={() => setIsEditModalOpen(true)}
         />
+        <div className="fixed bottom-3 right-4 z-40 pointer-events-none">
+          <AppVersion />
+        </div>
       </div>
       <EditProfileModal
         user={user}

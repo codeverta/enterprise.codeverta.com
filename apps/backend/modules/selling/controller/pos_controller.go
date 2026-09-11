@@ -44,8 +44,9 @@ type posItemResponse struct {
 	Barcodes    []string  `json:"barcodes"`
 }
 
-// Items exposes the active Item master as the canonical POS catalog.
+// Items exposes the active Item master joined with latest selling ItemPrice as the canonical POS catalog.
 func (c *POSController) Items(ctx *gin.Context) {
+	tenant := tenantString(ctx)
 	db := model.GetDB(ctx).WithContext(ctx.Request.Context()).
 		Preload("Barcodes", func(query *gorm.DB) *gorm.DB { return query.Order("idx ASC") }).
 		Where("disabled = ?", false)
@@ -59,6 +60,27 @@ func (c *POSController) Items(ctx *gin.Context) {
 		return
 	}
 
+	itemCodes := make([]string, 0, len(items))
+	for _, item := range items {
+		itemCodes = append(itemCodes, item.ItemCode)
+	}
+
+	latestPrices := make(map[string]float64)
+	if len(itemCodes) > 0 {
+		var itemPrices []sellingmodel.ItemPrice
+		pQuery := posDB(ctx).Where("item_code IN ? AND selling = ? AND is_active = ?", itemCodes, true, true)
+		if tenant != "" {
+			pQuery = pQuery.Where("tenant_id = ?", tenant)
+		}
+		if err := pQuery.Order("valid_from desc, created_at desc, id desc").Find(&itemPrices).Error; err == nil {
+			for _, ip := range itemPrices {
+				if _, exists := latestPrices[ip.ItemCode]; !exists {
+					latestPrices[ip.ItemCode] = ip.PriceListRate
+				}
+			}
+		}
+	}
+
 	result := make([]posItemResponse, 0, len(items))
 	for _, item := range items {
 		barcodes := make([]string, 0, len(item.Barcodes))
@@ -67,9 +89,13 @@ func (c *POSController) Items(ctx *gin.Context) {
 				barcodes = append(barcodes, value)
 			}
 		}
+		rate := item.StandardRate
+		if latestRate, exists := latestPrices[item.ItemCode]; exists {
+			rate = latestRate
+		}
 		result = append(result, posItemResponse{
 			ID: item.ID, ItemCode: item.ItemCode, ItemName: item.ItemName,
-			ItemGroup: item.ItemGroup, Rate: item.StandardRate, Stock: item.OpeningStock,
+			ItemGroup: item.ItemGroup, Rate: rate, Stock: item.OpeningStock,
 			Unit: item.StockUOM, IsStockItem: item.IsStockItem, Barcodes: barcodes,
 		})
 	}
@@ -293,6 +319,20 @@ func closePOSOpening(db *gorm.DB, tenant, openingID string, closingAmounts map[s
 				OpeningAmount: openingByMode[mode], ExpectedAmount: expected, ClosingAmount: actual, Difference: actual - expected,
 			})
 		}
+		for _, inv := range invoices {
+			num := inv.InvoiceNumber
+			if num == "" {
+				num = inv.ID
+			}
+			closing.SalesInvoices = append(closing.SalesInvoices, sellingmodel.POSClosingInvoice{
+				ID:             "posci-" + uuid.New().String()[:8],
+				ClosingEntryID: closing.ID,
+				SalesInvoice:   num,
+				Customer:       inv.Customer,
+				PostingDate:    inv.CreatedAt,
+				GrandTotal:     inv.GrandTotal,
+			})
+		}
 		if err := tx.Create(&closing).Error; err != nil {
 			return err
 		}
@@ -305,7 +345,7 @@ func closePOSOpening(db *gorm.DB, tenant, openingID string, closingAmounts map[s
 }
 
 func (c *POSController) ClosingEntries(ctx *gin.Context) {
-	query := posDB(ctx).Preload("Reconciliations").Order("period_end_date desc")
+	query := posDB(ctx).Preload("Reconciliations").Preload("SalesInvoices").Order("period_end_date desc")
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
@@ -325,7 +365,7 @@ func (c *POSController) ClosingEntries(ctx *gin.Context) {
 
 func (c *POSController) GetClosingEntry(ctx *gin.Context) {
 	id := ctx.Param("id")
-	query := posDB(ctx).Preload("Reconciliations").Where("id = ?", id)
+	query := posDB(ctx).Preload("Reconciliations").Preload("SalesInvoices").Where("id = ?", id)
 	if tenant := tenantString(ctx); tenant != "" {
 		query = query.Where("tenant_id = ?", tenant)
 	}
@@ -337,6 +377,29 @@ func (c *POSController) GetClosingEntry(ctx *gin.Context) {
 		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengambil POS Closing Entry"})
 		return
+	}
+	if len(entry.SalesInvoices) == 0 && entry.OpeningEntryID != "" {
+		var posInvoices []sellingmodel.POSInvoice
+		invQuery := posDB(ctx).Where("opening_entry_id = ?", entry.OpeningEntryID)
+		if tenant := tenantString(ctx); tenant != "" {
+			invQuery = invQuery.Where("tenant_id = ?", tenant)
+		}
+		if err := invQuery.Order("created_at asc").Find(&posInvoices).Error; err == nil && len(posInvoices) > 0 {
+			for _, inv := range posInvoices {
+				num := inv.InvoiceNumber
+				if num == "" {
+					num = inv.ID
+				}
+				entry.SalesInvoices = append(entry.SalesInvoices, sellingmodel.POSClosingInvoice{
+					ID:             inv.ID,
+					ClosingEntryID: entry.ID,
+					SalesInvoice:   num,
+					Customer:       inv.Customer,
+					PostingDate:    inv.CreatedAt,
+					GrandTotal:     inv.GrandTotal,
+				})
+			}
+		}
 	}
 	ctx.JSON(http.StatusOK, entry)
 }
@@ -402,6 +465,22 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 	var salesInvoiceItems []sellingmodel.SalesInvoiceItem
 	salesInvoiceID := "sinv-" + uuid.New().String()[:8]
 
+	latestPrices := make(map[string]float64)
+	if len(itemCodes) > 0 {
+		var itemPrices []sellingmodel.ItemPrice
+		pQuery := posDB(ctx).Where("item_code IN ? AND selling = ? AND is_active = ?", itemCodes, true, true)
+		if tenant != "" {
+			pQuery = pQuery.Where("tenant_id = ?", tenant)
+		}
+		if err := pQuery.Order("valid_from desc, created_at desc, id desc").Find(&itemPrices).Error; err == nil {
+			for _, ip := range itemPrices {
+				if _, exists := latestPrices[ip.ItemCode]; !exists {
+					latestPrices[ip.ItemCode] = ip.PriceListRate
+				}
+			}
+		}
+	}
+
 	for i := range input.Items {
 		masterItem, exists := itemsByCode[input.Items[i].ItemCode]
 		if !exists {
@@ -412,9 +491,13 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		input.Items[i].InvoiceID = input.ID
 		input.Items[i].ItemName = masterItem.ItemName
 		// POS may override the catalog rate for a negotiated or promotional price.
-		// Keep the master rate as a fallback for clients that omit the rate.
+		// Use the latest selling ItemPrice, falling back to master standard rate.
 		if input.Items[i].Rate == 0 {
-			input.Items[i].Rate = masterItem.StandardRate
+			if lp, exists := latestPrices[input.Items[i].ItemCode]; exists {
+				input.Items[i].Rate = lp
+			} else {
+				input.Items[i].Rate = masterItem.StandardRate
+			}
 		}
 		input.Items[i].Amount = input.Items[i].Quantity * input.Items[i].Rate
 		input.NetTotal += input.Items[i].Amount
@@ -433,16 +516,17 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 	}
 	input.GrandTotal = input.NetTotal + input.TaxTotal
 	input.PaidAmount = input.GrandTotal
-	if err := posDB(ctx).Create(&input).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan transaksi POS"})
-		return
-	}
-
 	company := opening.Company
 	if company == "" {
 		userID, _ := ctx.Get("id")
 		company = model.ResolveActiveCompanyName(posDB(ctx), userID)
 	}
+	input.Company = company
+	if err := posDB(ctx).Create(&input).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan transaksi POS"})
+		return
+	}
+
 	customerName := input.Customer
 	if customerName == "" {
 		customerName = "Walk-in Customer"

@@ -7,7 +7,7 @@ import (
 )
 
 func Migrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(&Account{}, &GLEntry{}); err != nil {
+	if err := db.AutoMigrate(&Account{}, &GLEntry{}, &Bank{}, &BankAccount{}, &BankAccountType{}); err != nil {
 		return fmt.Errorf("auto migrate Accounting models: %w", err)
 	}
 	return nil

@@ -26,6 +26,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { currencyApi, type Currency } from "@/modules/accounting/currencyApi";
 import {
   itemPriceApi,
   type ItemOption,
@@ -52,7 +54,7 @@ const defaultCurrencies = ["IDR", "USD", "EUR", "SGD", "MYR", "JPY"];
 const emptyItemPrice: ItemPrice = {
   item_code: "",
   item_name: "",
-  price_list: "Standard Selling",
+  price_list: "",
   price_list_rate: 0,
   currency: "IDR",
   uom: "Nos",
@@ -96,6 +98,7 @@ export default function ItemPricePage() {
   const [priceLists, setPriceLists] = useState<PriceList[]>([]);
   const [items, setItems] = useState<ItemOption[]>([]);
   const [uoms, setUoms] = useState<{ id?: string; uom_name: string; symbol?: string; common_code?: string }[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriceList, setFilterPriceList] = useState("ALL");
   const [filterType, setFilterType] = useState<"ALL" | "SELLING" | "BUYING">("ALL");
@@ -111,14 +114,37 @@ export default function ItemPricePage() {
   // Load Master data for Dropdowns
   const loadMasterData = useCallback(async () => {
     try {
-      const [plData, itmData, uomData] = await Promise.all([
+      const [plData, itmData, uomData, curData] = await Promise.all([
         itemPriceApi.listPriceLists().catch(() => []),
         itemPriceApi.listItems().catch(() => []),
         itemPriceApi.listUOMs().catch(() => []),
+        currencyApi.list({ enabled: true }).catch(() => []),
       ]);
       setPriceLists(plData || []);
       setItems(itmData || []);
       setUoms(uomData || []);
+      setCurrencies(curData || []);
+
+      if (plData && plData.length > 0) {
+        setFormData((prev) => {
+          if (!prev.price_list || prev.price_list === "Standard Selling" || prev.price_list === "Standar Selling") {
+            const defaultPL =
+              plData.find((p) => p.price_list_name === "Standar Selling") ||
+              plData.find((p) => p.price_list_name === "Standard Selling") ||
+              plData[0];
+            if (defaultPL) {
+              return {
+                ...prev,
+                price_list: defaultPL.price_list_name,
+                currency: defaultPL.currency || prev.currency || "IDR",
+                buying: defaultPL.buying,
+                selling: defaultPL.selling,
+              };
+            }
+          }
+          return prev;
+        });
+      }
     } catch {
       // fallback
     }
@@ -465,29 +491,35 @@ export default function ItemPricePage() {
                       Master UOM ↗
                     </Link>
                   </div>
-                  <div className="relative">
-                    <Input
-                      list="uom-suggestions"
-                      placeholder="Begin typing for results."
-                      value={formData.uom || ""}
-                      onChange={(e) => updateField("uom", e.target.value)}
-                      className="rounded-lg bg-slate-50/70 dark:bg-slate-800/60"
-                    />
-                    <datalist id="uom-suggestions">
-                      {uoms.length > 0
-                        ? uoms.map((u) => (
-                            <option
-                              key={u.id || u.uom_name}
-                              value={u.uom_name}
-                            >
-                              {u.uom_name} {u.symbol ? `(${u.symbol})` : ""}
-                            </option>
-                          ))
-                        : defaultUOMs.map((u) => (
-                            <option key={u} value={u} />
-                          ))}
-                    </datalist>
-                  </div>
+                  <SearchableSelect
+                    value={formData.uom || "Nos"}
+                    onChange={(val) => updateField("uom", val)}
+                    options={
+                      uoms.length > 0
+                        ? uoms.map((u) => ({
+                            value: u.uom_name,
+                            label: `${u.uom_name}${u.symbol ? ` (${u.symbol})` : ""}`,
+                            sublabel: u.common_code ? `Code: ${u.common_code}` : undefined,
+                          }))
+                        : defaultUOMs.map((u) => ({ value: u, label: u }))
+                    }
+                    onSearch={async (q) => {
+                      try {
+                        const data = await itemPriceApi.listUOMs(q);
+                        return data.map((u) => ({
+                          value: u.uom_name,
+                          label: `${u.uom_name}${u.symbol ? ` (${u.symbol})` : ""}`,
+                        }));
+                      } catch {
+                        return [];
+                      }
+                    }}
+                    placeholder="Pilih UOM..."
+                    searchPlaceholder="Cari UOM (Nos, Pcs, Box, Kg)..."
+                    addNewLabel="Tambah UOM Baru"
+                    addNewHref="/desk/uom"
+                    buttonClassName="h-10 rounded-lg bg-slate-50/70 dark:bg-slate-800/60 text-sm font-medium"
+                  />
                   <p className="text-[11px] font-mono text-slate-400">uom</p>
                 </div>
 
@@ -531,23 +563,21 @@ export default function ItemPricePage() {
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Price List <span className="text-red-500">*</span>
                   </Label>
-                  <div className="relative">
-                    <Input
-                      required
-                      list="price-list-options"
-                      placeholder="Begin typing for results."
-                      value={formData.price_list}
-                      onChange={(e) => handlePriceListChange(e.target.value)}
-                      className="rounded-lg bg-slate-50/70 dark:bg-slate-800/60"
-                    />
-                    <datalist id="price-list-options">
-                      <option value="Standard Selling" />
-                      <option value="Standard Buying" />
-                      {priceLists.map((pl) => (
-                        <option key={pl.id || pl.price_list_name} value={pl.price_list_name} />
-                      ))}
-                    </datalist>
-                  </div>
+                  <SearchableSelect
+                    value={formData.price_list}
+                    onChange={(val) => handlePriceListChange(val)}
+                    options={priceLists.map((pl) => ({
+                      value: pl.price_list_name,
+                      label: pl.price_list_name,
+                      sublabel: `${pl.currency} · ${pl.selling ? "Selling" : ""}${pl.buying ? (pl.selling ? " / Buying" : "Buying") : ""}`,
+                      badge: pl.enabled ? "Aktif" : "Nonaktif",
+                    }))}
+                    placeholder="Pilih Price List..."
+                    searchPlaceholder="Cari price list..."
+                    addNewLabel="Tambah Price List Baru"
+                    addNewHref="/desk/price-list"
+                    buttonClassName="h-10 rounded-lg bg-slate-50/70 dark:bg-slate-800/60 text-sm font-medium"
+                  />
                   <p className="text-[11px] font-mono text-slate-400">
                     price_list
                   </p>
@@ -603,24 +633,22 @@ export default function ItemPricePage() {
                   <Label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                     Currency
                   </Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      list="currency-list"
-                      value={formData.currency || "IDR"}
-                      onChange={(e) =>
-                        updateField("currency", e.target.value.toUpperCase())
-                      }
-                      className="w-32 rounded-lg font-bold uppercase"
-                    />
-                    <datalist id="currency-list">
-                      {defaultCurrencies.map((c) => (
-                        <option key={c} value={c} />
-                      ))}
-                    </datalist>
-                    <span className="rounded-lg bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">
-                      {formData.currency || "IDR"}
-                    </span>
-                  </div>
+                  <SearchableSelect
+                    value={formData.currency || "IDR"}
+                    onChange={(val) => updateField("currency", val)}
+                    options={
+                      currencies.length > 0
+                        ? currencies.map((c) => ({
+                            value: c.id,
+                            label: `${c.id} - ${c.currency_name || c.id}`,
+                            sublabel: c.symbol ? `Simbol: ${c.symbol}` : undefined,
+                          }))
+                        : defaultCurrencies.map((c) => ({ value: c, label: c }))
+                    }
+                    placeholder="Pilih Mata Uang..."
+                    searchPlaceholder="Cari mata uang..."
+                    buttonClassName="h-10 rounded-lg bg-slate-50/70 dark:bg-slate-800/60 text-sm font-medium"
+                  />
                   <p className="text-[11px] font-mono text-slate-400">
                     currency
                   </p>
@@ -886,8 +914,6 @@ export default function ItemPricePage() {
               className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
             >
               <option value="ALL">Semua Price List</option>
-              <option value="Standard Selling">Standard Selling</option>
-              <option value="Standard Buying">Standard Buying</option>
               {priceLists.map((pl) => (
                 <option key={pl.id || pl.price_list_name} value={pl.price_list_name}>
                   {pl.price_list_name}

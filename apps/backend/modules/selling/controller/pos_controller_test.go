@@ -9,6 +9,7 @@ import (
 	"time"
 
 	coremodel "gin-template/model"
+	buyingmodel "gin-template/modules/buying/model"
 	sellingmodel "gin-template/modules/selling/model"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,9 @@ func setupPOSTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	assert.NoError(t, err)
 
 	err = sellingmodel.Migrate(db)
+	assert.NoError(t, err)
+
+	err = buyingmodel.Migrate(db)
 	assert.NoError(t, err)
 
 	err = db.AutoMigrate(&coremodel.Company{}, &coremodel.User{})
@@ -64,6 +68,8 @@ func setupPOSTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	r.PUT("/pos-profiles/:id", posProfCtrl.Update)
 	r.DELETE("/pos-profiles/:id", posProfCtrl.Delete)
 
+	r.GET("/pos/items", posCtrl.Items)
+	r.POST("/pos/invoices", posCtrl.CreateInvoice)
 	r.GET("/pos/opening-entries", posCtrl.OpeningEntries)
 	r.GET("/pos/opening-entries/current", posCtrl.CurrentOpening)
 	r.GET("/pos/opening-entries/:id", posCtrl.GetOpeningEntry)
@@ -155,4 +161,141 @@ func TestPOSProfileAndOpeningClosingFlow(t *testing.T) {
 	req, _ = http.NewRequest(http.MethodGet, "/pos/closing-entries/"+createdClosing.ID, nil)
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestPOSClosingLinkedSalesInvoices(t *testing.T) {
+	router, db := setupPOSTestRouter(t)
+
+	// 1. Create Opening
+	openPayload := map[string]any{
+		"company":           "UD MILLION CANDLES",
+		"pos_profile":       "Usaha Jualan Lilin",
+		"user":              "Administrator",
+		"period_start_date": time.Now(),
+		"posting_date":      time.Now(),
+		"balance_details": []map[string]any{
+			{"mode_of_payment": "Cash", "opening_amount": 0},
+		},
+	}
+	openBody, _ := json.Marshal(openPayload)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/pos/opening-entries", bytes.NewReader(openBody))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var opening sellingmodel.POSOpeningEntry
+	_ = json.Unmarshal(w.Body.Bytes(), &opening)
+
+	// 2. Simulate Invoice in this opening
+	inv := sellingmodel.POSInvoice{
+		ID:             "posi-test-11",
+		TenantID:       "test-pos-tenant",
+		InvoiceNumber:  "ACC-SINV-2026-00011",
+		OpeningEntryID: opening.ID,
+		Customer:       "Walk-in Customer",
+		NetTotal:       28000,
+		GrandTotal:     28000,
+		PaidAmount:     28000,
+		ModeOfPayment:  "Cash",
+		Status:         "Paid",
+		CreatedAt:      time.Now(),
+	}
+	err := db.Create(&inv).Error
+	assert.NoError(t, err)
+
+	// 3. Close Opening
+	closePayload := map[string]any{
+		"closing_amounts": map[string]float64{
+			"Cash": 28000,
+		},
+	}
+	closeBody, _ := json.Marshal(closePayload)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodPost, "/pos/opening-entries/"+opening.ID+"/close", bytes.NewReader(closeBody))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var closing sellingmodel.POSClosingEntry
+	_ = json.Unmarshal(w.Body.Bytes(), &closing)
+	assert.NotEmpty(t, closing.SalesInvoices)
+	assert.Equal(t, "ACC-SINV-2026-00011", closing.SalesInvoices[0].SalesInvoice)
+	assert.Equal(t, 28000.0, closing.SalesInvoices[0].GrandTotal)
+
+	// 4. Get Closing Entry by ID (e.g. POS-CLOSE-...)
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest(http.MethodGet, "/pos/closing-entries/"+closing.ID, nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var fetched sellingmodel.POSClosingEntry
+	_ = json.Unmarshal(w.Body.Bytes(), &fetched)
+	assert.NotEmpty(t, fetched.SalesInvoices)
+	assert.Equal(t, "ACC-SINV-2026-00011", fetched.SalesInvoices[0].SalesInvoice)
+	assert.Equal(t, 28000.0, fetched.SalesInvoices[0].GrandTotal)
+}
+
+func TestPOSItemsUsesLatestItemPrice(t *testing.T) {
+	router, db := setupPOSTestRouter(t)
+
+	// 1. Seed Item with StandardRate 10,000
+	item := buyingmodel.Item{
+		Base:         buyingmodel.Base{ID: uuid.New(), TenantID: uuid.New()},
+		ItemCode:     "MK",
+		ItemName:     "Lilin Million Kecil",
+		ItemGroup:    "Products",
+		StandardRate: 10000,
+		OpeningStock: 50,
+		StockUOM:     "Nos",
+		IsStockItem:  true,
+		Disabled:     false,
+	}
+	err := db.Create(&item).Error
+	assert.NoError(t, err)
+
+	// 2. Seed older ItemPrice with Rate 1500
+	oldPrice := sellingmodel.ItemPrice{
+		ID:            "ip-old",
+		TenantID:      "test-pos-tenant",
+		ItemCode:      "MK",
+		ItemName:      "Lilin Million Kecil",
+		PriceList:     "Standard Selling",
+		PriceListRate: 1500,
+		Selling:       true,
+		IsActive:      true,
+		CreatedAt:     time.Now().Add(-2 * time.Hour),
+	}
+	err = db.Create(&oldPrice).Error
+	assert.NoError(t, err)
+
+	// 3. Seed latest ItemPrice with Rate 2000 (from /desk/item-price)
+	latestPrice := sellingmodel.ItemPrice{
+		ID:            "ip-latest",
+		TenantID:      "test-pos-tenant",
+		ItemCode:      "MK",
+		ItemName:      "Lilin Million Kecil",
+		PriceList:     "Standard Selling",
+		PriceListRate: 2000,
+		Selling:       true,
+		IsActive:      true,
+		CreatedAt:     time.Now(),
+	}
+	err = db.Create(&latestPrice).Error
+	assert.NoError(t, err)
+
+	// 4. Query /pos/items and verify rate is 2000 (not 10000 and not 1500)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/pos/items", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp struct {
+		Data []posItemResponse `json:"data"`
+	}
+	err = json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.NoError(t, err)
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "MK", resp.Data[0].ItemCode)
+	assert.Equal(t, 2000.0, resp.Data[0].Rate)
 }

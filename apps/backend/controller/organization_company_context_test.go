@@ -98,3 +98,22 @@ func TestCompanyContextDefaultsToAnActiveCompany(t *testing.T) {
 	require.NoError(t, db.Where("user_id = ?", userID).First(&preference).Error)
 	require.Equal(t, active.ID, *preference.ActiveCompanyID)
 }
+
+func TestCompanyContextOneUserOnePreference(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	db, tenant := companyContextTestDB(t)
+	companyA := model.Company{ID: uuid.New(), TenantID: tenant.ID, Name: "Company A", Abbreviation: "A", Currency: "IDR", IsActive: true}
+	require.NoError(t, db.Create(&companyA).Error)
+
+	userID := uuid.New()
+	// Call GET /company-context multiple times
+	for i := 0; i < 3; i++ {
+		res := contextRequest(t, db, tenant, userID, http.MethodGet, "/company-context", nil)
+		require.Equal(t, http.StatusOK, res.Code)
+	}
+
+	// Verify exactly 1 preference record exists for this user
+	var count int64
+	require.NoError(t, db.Model(&model.UserAppPreference{}).Where("user_id = ?", userID).Count(&count).Error)
+	require.Equal(t, int64(1), count, "1 user must have exactly 1 preference")
+}

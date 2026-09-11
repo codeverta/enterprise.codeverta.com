@@ -1,7 +1,11 @@
 package model
 
 import (
+	"log"
 	"time"
+
+	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type PriceList struct {
@@ -10,7 +14,7 @@ type PriceList struct {
 	PriceListName string    `gorm:"size:180;not null;index" json:"price_list_name"`
 	Currency      string    `gorm:"size:10;not null;default:'IDR'" json:"currency"`
 	Buying        bool      `gorm:"default:false" json:"buying"`
-	Selling       bool      `gorm:"default:true" json:"selling"`
+	Selling       bool      `json:"selling"`
 	Enabled       bool      `gorm:"default:true;index" json:"enabled"`
 	CreatedAt     time.Time `json:"created_at"`
 	UpdatedAt     time.Time `json:"updated_at"`
@@ -42,3 +46,42 @@ type ItemPrice struct {
 }
 
 func (ItemPrice) TableName() string { return "selling_item_prices" }
+
+type DefaultPriceListSeed struct {
+	PriceListName string
+	Currency      string
+	Buying        bool
+	Selling       bool
+	Enabled       bool
+}
+
+var DefaultPriceLists = []DefaultPriceListSeed{
+	{PriceListName: "Standar Selling", Currency: "IDR", Buying: false, Selling: true, Enabled: true},
+	{PriceListName: "Standar Buying", Currency: "IDR", Buying: true, Selling: false, Enabled: true},
+	{PriceListName: "Standard Selling", Currency: "IDR", Buying: false, Selling: true, Enabled: true},
+	{PriceListName: "Standard Buying", Currency: "IDR", Buying: true, Selling: false, Enabled: true},
+}
+
+// SeedPriceLists seeds default price lists for a tenant
+func SeedPriceLists(db *gorm.DB, tenantID string) error {
+	for _, def := range DefaultPriceLists {
+		var existing PriceList
+		err := db.Where("(tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL) AND price_list_name = ?", tenantID, def.PriceListName).First(&existing).Error
+		if err == gorm.ErrRecordNotFound {
+			newPL := PriceList{
+				ID:            "pl-" + uuid.NewString()[:8],
+				TenantID:      tenantID,
+				PriceListName: def.PriceListName,
+				Currency:      def.Currency,
+				Buying:        def.Buying,
+				Selling:       def.Selling,
+				Enabled:       def.Enabled,
+			}
+			if err := db.Create(&newPL).Error; err != nil {
+				log.Printf("[PriceListSeeder] Failed to seed Price List %s: %v\n", def.PriceListName, err)
+				return err
+			}
+		}
+	}
+	return nil
+}

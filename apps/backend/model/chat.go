@@ -168,14 +168,12 @@ func (m *ChatMessage) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-// ChatModels returns all chat models for auto-migration.
+// ChatModels returns all chat and AI retrieval models for auto-migration.
 func ChatModels() []interface{} {
 	return []interface{}{
 		&ChatConversation{},
 		&ChatConversationUserState{},
 		&ChatMessage{},
-		&UserAppPreference{},
-		&UserCompanyUsage{},
 		&AIChatDailyUsage{},
 		&RAGDocument{},
 		&RAGDocumentChunk{},

@@ -27,6 +27,14 @@ export type POSReconciliation = {
   difference: number;
 };
 
+export type POSClosingInvoice = {
+  id?: string;
+  sales_invoice: string;
+  customer?: string;
+  posting_date: string;
+  grand_total?: number;
+};
+
 export type POSClosingEntry = {
   id: string;
   pos_opening_entry: string;
@@ -43,6 +51,7 @@ export type POSClosingEntry = {
   grand_total: number;
   status?: string;
   payment_reconciliation: POSReconciliation[];
+  sales_invoices?: POSClosingInvoice[];
 };
 
 export type POSItem = {
@@ -342,6 +351,13 @@ export const posApi = {
           0,
         ),
         payment_reconciliation,
+        sales_invoices: invoices.map((inv) => ({
+          id: inv.id,
+          sales_invoice: inv.invoice_number || inv.id || "",
+          customer: inv.customer,
+          posting_date: inv.created_at || now,
+          grand_total: inv.grand_total || 0,
+        })),
       };
       openings[index] = { ...opening, status: "Closed", closed_at: now };
       write(OPENINGS_KEY, openings);

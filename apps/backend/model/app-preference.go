@@ -1,7 +1,6 @@
 package model
 
 import (
-	"fmt"
 	"gin-template/common"
 	"time"
 
@@ -49,10 +48,12 @@ func (m *UserAppPreference) BeforeCreate(tx *gorm.DB) error {
 	if m.AIChatDailyLimit <= 0 {
 		m.AIChatDailyLimit = 200
 	}
-	if tenant, ok := tx.Statement.Context.Value(common.CtxTenantKey).(Tenant); ok {
-		m.TenantID = &tenant.ID
-	} else {
-		return fmt.Errorf("tenant_id is required for security isolation")
+	if m.TenantID == nil || *m.TenantID == uuid.Nil {
+		if tenant, ok := tx.Statement.Context.Value(common.CtxTenantKey).(Tenant); ok && tenant.ID != uuid.Nil {
+			m.TenantID = &tenant.ID
+		} else {
+			m.TenantID = &DefaultTenantID
+		}
 	}
 	return nil
 }
@@ -61,10 +62,12 @@ func (m *UserCompanyUsage) BeforeCreate(tx *gorm.DB) error {
 	if m.ID == uuid.Nil {
 		m.ID = uuid.New()
 	}
-	if tenant, ok := tx.Statement.Context.Value(common.CtxTenantKey).(Tenant); ok {
-		m.TenantID = &tenant.ID
-	} else {
-		return fmt.Errorf("tenant_id is required for security isolation")
+	if m.TenantID == nil || *m.TenantID == uuid.Nil {
+		if tenant, ok := tx.Statement.Context.Value(common.CtxTenantKey).(Tenant); ok && tenant.ID != uuid.Nil {
+			m.TenantID = &tenant.ID
+		} else {
+			m.TenantID = &DefaultTenantID
+		}
 	}
 	return nil
 }

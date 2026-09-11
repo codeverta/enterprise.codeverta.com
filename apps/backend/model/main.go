@@ -82,7 +82,10 @@ func InitDB() error {
 		&InstallationSeedState{},
 		&DocumentRevision{},
 		&Currency{},
+		&UserAppPreference{},
+		&UserCompanyUsage{},
 	}
+	models = append(models, ChatModels()...)
 
 	err = db.AutoMigrate(models...)
 	if err != nil {

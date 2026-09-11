@@ -20,6 +20,7 @@ import SalesOrderFormPage, { SalesOrderListPage } from "./pages/SalesOrderPage";
 import SalesRegisterPage from "./pages/SalesRegisterPage";
 import PriceListPage from "./pages/PriceListPage";
 import ItemPricePage from "./pages/ItemPricePage";
+import PricingRulePage from "./pages/PricingRulePage";
 import MasterListPage from "../buying/pages/MasterListPage";
 import ItemFormPage from "../buying/pages/ItemFormPage";
 import SalesInvoiceFormPage, { SalesInvoiceListPage } from "./pages/SalesInvoicePage";
@@ -82,6 +83,8 @@ export default function SellingModule() {
     content = <CustomerPage />;
   } else if (pathname.startsWith("/desk/item-price")) {
     content = <ItemPricePage />;
+  } else if (pathname.startsWith("/desk/pricing-rule")) {
+    content = <PricingRulePage />;
   } else if (pathname.startsWith("/desk/price-list")) {
     content = <PriceListPage />;
   } else if (pathname.startsWith("/desk/item")) {

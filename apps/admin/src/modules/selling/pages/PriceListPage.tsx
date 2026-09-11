@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Plus, Trash2, Tag, DollarSign, Save } from "lucide-react";
+import { Plus, Trash2, Tag, DollarSign, Save, Database, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { currencyApi, type Currency } from "@/modules/accounting/currencyApi";
 
 export type PriceList = {
   id?: string;
@@ -34,7 +35,9 @@ export default function PriceListPage() {
   const [activeTab, setActiveTab] = useState<"price-list" | "item-price">("price-list");
   const [priceLists, setPriceLists] = useState<PriceList[]>([]);
   const [itemPrices, setItemPrices] = useState<ItemPrice[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [loading, setLoading] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   // Dialog State for PriceList
   const [openPLDialog, setOpenPLDialog] = useState(false);
@@ -61,14 +64,31 @@ export default function PriceListPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const plRes = await api.get<{ data: PriceList[] }>("/selling/price-lists");
+      const [plRes, ipRes, curData] = await Promise.all([
+        api.get<{ data: PriceList[] }>("/selling/price-lists"),
+        api.get<{ data: ItemPrice[] }>("/selling/item-prices"),
+        currencyApi.list({ enabled: true }).catch(() => []),
+      ]);
       setPriceLists(plRes.data.data || []);
-      const ipRes = await api.get<{ data: ItemPrice[] }>("/selling/item-prices");
       setItemPrices(ipRes.data.data || []);
+      setCurrencies(curData || []);
     } catch {
       toast.error("Gagal memuat data Price List & Item Price");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSeed = async () => {
+    setSeeding(true);
+    try {
+      await api.post("/selling/price-lists/seed");
+      toast.success("Standar Selling & Standar Buying berhasil di-seed!");
+      loadData();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Gagal seeding Price List");
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -146,14 +166,33 @@ export default function PriceListPage() {
             Kelola daftar harga jual/beli dan tarif harga produk untuk setiap Price List.
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <Button
+            variant="outline"
+            onClick={handleSeed}
+            disabled={seeding}
+            className="gap-1.5 cursor-pointer"
+          >
+            <Database className={`size-4 ${seeding ? "animate-spin" : ""}`} />
+            <span>{seeding ? "Seeding..." : "Seed Standar Price List"}</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={loadData}
+            disabled={loading}
+            title="Refresh Data"
+            className="cursor-pointer"
+          >
+            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+          </Button>
           {activeTab === "price-list" ? (
             <Button
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
               onClick={() => {
                 setPlForm({
                   price_list_name: "",
-                  currency: "IDR",
+                  currency: currencies[0]?.id || "IDR",
                   buying: false,
                   selling: true,
                   enabled: true,
@@ -165,14 +204,15 @@ export default function PriceListPage() {
             </Button>
           ) : (
             <Button
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 cursor-pointer"
               onClick={() => {
+                const defaultPL = priceLists[0];
                 setIpForm({
                   item_code: "",
                   item_name: "",
-                  price_list: priceLists[0]?.price_list_name || "Standard Selling",
+                  price_list: defaultPL?.price_list_name || "Standar Selling",
                   price_list_rate: 0,
-                  currency: "IDR",
+                  currency: defaultPL?.currency || currencies[0]?.id || "IDR",
                   uom: "Nos",
                   is_active: true,
                 });
@@ -346,11 +386,24 @@ export default function PriceListPage() {
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Currency</label>
-              <Input
-                value={plForm.currency}
+              <ERPSelect
+                className="w-full rounded-md border p-2 text-sm dark:bg-slate-900"
+                value={plForm.currency || "IDR"}
                 onChange={(e) => setPlForm({ ...plForm, currency: e.target.value })}
-                placeholder="IDR"
-              />
+              >
+                {currencies.length > 0 ? (
+                  currencies.map((c) => (
+                    <ERPSelectOption key={c.id} value={c.id}>
+                      {c.id} - {c.currency_name || c.id} {c.symbol ? `(${c.symbol})` : ""}
+                    </ERPSelectOption>
+                  ))
+                ) : (
+                  <>
+                    <ERPSelectOption value="IDR">IDR - Indonesian Rupiah (Rp)</ERPSelectOption>
+                    <ERPSelectOption value="USD">USD - US Dollar ($)</ERPSelectOption>
+                  </>
+                )}
+              </ERPSelect>
             </div>
             <div className="flex gap-6 pt-2">
               <label className="flex items-center gap-2 text-sm font-medium">
@@ -418,7 +471,14 @@ export default function PriceListPage() {
               <ERPSelect
                 className="w-full rounded-md border p-2 text-sm dark:bg-slate-900"
                 value={ipForm.price_list}
-                onChange={(e) => setIpForm({ ...ipForm, price_list: e.target.value })}
+                onChange={(e) => {
+                  const selectedPL = priceLists.find((p) => p.price_list_name === e.target.value);
+                  setIpForm({
+                    ...ipForm,
+                    price_list: e.target.value,
+                    currency: selectedPL?.currency || ipForm.currency,
+                  });
+                }}
               >
                 {priceLists.length > 0 ? (
                   priceLists.map((pl) => (
@@ -427,7 +487,28 @@ export default function PriceListPage() {
                     </ERPSelectOption>
                   ))
                 ) : (
-                  <ERPSelectOption value="Standard Selling">Standard Selling</ERPSelectOption>
+                  <ERPSelectOption value="Standar Selling">Standar Selling</ERPSelectOption>
+                )}
+              </ERPSelect>
+            </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Currency</label>
+              <ERPSelect
+                className="w-full rounded-md border p-2 text-sm dark:bg-slate-900"
+                value={ipForm.currency || "IDR"}
+                onChange={(e) => setIpForm({ ...ipForm, currency: e.target.value })}
+              >
+                {currencies.length > 0 ? (
+                  currencies.map((c) => (
+                    <ERPSelectOption key={c.id} value={c.id}>
+                      {c.id} - {c.currency_name || c.id} {c.symbol ? `(${c.symbol})` : ""}
+                    </ERPSelectOption>
+                  ))
+                ) : (
+                  <>
+                    <ERPSelectOption value="IDR">IDR - Indonesian Rupiah (Rp)</ERPSelectOption>
+                    <ERPSelectOption value="USD">USD - US Dollar ($)</ERPSelectOption>
+                  </>
                 )}
               </ERPSelect>
             </div>

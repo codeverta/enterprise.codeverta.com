@@ -70,27 +70,8 @@ export default function DashboardLayout(PageComponent, options = {}) {
         : options.moduleLabel || "Core";
 
     return (
-      <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-slate-50 flex flex-col">
         <ImpersonationBanner />
-        <div className="hidden lg:flex">
-          <Sidebar
-            user={user}
-            items={resolvedNavigation}
-            basePath={options.basePath ?? "/dashboard"}
-            navigationState={options.navigationState?.(props)}
-            defaultOpenAll={Boolean(options.defaultOpenAll)}
-            openMenusStorageKey={
-              options.openMenusStorageKey?.(props) || "sidebarOpenMenus"
-            }
-            moduleLabel={resolvedModuleLabel}
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen((open) => !open)}
-            onLogout={logout}
-          />
-          <main className="min-w-0 flex-1">
-            <PageComponent {...props} />
-          </main>
-        </div>
         <div className="lg:hidden">
           <Navbar
             user={user}
@@ -100,7 +81,25 @@ export default function DashboardLayout(PageComponent, options = {}) {
             navigationState={options.navigationState?.(props)}
             onLogout={logout}
           />
-          <main>
+        </div>
+        <div className="flex flex-1 min-w-0">
+          <div className="hidden lg:block">
+            <Sidebar
+              user={user}
+              items={resolvedNavigation}
+              basePath={options.basePath ?? "/dashboard"}
+              navigationState={options.navigationState?.(props)}
+              defaultOpenAll={Boolean(options.defaultOpenAll)}
+              openMenusStorageKey={
+                options.openMenusStorageKey?.(props) || "sidebarOpenMenus"
+              }
+              moduleLabel={resolvedModuleLabel}
+              isOpen={sidebarOpen}
+              onToggle={() => setSidebarOpen((open) => !open)}
+              onLogout={logout}
+            />
+          </div>
+          <main className="min-w-0 flex-1">
             <PageComponent {...props} />
           </main>
         </div>

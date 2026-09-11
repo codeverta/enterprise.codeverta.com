@@ -17,6 +17,7 @@ func Migrate(db *gorm.DB) error {
 		&POSInvoiceItem{},
 		&POSClosingEntry{},
 		&POSPaymentReconciliation{},
+		&POSClosingInvoice{},
 		&POSProfile{},
 		&POSProfileUser{},
 		&POSProfilePaymentMethod{},
@@ -50,6 +51,8 @@ func Migrate(db *gorm.DB) error {
 		&Subscription{},
 		&SubscriptionPlanItem{},
 		&SubscriptionPlanMaster{},
+		&PricingRule{},
+		&PricingRuleItem{},
 	); err != nil {
 		return fmt.Errorf("auto migrate Selling models: %w", err)
 	}

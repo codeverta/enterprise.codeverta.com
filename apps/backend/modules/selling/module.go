@@ -23,6 +23,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 	quotationHandler := controller.NewQuotationController()
 	subscriptionHandler := controller.NewSubscriptionController()
 	subscriptionPlanHandler := controller.NewSubscriptionPlanController()
+	pricingRuleHandler := controller.NewPricingRuleController()
 
 	store := parent.Group("/store")
 	{
@@ -76,6 +77,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.PUT("/pos-profiles/:id", posProfileHandler.Update)
 		group.DELETE("/pos-profiles/:id", posProfileHandler.Delete)
 		group.GET("/price-lists", priceListHandler.ListPriceLists)
+		group.POST("/price-lists/seed", priceListHandler.Seed)
 		group.GET("/price-lists/:id", priceListHandler.GetPriceList)
 		group.POST("/price-lists", priceListHandler.CreatePriceList)
 		group.PUT("/price-lists/:id", priceListHandler.UpdatePriceList)
@@ -158,5 +160,10 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.GET("/subscription-plans/:id", subscriptionPlanHandler.Get)
 		group.PUT("/subscription-plans/:id", subscriptionPlanHandler.Update)
 		group.DELETE("/subscription-plans/:id", subscriptionPlanHandler.Delete)
+		group.GET("/pricing-rules", pricingRuleHandler.ListPricingRules)
+		group.POST("/pricing-rules", pricingRuleHandler.CreatePricingRule)
+		group.GET("/pricing-rules/:id", pricingRuleHandler.GetPricingRule)
+		group.PUT("/pricing-rules/:id", pricingRuleHandler.UpdatePricingRule)
+		group.DELETE("/pricing-rules/:id", pricingRuleHandler.DeletePricingRule)
 	}
 }

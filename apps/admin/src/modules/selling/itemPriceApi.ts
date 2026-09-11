@@ -61,9 +61,9 @@ export const itemPriceApi = {
       return [] as ItemOption[];
     }
   },
-  listUOMs: async () => {
+  listUOMs: async (q = "") => {
     try {
-      const res = await api.get("/stock/uoms");
+      const res = await api.get("/stock/uoms", { params: q ? { q } : undefined });
       return (unwrap(res) || []) as { id?: string; uom_name: string; symbol?: string; common_code?: string }[];
     } catch {
       return [];

@@ -36,6 +36,7 @@ type POSInvoice struct {
 	InvoiceNumber  string           `gorm:"size:64;uniqueIndex;not null" json:"invoice_number"`
 	OpeningEntryID string           `gorm:"size:64;index;not null" json:"opening_entry_id"`
 	Customer       string           `gorm:"size:255" json:"customer"`
+	Company        string           `gorm:"size:255;index" json:"company"`
 	NetTotal       float64          `gorm:"type:decimal(16,2);default:0" json:"net_total"`
 	TaxTotal       float64          `gorm:"type:decimal(16,2);default:0" json:"tax_total"`
 	GrandTotal     float64          `gorm:"type:decimal(16,2);default:0" json:"grand_total"`
@@ -73,6 +74,7 @@ type POSClosingEntry struct {
 	GrandTotal           float64                    `gorm:"type:decimal(16,2);default:0" json:"grand_total"`
 	Status               string                     `gorm:"size:20;default:'Submitted'" json:"status"`
 	Reconciliations      []POSPaymentReconciliation `gorm:"foreignKey:ClosingEntryID;constraint:OnDelete:CASCADE" json:"payment_reconciliation"`
+	SalesInvoices        []POSClosingInvoice        `gorm:"foreignKey:ClosingEntryID;constraint:OnDelete:CASCADE" json:"sales_invoices"`
 	CreatedAt            time.Time                  `json:"created_at"`
 }
 
@@ -84,4 +86,13 @@ type POSPaymentReconciliation struct {
 	ExpectedAmount float64 `gorm:"type:decimal(16,2);default:0" json:"expected_amount"`
 	ClosingAmount  float64 `gorm:"type:decimal(16,2);default:0" json:"closing_amount"`
 	Difference     float64 `gorm:"type:decimal(16,2);default:0" json:"difference"`
+}
+
+type POSClosingInvoice struct {
+	ID             string    `gorm:"primaryKey;size:64" json:"id"`
+	ClosingEntryID string    `gorm:"size:64;index;not null" json:"closing_entry_id"`
+	SalesInvoice   string    `gorm:"size:64;not null" json:"sales_invoice"`
+	Customer       string    `gorm:"size:255" json:"customer"`
+	PostingDate    time.Time `gorm:"type:date;not null" json:"posting_date"`
+	GrandTotal     float64   `gorm:"type:decimal(16,2);default:0" json:"grand_total"`
 }

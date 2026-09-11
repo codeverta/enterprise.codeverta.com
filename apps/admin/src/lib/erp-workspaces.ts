@@ -7,6 +7,7 @@ import {
   ArrowLeftRight,
   ArrowRightLeft,
   Award,
+  BadgeDollarSign,
   BadgeCheck,
   Banknote,
   BarChart,
@@ -557,8 +558,13 @@ const documentLinks = (definitions: readonly LinkDefinition[]): WorkspaceNavigat
     return link(name, href);
   });
 
-const reportLinks = (names: readonly string[]): WorkspaceNavigationItem[] =>
-  names.map((name) => link(name, `/desk/query-report/${encodeURIComponent(name)}`, getReportIcon(name)));
+const reportLinks = (definitions: readonly LinkDefinition[]): WorkspaceNavigationItem[] =>
+  definitions.map((definition) => {
+    const [name, href] = typeof definition === "string"
+      ? [definition, `/desk/query-report/${encodeURIComponent(definition)}`]
+      : definition;
+    return link(name, href, getReportIcon(name));
+  });
 
 const group = (
   name: string,
@@ -664,6 +670,41 @@ const stock = workspace(
 );
 
 const accountingHome = "/desk/accounting";
+const invoicing = workspace("Invoicing", "invoicing", [["Chart of Accounts", "/desk/account"], ["Receivables", "/desk/customer"], ["Payables", "/desk/supplier"]], [
+  group("Receivables", "/desk/invoicing", documentLinks([
+    ["Customer", "/desk/customer"], "Sales Invoice", "Payment Entry", ["Accounts Receivable", "/desk/query-report/Accounts%20Receivable"],
+  ]), Users),
+  group("Payables", "/desk/invoicing", documentLinks([
+    ["Supplier", "/desk/supplier"], ["Purchase Invoice", "/desk/purchase-invoice"], ["Debit Note", "/desk/purchase-invoice/view/list?is_return=%3D%2C1"], ["Accounts Payable", "/desk/query-report/Accounts%20Payable"],
+  ]), Building2),
+  group("Payments", "/desk/invoicing", documentLinks([
+    ["Payment Entry", "/desk/payment-entry"], ["Journal Entry", "/desk/journal-entry"], ["Payment Request", "/desk/payment-request"], ["Payment Order", "/desk/payment-order"],
+    ["Payment Reconciliation", "/desk/payment-reconciliation/Payment%20Reconciliation"], ["Unreconcile Payment", "/desk/unreconcile-payment"], ["Process Payment Reconciliation", "/desk/process-payment-reconciliation"],
+    ["Repost Accounting Ledger", "/desk/repost-accounting-ledger"], ["Repost Payment Ledger", "/desk/repost-payment-ledger"],
+  ]), CreditCard),
+  group("Reports", "/desk/invoicing", reportLinks([
+    ["General Ledger", "/desk/query-report/General%20Ledger"], ["Trial Balance", "/desk/query-report/Trial%20Balance"], ["Financial Reports", "/desk/financial-reports"],
+  ]), LineChart),
+  group("Settings", "/desk/invoicing", documentLinks([["Settings", "/desk/accounts-settings/Accounts%20Settings"]]), SlidersHorizontal),
+]);
+
+const budget = workspace("Budget", "budget", [], [
+  group("Budget", "/desk/budget", documentLinks([
+    ["Budget", "/desk/budget"], ["Cost Center", "/desk/cost-center"], ["Accounting Dimension", "/desk/accounting-dimension"], ["Cost Center Allocation", "/desk/cost-center-allocation"],
+  ]), PiggyBank),
+  group("Reports", "/desk/budget", reportLinks([["Budget Variance", "/desk/query-report/Budget%20Variance%20Report"]]), LineChart),
+]);
+
+const taxes = workspace("Taxes", "taxes", [], [
+  group("Tax Templates", "/desk/sales-taxes-and-charges-template", documentLinks([
+    ["Sales Tax Template", "/desk/sales-taxes-and-charges-template"], ["Purchase Tax Template", "/desk/purchase-taxes-and-charges-template"], ["Item Tax Template", "/desk/item-tax-template"],
+  ]), BadgeDollarSign),
+  group("Setup", "/desk/sales-taxes-and-charges-template", documentLinks([
+    ["Tax Category", "/desk/tax-category"], ["Tax Rule", "/desk/tax-rule"], ["Tax Withholding Category", "/desk/tax-withholding-category"], ["Tax Withholding Group", "/desk/tax-withholding-group"], ["Deduction Certificate", "/desk/lower-deduction-certificate"],
+  ]), SlidersHorizontal),
+  group("Reports", "/desk/sales-taxes-and-charges-template", reportLinks([]), LineChart),
+]);
+
 const accounting = workspace("Accounting", "accounting", [["Core Finance", "/desk/accounting/finance"], ["Currency", "/desk/currency"], ["GL Entry", "/desk/gl-entry"]], [
   group("Accounting", accountingHome, [
     link("GL Entry", "/desk/gl-entry", BookOpen),
@@ -673,12 +714,39 @@ const accounting = workspace("Accounting", "accounting", [["Core Finance", "/des
     link("Financial Reports", "/desk/query-report/Balance%20Sheet", PieChart),
     link("Accounts Setup", "/desk/account?sidebar=Accounts%20Setup"),
     link("Taxes", "/desk/sales-taxes-and-charges-template?sidebar=Taxes"),
-    link("Banking", "/desk/bank-clearance/Bank%20Clearance?sidebar=Banking"),
+    link("Banking", "/desk/banking"),
     link("Budget", "/desk/budget?sidebar=Budget"),
     link("Share Management", "/desk/shareholder?sidebar=Share%20Management"),
     link("Subscription", "/desk/subscription?sidebar=Subscription"),
   ], Landmark),
 ]);
+
+const bankingHome = "/desk/banking";
+const banking: ErpWorkspace = {
+  name: "Banking",
+  slug: "banking",
+  navigation: [
+    ...documentLinks([
+      ["Bank Clearance", "/desk/bank-clearance/Bank%20Clearance"],
+      ["Bank Reconciliation", "/desk/bank-reconciliation-tool/Bank%20Reconciliation%20Tool"],
+      ["Reconciliation Statement", "/desk/query-report/Bank%20Reconciliation%20Statement"],
+      ["Unreconcile Payment", "/desk/unreconcile-payment"],
+      ["Process Payment Reconciliation", "/desk/process-payment-reconciliation"],
+    ]),
+    group("Setup", bankingHome, [
+      link("Bank", "/desk/bank"),
+      link("Bank Account", "/desk/bank-account"),
+      link("Bank Account Type", "/desk/bank-account-type"),
+      link("Bank Account Subtype", "/desk/bank-account-subtype"),
+      link("Bank Guarantee", "/desk/bank-guarantee"),
+      link("Plaid Settings", "/desk/plaid-settings/Plaid%20Settings"),
+    ], Sliders),
+    group("Dunning", bankingHome, [
+      link("Dunning", "/desk/dunning"),
+      link("Dunning Type", "/desk/dunning-type"),
+    ], Sliders),
+  ],
+};
 
 const accountsSetupHome = "/desk/account?sidebar=Accounts%20Setup";
 const accountsSetup = workspace(
@@ -1125,6 +1193,10 @@ export const erpWorkspaces: Record<string, ErpWorkspace> = {
   communication,
   organization,
   accounting,
+  invoicing,
+  budget,
+  taxes,
+  banking,
   "accounts-setup": accountsSetup,
   "account-setup": accountsSetup,
   assets,

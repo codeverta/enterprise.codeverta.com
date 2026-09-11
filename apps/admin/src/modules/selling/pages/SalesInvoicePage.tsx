@@ -468,11 +468,15 @@ export function SearchableItemSelect({
    FORM PAGE
    ========================================================================= */
 export default function SalesInvoiceFormPage() {
-  const { id } = useParams();
+  // This page is mounted through `sales-invoice/*`; React Router stores the
+  // document id in the wildcard param rather than `params.id`.
+  const routeParams = useParams<{ id?: string; "*"?: string }>();
+  const id = routeParams.id || routeParams["*"]?.split("/").filter(Boolean).pop();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const isNew = !id || id === "new" || id.startsWith("new-sales-invoice");
   const deliveryNoteID = params.get("delivery_note_id") || "";
+  const salesOrderID = params.get("sales_order_id") || "";
   const returnAgainst = params.get("return_against") || "";
 
   const [tab, setTab] = useState<string>("details");
@@ -576,6 +580,27 @@ export default function SalesInvoiceFormPage() {
               })),
             })
           );
+        } else if (salesOrderID) {
+          const soRes = await api.get<{ data: any } | any>(`/crm/sales-orders/${salesOrderID}`);
+          const soData = soRes?.data?.data || soRes?.data || {};
+          setRow(
+            calculateTotals({
+              ...emptyInvoice(),
+              customer: soData.customer || "",
+              company: soData.company || "",
+              sales_order_id: soData.id || salesOrderID,
+              currency: soData.currency || "IDR",
+              items: (soData.items || []).map((item: any) => ({
+                item_code: item.item_code,
+                item_name: item.item_name || "",
+                warehouse: item.warehouse || "",
+                quantity: item.quantity || 1,
+                uom: item.uom || "Nos",
+                rate: item.rate || 0,
+                amount: item.amount || (item.quantity || 1) * (item.rate || 0),
+              })),
+            })
+          );
         }
       } catch {
         toast.error("Gagal memuat form Sales Invoice");
@@ -584,7 +609,7 @@ export default function SalesInvoiceFormPage() {
       }
     };
     init();
-  }, [id, isNew, deliveryNoteID, returnAgainst]);
+  }, [id, isNew, deliveryNoteID, salesOrderID, returnAgainst]);
 
   const update = <K extends keyof SalesInvoice>(key: K, value: SalesInvoice[K]) =>
     setRow((previous) => calculateTotals({ ...previous, [key]: value }));

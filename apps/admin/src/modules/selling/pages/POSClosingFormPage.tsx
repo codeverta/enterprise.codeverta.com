@@ -32,6 +32,37 @@ const formatRp = (val: number) =>
     maximumFractionDigits: 0,
   }).format(val || 0);
 
+const formatDateOnly = (val?: string) => {
+  if (!val) return "—";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  } catch {
+    return val;
+  }
+};
+
+const formatDateTime = (val?: string) => {
+  if (!val) return "—";
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return val;
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const year = d.getFullYear();
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const seconds = String(d.getSeconds()).padStart(2, "0");
+    return `${day}-${month}-${year} ${hours}:${minutes}:${seconds}`;
+  } catch {
+    return val;
+  }
+};
+
 const localDateTime = () => {
   const now = new Date();
   return new Date(now.getTime() - now.getTimezoneOffset() * 60000)
@@ -81,6 +112,20 @@ export default function POSClosingFormPage() {
               actuals[r.mode_of_payment] = r.closing_amount;
             });
             setActualAmounts(actuals);
+
+            // Fetch opening & invoices for this closing
+            if (closing.pos_opening_entry) {
+              try {
+                const [opData, invList] = await Promise.all([
+                  posApi.getOpening(closing.pos_opening_entry).catch(() => null),
+                  posApi.listInvoices(closing.pos_opening_entry).catch(() => []),
+                ]);
+                if (opData) setSelectedOpening(opData);
+                if (invList && invList.length > 0) setInvoices(invList);
+              } catch {
+                // ignore
+              }
+            }
           }
         } else {
           // New Closing: fetch open openings
@@ -102,19 +147,21 @@ export default function POSClosingFormPage() {
   // 2. When selected opening changes, fetch opening details and invoices
   useEffect(() => {
     if (!selectedOpeningId) {
-      setSelectedOpening(null);
-      setInvoices([]);
+      if (isNew) {
+        setSelectedOpening(null);
+        setInvoices([]);
+      }
       return;
     }
 
     const loadOpeningDetails = async () => {
       try {
         const [opData, invList] = await Promise.all([
-          posApi.getOpening(selectedOpeningId),
-          posApi.listInvoices(selectedOpeningId),
+          posApi.getOpening(selectedOpeningId).catch(() => null),
+          posApi.listInvoices(selectedOpeningId).catch(() => []),
         ]);
-        setSelectedOpening(opData);
-        setInvoices(invList || []);
+        if (opData) setSelectedOpening(opData);
+        if (invList) setInvoices(invList);
       } catch {
         // If from list
         const match = openings.find((o) => o.id === selectedOpeningId);
@@ -125,7 +172,35 @@ export default function POSClosingFormPage() {
     if (isNew) {
       loadOpeningDetails();
     }
-  }, [selectedOpeningId, isNew]);
+  }, [selectedOpeningId, isNew, openings]);
+
+  const companyName = existingClosing?.company || selectedOpening?.company || "";
+  const posProfileName = existingClosing?.pos_profile || selectedOpening?.pos_profile || "";
+  const cashierName = existingClosing?.user || selectedOpening?.user || "";
+  const periodStartDate = selectedOpening?.period_start_date || existingClosing?.period_start_date;
+
+  // Invoices to display in Linked Invoices section
+  const displayInvoices = useMemo(() => {
+    if (existingClosing?.sales_invoices && existingClosing.sales_invoices.length > 0) {
+      return existingClosing.sales_invoices.map((inv) => ({
+        id: inv.id || inv.sales_invoice,
+        sales_invoice: inv.sales_invoice,
+        date: inv.posting_date,
+        amount: inv.grand_total ?? 0,
+        customer: inv.customer,
+      }));
+    }
+    if (invoices && invoices.length > 0) {
+      return invoices.map((inv) => ({
+        id: inv.id || inv.invoice_number,
+        sales_invoice: inv.invoice_number || inv.id || "",
+        date: inv.created_at || postingDate,
+        amount: inv.grand_total ?? inv.paid_amount ?? inv.net_total ?? 0,
+        customer: inv.customer,
+      }));
+    }
+    return [];
+  }, [existingClosing?.sales_invoices, invoices, postingDate]);
 
   // Payment Reconciliations calculation
   const paymentRows = useMemo(() => {
@@ -276,23 +351,24 @@ export default function POSClosingFormPage() {
 
       {/* Period Details */}
       <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-5 dark:bg-slate-950">
-        <h2 className="font-bold text-base text-slate-800 dark:text-slate-200 border-b pb-2">
-          Period Details
-        </h2>
+        <div>
+          <h2 className="font-bold text-base text-slate-800 dark:text-slate-200">
+            Period Details
+          </h2>
+        </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          {/* If opening is selected, display Period Start Date */}
-          {selectedOpening && (
+          {/* Period Start Date */}
+          {periodStartDate && (
             <div>
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Period Start Date
               </label>
               <div className="mt-1 font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border bg-slate-50 dark:bg-slate-900">
-                {new Date(selectedOpening.period_start_date).toLocaleString("id-ID", {
-                  timeZone: "Asia/Jakarta",
-                })}
+                {formatDateTime(periodStartDate)}
               </div>
               <span className="mt-0.5 block text-[10px] text-slate-400">Asia/Jakarta</span>
+              <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">period_start_date</span>
             </div>
           )}
 
@@ -300,40 +376,58 @@ export default function POSClosingFormPage() {
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Period End Date <span className="text-red-500">*</span>
             </label>
-            <Input
-              type="datetime-local"
-              value={periodEndDate}
-              disabled={isReadonly}
-              onChange={(e) => setPeriodEndDate(e.target.value)}
-              className="mt-1 font-mono text-xs"
-            />
+            {isReadonly ? (
+              <div className="mt-1 font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border bg-slate-50 dark:bg-slate-900">
+                {formatDateTime(existingClosing?.period_end_date || periodEndDate)}
+              </div>
+            ) : (
+              <Input
+                type="datetime-local"
+                value={periodEndDate}
+                onChange={(e) => setPeriodEndDate(e.target.value)}
+                className="mt-1 font-mono text-xs"
+              />
+            )}
             <span className="mt-0.5 block text-[10px] text-slate-400">Asia/Jakarta</span>
+            <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">period_end_date</span>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Posting Date <span className="text-red-500">*</span>
             </label>
-            <Input
-              type="date"
-              value={postingDate}
-              disabled={isReadonly}
-              onChange={(e) => setPostingDate(e.target.value)}
-              className="mt-1 text-xs"
-            />
+            {isReadonly ? (
+              <div className="mt-1 font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border bg-slate-50 dark:bg-slate-900">
+                {formatDateOnly(postingDate)}
+              </div>
+            ) : (
+              <Input
+                type="date"
+                value={postingDate}
+                onChange={(e) => setPostingDate(e.target.value)}
+                className="mt-1 text-xs"
+              />
+            )}
+            <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">posting_date</span>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Posting Time
             </label>
-            <Input
-              type="time"
-              value={postingTime}
-              disabled={isReadonly}
-              onChange={(e) => setPostingTime(e.target.value)}
-              className="mt-1 text-xs"
-            />
+            {isReadonly ? (
+              <div className="mt-1 font-mono text-xs font-semibold text-slate-900 dark:text-slate-100 p-2.5 rounded-lg border bg-slate-50 dark:bg-slate-900">
+                {postingTime || "—"}
+              </div>
+            ) : (
+              <Input
+                type="time"
+                value={postingTime}
+                onChange={(e) => setPostingTime(e.target.value)}
+                className="mt-1 text-xs"
+              />
+            )}
+            <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">posting_time</span>
           </div>
 
           <div className="sm:col-span-2">
@@ -342,8 +436,13 @@ export default function POSClosingFormPage() {
             </label>
             <div className="mt-1">
               {isReadonly ? (
-                <div className="p-2.5 rounded-lg border bg-slate-50 font-mono text-xs font-medium dark:bg-slate-900">
-                  {selectedOpeningId}
+                <div className="p-2.5 rounded-lg border bg-slate-50 font-mono text-xs font-semibold dark:bg-slate-900">
+                  <Link
+                    to={`/desk/pos-opening-entry/${encodeURIComponent(selectedOpeningId)}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {selectedOpeningId}
+                  </Link>
                 </div>
               ) : (
                 <SearchableSelect
@@ -359,6 +458,7 @@ export default function POSClosingFormPage() {
                 />
               )}
             </div>
+            <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">pos_opening_entry</span>
             {!selectedOpeningId && isNew && (
               <p className="mt-1 text-xs text-amber-600 flex items-center gap-1">
                 <AlertCircle className="size-3.5" /> Pilih POS Opening Entry terlebih dahulu untuk memuat data transaksi.
@@ -368,12 +468,14 @@ export default function POSClosingFormPage() {
         </div>
       </section>
 
-      {/* User Details (Only shown when POS Opening is selected) */}
-      {selectedOpening && (
+      {/* User Details */}
+      {(companyName || posProfileName || cashierName) && (
         <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-5 dark:bg-slate-950">
-          <h2 className="font-bold text-base text-slate-800 dark:text-slate-200 border-b pb-2">
-            User Details
-          </h2>
+          <div>
+            <h2 className="font-bold text-base text-slate-800 dark:text-slate-200">
+              User Details
+            </h2>
+          </div>
 
           <div className="grid gap-5 sm:grid-cols-3">
             <div>
@@ -382,12 +484,13 @@ export default function POSClosingFormPage() {
               </label>
               <div className="mt-1">
                 <Link
-                  to={`/desk/company/${encodeURIComponent(selectedOpening.company)}`}
+                  to={`/desk/company/${encodeURIComponent(companyName)}`}
                   className="font-semibold text-blue-600 hover:underline text-xs"
                 >
-                  {selectedOpening.company}
+                  {companyName}
                 </Link>
               </div>
+              <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">company</span>
             </div>
 
             <div>
@@ -395,13 +498,18 @@ export default function POSClosingFormPage() {
                 POS Profile
               </label>
               <div className="mt-1">
-                <Link
-                  to={`/desk/pos-profile/${encodeURIComponent(selectedOpening.pos_profile)}`}
-                  className="font-semibold text-blue-600 hover:underline text-xs"
-                >
-                  {selectedOpening.pos_profile}
-                </Link>
+                {posProfileName ? (
+                  <Link
+                    to={`/desk/pos-profile/${encodeURIComponent(posProfileName)}`}
+                    className="font-semibold text-blue-600 hover:underline text-xs"
+                  >
+                    {posProfileName}
+                  </Link>
+                ) : (
+                  <span className="text-xs text-slate-500">—</span>
+                )}
               </div>
+              <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">pos_profile</span>
             </div>
 
             <div>
@@ -409,14 +517,85 @@ export default function POSClosingFormPage() {
                 Cashier
               </label>
               <div className="mt-1">
-                <span className="font-semibold text-slate-900 dark:text-slate-100 text-xs">
-                  {selectedOpening.user}
-                </span>
+                <Link
+                  to={`/desk/user/${encodeURIComponent(cashierName)}`}
+                  className="font-semibold text-blue-600 hover:underline text-xs"
+                >
+                  {cashierName}
+                </Link>
               </div>
+              <span className="mt-0.5 block text-[10px] text-slate-400 font-mono">user</span>
             </div>
           </div>
         </section>
       )}
+
+      {/* Linked Invoices (Sales Invoice Transactions) */}
+      <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+        <div className="border-b pb-3 flex flex-col gap-1">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-base text-slate-800 dark:text-slate-200">
+                Linked Invoices
+              </h2>
+              <p className="text-xs text-slate-500">
+                <span className="font-mono text-[10px] text-slate-400 mr-2">sales_invoices</span>
+                Sales Invoice Transactions
+              </p>
+            </div>
+            <Badge variant="secondary" className="font-mono text-xs">
+              {displayInvoices.length} {displayInvoices.length === 1 ? "invoice" : "invoices"}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="border-b bg-slate-50 text-slate-600 font-semibold dark:bg-slate-900">
+              <tr>
+                <th className="py-2.5 px-3 w-12 text-center">No.</th>
+                <th className="py-2.5 px-3 min-w-[200px]">Sales Invoice</th>
+                <th className="py-2.5 px-3 min-w-[140px]">Date</th>
+                <th className="py-2.5 px-3 min-w-[140px] text-right">Amount</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {displayInvoices.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-slate-400 text-xs">
+                    Belum ada transaksi invoice pada shift ini.
+                  </td>
+                </tr>
+              ) : (
+                displayInvoices.map((inv, idx) => (
+                  <tr key={inv.id || idx} className="hover:bg-slate-50/70 transition-colors dark:hover:bg-slate-900/50">
+                    <td className="py-2.5 px-3 text-center text-slate-400">{idx + 1}</td>
+                    <td className="py-2.5 px-3">
+                      <Link
+                        to={`/desk/sales-invoice/${encodeURIComponent(inv.sales_invoice)}`}
+                        className="font-semibold text-blue-600 hover:underline font-mono text-xs"
+                      >
+                        {inv.sales_invoice}
+                      </Link>
+                      {inv.customer && (
+                        <span className="block text-[11px] text-slate-400">
+                          {inv.customer}
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400 font-mono text-xs">
+                      {formatDateOnly(inv.date)}
+                    </td>
+                    <td className="py-2.5 px-3 text-right font-bold text-slate-900 dark:text-slate-100">
+                      {formatRp(inv.amount)}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {/* Totals Section */}
       <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
@@ -430,6 +609,7 @@ export default function POSClosingFormPage() {
             <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
               {totals.totalQuantity}
             </p>
+            <span className="mt-1 block text-[10px] text-slate-400 font-mono">total_quantity</span>
           </div>
 
           <div className="rounded-xl border bg-slate-50 p-4 dark:bg-slate-900">
@@ -437,6 +617,7 @@ export default function POSClosingFormPage() {
             <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
               {formatRp(totals.netTotal)}
             </p>
+            <span className="mt-1 block text-[10px] text-slate-400 font-mono">net_total</span>
           </div>
 
           <div className="rounded-xl border bg-slate-50 p-4 dark:bg-slate-900">
@@ -444,6 +625,7 @@ export default function POSClosingFormPage() {
             <p className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
               {formatRp(totals.totalTaxes)}
             </p>
+            <span className="mt-1 block text-[10px] text-slate-400 font-mono">total_taxes_and_charges</span>
           </div>
 
           <div className="rounded-xl border bg-blue-50/70 p-4 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900">
@@ -451,6 +633,7 @@ export default function POSClosingFormPage() {
             <p className="mt-1 text-xl font-extrabold text-blue-700 dark:text-blue-300">
               {formatRp(totals.grandTotal)}
             </p>
+            <span className="mt-1 block text-[10px] text-blue-500 font-mono">grand_total</span>
           </div>
         </div>
       </section>
@@ -459,10 +642,11 @@ export default function POSClosingFormPage() {
       <section className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
         <div className="border-b pb-3">
           <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">
-            Modes of Payment (Payment Reconciliation)
+            Modes of Payment
           </h3>
           <p className="text-xs text-slate-500">
-            Bandingkan saldo kas awal, penjualan yang diharapkan (Expected Amount), dan hitungan kas fisik penutupan (Closing Amount).
+            <span className="font-mono text-[10px] text-slate-400 mr-2">payment_reconciliation</span>
+            Payment Reconciliation
           </p>
         </div>
 
@@ -483,7 +667,9 @@ export default function POSClosingFormPage() {
                 <tr key={row.mode}>
                   <td className="py-2.5 px-3 text-center text-slate-400">{idx + 1}</td>
                   <td className="py-2.5 px-3 font-semibold text-blue-600 hover:underline">
-                    {row.mode}
+                    <Link to={`/desk/mode-of-payment/${encodeURIComponent(row.mode)}`}>
+                      {row.mode}
+                    </Link>
                   </td>
                   <td className="py-2.5 px-3 text-right font-medium">
                     {formatRp(row.openingAmount)}
