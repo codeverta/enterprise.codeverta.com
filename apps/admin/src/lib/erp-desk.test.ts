@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { accountingMenus, getAuthenticatedLandingPath, hrSubmodules, isAdminRole } from "./erp-desk";
+import { accountingMenus, accountingSubmodules, getAuthenticatedLandingPath, hrSubmodules, isAdminRole } from "./erp-desk";
 
 describe("ERP desk navigation", () => {
   it("sends admin and superadmin accounts to the desk", () => {
@@ -15,31 +15,45 @@ describe("ERP desk navigation", () => {
 
   it("exposes the complete Accounting menu", () => {
     expect(accountingMenus.map((item) => item.name)).toEqual([
-      "Invoicing",
-      "Payments",
-      "Financial Reports",
-      "Accounts Setup",
-      "Taxes",
-      "Banking",
-      "Budget",
-      "Share Management",
-      "Subscription",
+      "Faktur & Penagihan",
+      "Pembayaran",
+      "Laporan Keuangan",
+      "Pengaturan Akun (COA)",
+      "Pajak & Tarif",
+      "Perbankan",
+      "Anggaran (Budget)",
+      "Manajemen Saham",
+      "Langganan",
     ]);
   });
+
+  it("exposes the complete Accounting submodules matching dialog specifications", () => {
+    expect(accountingSubmodules.map((item) => ({ name: item.name, href: item.href }))).toEqual([
+      { name: "Invoicing", href: "/desk/invoicing?sidebar=Invoicing" },
+      { name: "Payments", href: "/desk/dashboard-view/Payments?sidebar=Payments" },
+      { name: "Financial Reports", href: "/desk/query-report/Balance%20Sheet" },
+      { name: "Accounts Setup", href: "/desk/account?sidebar=Accounts%20Setup" },
+      { name: "Taxes", href: "/desk/sales-taxes-and-charges-template?sidebar=Taxes" },
+      { name: "Banking", href: "/desk/bank-clearance/Bank%20Clearance?sidebar=Banking" },
+      { name: "Budget", href: "/desk/budget?sidebar=Budget" },
+      { name: "Share Management", href: "/desk/shareholder?sidebar=Share%20Management" },
+      { name: "Subscription", href: "/desk/subscription?sidebar=Subscription" },
+    ]);
+  });
+
 
   it("exposes the complete HR submodules", () => {
     expect(hrSubmodules.map((item) => item.name)).toEqual([
-      "Expenses",
-      "Performance",
-      "Tenure",
-      "HR Setup",
-      "Recruitment",
-      "Leaves",
-      "Shift & Attendance",
-      "Payroll",
-      "Tax & Benefits",
+      "Klaim Biaya (Expenses)",
+      "Penilaian Kinerja",
+      "Masa Kerja & Karyawan",
+      "Pengaturan HR",
+      "Perekrutan (Recruitment)",
+      "Cuti & Izin (Leaves)",
+      "Shift & Kehadiran",
+      "Penggajian (Payroll)",
+      "Pajak & Tunjangan",
     ]);
   });
 });
-
 

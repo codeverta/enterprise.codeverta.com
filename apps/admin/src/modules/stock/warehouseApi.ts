@@ -50,8 +50,6 @@ export const warehouseApi = {
     } catch {
       return [
         { name: "PT ZENIT TECHNOLOGY SOLUTION", abbreviation: "PZTS" },
-        { name: "PT Codeverta Utama", abbreviation: "PZTS" },
-        { name: "PT Codeverta Mandiri", abbreviation: "MC" },
       ];
     }
   },

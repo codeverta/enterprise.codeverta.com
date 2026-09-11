@@ -21,6 +21,8 @@ import CommunicationModule from "./modules/communication";
 import AdministrationModule from "./modules/administration";
 import SettingsModule from "./modules/settings";
 import PrintingModule from "./modules/printing";
+import HRModule from "./modules/hr";
+import ProjectsModule from "./modules/projects";
 import { isAdminRole } from "./lib/erp-desk";
 import { isTauri } from "@tauri-apps/api/core";
 import DesktopTitleBar from "./components/DesktopTitleBar";
@@ -87,6 +89,7 @@ const router = createBrowserRouter([
           { path: "desk/sales-partner/*", element: <SellingModule /> },
           { path: "desk/item-group/*", element: <SellingModule /> },
           { path: "desk/item/*", element: <SharedItemRoute /> },
+          { path: "desk/role/*", element: <OrganizationModule /> },
           { path: "desk/organization/users/*", element: <OrganizationModule /> },
           { path: "desk/organization/tenants/*", element: <OrganizationModule /> },
           { path: "desk/organization/permissions/*", element: <OrganizationModule /> },
@@ -101,6 +104,15 @@ const router = createBrowserRouter([
           { path: "desk/pos-opening-entry/*", element: <SellingModule /> },
           { path: "desk/pos-closing-entry/*", element: <SellingModule /> },
           { path: "desk/pos-invoice/*", element: <SellingModule /> },
+          { path: "desk/payroll-entry/*", element: <HRModule /> },
+          { path: "desk/attendance/*", element: <HRModule /> },
+          { path: "desk/employee-attendance-tool/*", element: <HRModule /> },
+          { path: "desk/employee-checkin/*", element: <HRModule /> },
+          { path: "desk/employee-onboarding/*", element: <HRModule /> },
+          { path: "desk/quotation/*", element: <SellingModule /> },
+          { path: "desk/tax-category/*", element: <SellingModule /> },
+          { path: "desk/subscription/*", element: <SellingModule /> },
+          { path: "desk/subscription-plan/*", element: <SellingModule /> },
           { path: "desk/sales-order/*", element: <SellingModule /> },
           { path: "desk/sales-invoice/*", element: <SellingModule /> },
           { path: "desk/item-price/*", element: <SellingModule /> },
@@ -130,6 +142,10 @@ const router = createBrowserRouter([
           { path: "desk/print-heading/*", element: <PrintingModule /> },
           { path: "desk/print-format-builder/*", element: <PrintingModule /> },
           { path: "desk/print-settings/*", element: <PrintingModule /> },
+          { path: "desk/project/*", element: <ProjectsModule /> },
+          { path: "desk/task/*", element: <ProjectsModule /> },
+          { path: "desk/timesheet/*", element: <ProjectsModule /> },
+          { path: "desk/projects/*", element: <ProjectsModule /> },
           { path: "desk/*", element: <ErpWorkspacePage /> },
           { path: "dashboard", element: <LegacyDashboardHome /> },
           { path: "dashboard/users/*", element: <Navigate to="/desk/organization/users" replace /> },

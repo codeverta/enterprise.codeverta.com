@@ -591,7 +591,7 @@ const selling = workspace(
   "Selling",
   "selling",
   [
-    "Quotation", "Sales Order", "Sales Invoice", ["POS", "/desk/point-of-sale"],
+    "Quotation", "Sales Order", "Sales Invoice", 
     ["Item Price", "/desk/item-price"],
     ["Subscriptions", "/desk/selling/subscriptions"],
     ["Promotions", "/desk/selling/promotions"],
@@ -766,9 +766,10 @@ const shiftAndAttendance = workspace(
   "Shift & Attendance",
   "shift-and-attendance",
   [
-    ["Roster", "/desk/roster"],
+    ["Attendance", "/desk/attendance"],
     ["Employee Attendance Tool", "/desk/employee-attendance-tool"],
     ["Employee Checkin", "/desk/employee-checkin"],
+    ["Roster", "/desk/roster"],
     ["Shift Request", "/desk/shift-request"],
     ["Attendance Request", "/desk/attendance-request"],
     ["Overtime", "/desk/overtime"],
@@ -1040,16 +1041,44 @@ const hr = workspace(
   [],
 );
 
+const subscriptionHome = "/desk/subscription";
+const subscription = workspace(
+  "Subscription",
+  "subscription",
+  [],
+  [
+    group("Subscription", subscriptionHome, [
+      link("Subscription", "/desk/subscription", Repeat),
+      link("Subscription Plan", "/desk/subscription-plan", FileSpreadsheet),
+      link("Subscription Settings", "/desk/subscription-settings/Subscription%20Settings", Settings2),
+    ], Repeat),
+    group("Setup", subscriptionHome, [
+      link("Customer", "/desk/customer", Users),
+      link("Supplier", "/desk/supplier", Factory),
+      link("Item", "/desk/item", Package),
+    ], Sliders),
+  ],
+);
+
 export const erpWorkspaces: Record<string, ErpWorkspace> = {
+  subscription,
+  "subscription-plan": subscription,
+  "subscription-settings": subscription,
   hr,
   "shift-and-attendance": shiftAndAttendance,
   "shift-attendance": shiftAndAttendance,
+  attendance: shiftAndAttendance,
+  "employee-attendance-tool": shiftAndAttendance,
+  "employee-checkin": shiftAndAttendance,
   expenses,
   recruitment,
   "hr-setup": hrSetup,
   payroll,
+  "payroll-entry": payroll,
   performance: performanceWorkspace,
   tenure,
+  "employee-onboarding": tenure,
+  "employee-onboarding-template": tenure,
   leaves,
   "tax-and-benefits": taxAndBenefits,
   "tax-and-benef": taxAndBenefits,
@@ -1074,8 +1103,9 @@ export const getWorkspaceFromPath = (
   pathname: string,
   preferredSlug?: string,
 ): ErpWorkspace | undefined => {
-  if (preferredSlug && erpWorkspaces[preferredSlug]) return erpWorkspaces[preferredSlug];
-  const directSlug = pathname.split("/").filter(Boolean)[1];
+  const normalizedPreferred = preferredSlug?.toLowerCase();
+  if (normalizedPreferred && erpWorkspaces[normalizedPreferred]) return erpWorkspaces[normalizedPreferred];
+  const directSlug = pathname.split("/").filter(Boolean)[1]?.toLowerCase();
   if (directSlug && erpWorkspaces[directSlug]) return erpWorkspaces[directSlug];
 
   return Object.values(erpWorkspaces).find((candidate) =>

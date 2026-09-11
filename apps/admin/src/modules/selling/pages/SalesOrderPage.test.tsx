@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import SalesOrderFormPage, { mergeServerOrder } from "./SalesOrderPage";
@@ -117,5 +117,56 @@ describe("Sales Order detail mapping", () => {
     expect(mapped.transaction_date).toBe("2026-08-07");
     expect(mapped.delivery_date).toBe("2026-08-20");
     expect(mapped.items[0].item_code).toBe("CACHE-ITEM");
+  });
+
+  it("automatically adjusts rate and amount when selecting an item code in new Sales Order", async () => {
+    apiGet.mockImplementation((url: string) => {
+      if (url === "/organization/companies") {
+        return Promise.resolve({ data: [{ name: "UD MILLION CANDLES", abbreviation: "MC" }] });
+      }
+      if (url === "/selling/customers") {
+        return Promise.resolve({ data: [{ customer_name: "Customer Bintang", email: "bintang@example.com" }] });
+      }
+      if (url === "/selling/sales-invoices/options") {
+        return Promise.resolve({
+          data: {
+            companies: ["UD MILLION CANDLES"],
+            customers: ["Customer Bintang"],
+            items: [
+              { item_code: "LILIN-01", item_name: "Lilin Aroma Terapi", uom: "Pcs", rate: 25000 },
+            ],
+          },
+        });
+      }
+      if (url === "/buying/items") {
+        return Promise.resolve({ data: { data: [] } });
+      }
+      return Promise.resolve({ data: null });
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/desk/sales-order/new"]}>
+        <Routes>
+          <Route path="/desk/sales-order/*" element={<SalesOrderFormPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByRole("heading", { name: "New Sales Order" })).toBeInTheDocument();
+
+    const trigger = screen.getByText("Pilih Item Code...");
+    fireEvent.click(trigger);
+
+    const itemMenu = await screen.findByRole("listbox", { name: "Cari kode atau nama item..." });
+    const tableScroller = document.querySelector(".overflow-x-auto");
+    expect(tableScroller).not.toContainElement(itemMenu);
+    expect(itemMenu.closest("[data-radix-popper-content-wrapper]")?.parentElement).toBe(document.body);
+
+    const optionBtn = await screen.findByRole("button", { name: /LILIN-01/i });
+    fireEvent.click(optionBtn);
+
+    expect(await screen.findByText("Lilin Aroma Terapi")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("25000")).toBeInTheDocument();
+    expect(screen.getAllByText("Rp 25.000").length).toBeGreaterThanOrEqual(1);
   });
 });

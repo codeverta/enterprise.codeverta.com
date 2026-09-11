@@ -93,8 +93,10 @@ export default function ErpWorkspacePage() {
 
   if (!isAdminRole(user?.role)) return <Navigate to="/dashboard" replace />;
 
-  const preferredWorkspace = (location.state as { workspace?: string } | null)
-    ?.workspace;
+  const sidebarParam = new URLSearchParams(location.search).get("sidebar")?.toLowerCase();
+  const preferredWorkspace =
+    (location.state as { workspace?: string } | null)?.workspace ||
+    sidebarParam;
   const workspaceConfig = getWorkspaceFromPath(
     location.pathname,
     preferredWorkspace,

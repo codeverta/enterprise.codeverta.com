@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"sort"
 	"strings"
@@ -387,11 +388,20 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 
 	now := time.Now()
 	input.ID = "posi-" + uuid.New().String()[:8]
-	input.InvoiceNumber = "POS-INV-" + now.Format("20060102-150405")
+
+	var sinvCount int64
+	posDB(ctx).Model(&sellingmodel.SalesInvoice{}).Where("tenant_id = ? AND number LIKE ?", tenant, "ACC-SINV-"+now.Format("2006")+"-%").Count(&sinvCount)
+	invoiceNumber := fmt.Sprintf("ACC-SINV-%s-%05d", now.Format("2006"), sinvCount+1)
+
+	input.InvoiceNumber = invoiceNumber
 	input.TenantID = tenant
 	input.Status = "Paid"
 	input.CreatedAt = now
 	input.NetTotal = 0
+	var totalQty float64
+	var salesInvoiceItems []sellingmodel.SalesInvoiceItem
+	salesInvoiceID := "sinv-" + uuid.New().String()[:8]
+
 	for i := range input.Items {
 		masterItem, exists := itemsByCode[input.Items[i].ItemCode]
 		if !exists {
@@ -408,6 +418,18 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		}
 		input.Items[i].Amount = input.Items[i].Quantity * input.Items[i].Rate
 		input.NetTotal += input.Items[i].Amount
+		totalQty += input.Items[i].Quantity
+
+		salesInvoiceItems = append(salesInvoiceItems, sellingmodel.SalesInvoiceItem{
+			ID:             "sii-" + uuid.New().String()[:8],
+			SalesInvoiceID: salesInvoiceID,
+			ItemCode:       input.Items[i].ItemCode,
+			ItemName:       input.Items[i].ItemName,
+			Quantity:       input.Items[i].Quantity,
+			Rate:           input.Items[i].Rate,
+			Amount:         input.Items[i].Amount,
+			UOM:            "Nos",
+		})
 	}
 	input.GrandTotal = input.NetTotal + input.TaxTotal
 	input.PaidAmount = input.GrandTotal
@@ -415,6 +437,42 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan transaksi POS"})
 		return
 	}
+
+	company := opening.Company
+	if company == "" {
+		company = "PT ZENIT TECHNOLOGY SOLUTION"
+	}
+	customerName := input.Customer
+	if customerName == "" {
+		customerName = "Walk-in Customer"
+	}
+
+	salesInvoice := sellingmodel.SalesInvoice{
+		ID:                 salesInvoiceID,
+		TenantID:           tenant,
+		Number:             invoiceNumber,
+		NamingSeries:       "ACC-SINV-.YYYY.-",
+		Status:             sellingmodel.SalesInvoiceStatusSubmitted,
+		Customer:           customerName,
+		Company:            company,
+		PostingDate:        now,
+		PostingTime:        now.Format("15:04:05"),
+		IsPOS:              true,
+		IsPaid:             true,
+		Currency:           "IDR",
+		TotalQty:           totalQty,
+		NetTotal:           input.NetTotal,
+		GrandTotal:         input.GrandTotal,
+		RoundedTotal:       math.Round(input.GrandTotal),
+		RoundingAdjustment: math.Round(input.GrandTotal) - input.GrandTotal,
+		TotalAdvance:       input.GrandTotal,
+		OutstandingAmount:  0,
+		Items:              salesInvoiceItems,
+		CreatedAt:          now,
+		UpdatedAt:          now,
+	}
+	_ = posDB(ctx).Create(&salesInvoice).Error
+
 	ctx.JSON(http.StatusCreated, input)
 }
 

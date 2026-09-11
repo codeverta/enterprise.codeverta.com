@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import {
   ArrowLeft,
@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { SearchableSelect, SearchableWarehouseSelect } from "@/components/ui/searchable-select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { stockApi } from "@/modules/stock/api";
 import { customerApi, type Customer } from "../customerApi";
@@ -269,12 +270,19 @@ export function SalesInvoiceListPage() {
                 rows.map((row) => (
                   <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/50">
                     <td className="p-4 font-semibold">
-                      <Link
-                        className="text-blue-600 hover:underline"
-                        to={`/desk/sales-invoice/${row.id}`}
-                      >
-                        {row.number}
-                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          className="text-blue-600 hover:underline"
+                          to={`/desk/sales-invoice/${row.id}`}
+                        >
+                          {row.number}
+                        </Link>
+                        {row.is_pos && (
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-950 dark:text-blue-300">
+                            POS
+                          </span>
+                        )}
+                      </div>
                       {row.is_return && (
                         <div className="mt-1 text-xs text-amber-600">
                           Credit Note · against {row.return_against_id}
@@ -320,7 +328,7 @@ export function SalesInvoiceListPage() {
   );
 }
 
-function SearchableItemSelect({
+export function SearchableItemSelect({
   value,
   itemOptions,
   onChange,
@@ -335,17 +343,6 @@ function SearchableItemSelect({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const selectedItem = itemOptions.find((x) => x.item_code === value);
 
@@ -359,46 +356,59 @@ function SearchableItemSelect({
   });
 
   return (
-    <div className="relative w-full" ref={dropdownRef}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={() => {
-          if (!disabled) {
-            setOpen(!open);
-            setSearch("");
-          }
-        }}
-        className={`flex h-8 w-full items-center justify-between rounded border border-slate-200 bg-white px-2 py-1 text-left text-xs font-medium text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 ${
-          open ? "ring-1 ring-blue-500 border-blue-500" : ""
-        }`}
-      >
-        <div className="truncate">
-          {value ? (
-            <span>
-              <span className="font-semibold">{value}</span>
-              {selectedItem?.item_name && (
-                <span className="ml-1 text-slate-500 truncate">- {selectedItem.item_name}</span>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (disabled) return setOpen(false);
+        setOpen(nextOpen);
+        if (nextOpen) setSearch("");
+      }}
+    >
+      <div className="w-full">
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            className={`flex h-8 w-full items-center justify-between rounded border border-slate-200 bg-white px-2 py-1 text-left text-xs font-medium text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 ${
+              open ? "ring-1 ring-blue-500 border-blue-500" : ""
+            }`}
+          >
+            <div className="truncate">
+              {value ? (
+                <span>
+                  <span className="font-semibold">{value}</span>
+                  {selectedItem?.item_name && (
+                    <span className="ml-1 text-slate-500 truncate">- {selectedItem.item_name}</span>
+                  )}
+                </span>
+              ) : (
+                <span className="text-slate-400 font-normal">{placeholder}</span>
               )}
-            </span>
-          ) : (
-            <span className="text-slate-400 font-normal">{placeholder}</span>
-          )}
-        </div>
-        <ChevronDown className="ml-1.5 size-3 shrink-0 opacity-50" />
-      </button>
+            </div>
+            <ChevronDown className="ml-1.5 size-3 shrink-0 opacity-50" />
+          </button>
+        </PopoverTrigger>
 
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-64 w-[340px] rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex items-center gap-1.5 border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
-            <Search className="size-3.5 text-slate-400" />
+        <PopoverContent
+          align="start"
+          side="bottom"
+          sideOffset={6}
+          collisionPadding={12}
+          role="listbox"
+          aria-label="Ketik kode, nama, atau barcode item..."
+          className="z-[100] max-h-64 w-[340px] max-w-[calc(100vw-24px)] rounded-lg border-slate-200 p-1 shadow-xl dark:border-slate-800 dark:bg-slate-950"
+        >
+          <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+            <Search className="size-3.5 shrink-0 text-slate-400" />
             <input
               autoFocus
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Ketik kode, nama, atau barcode item..."
-              className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
+              className="w-full bg-transparent pl-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
             />
           </div>
 
@@ -447,9 +457,9 @@ function SearchableItemSelect({
               <ExternalLink className="ml-auto size-3 opacity-60" />
             </a>
           </div>
-        </div>
-      )}
-    </div>
+        </PopoverContent>
+      </div>
+    </Popover>
   );
 }
 
@@ -1076,7 +1086,7 @@ export default function SalesInvoiceFormPage() {
           </div>
 
           {/* Items Table */}
-          <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
+          <div className="min-w-0 max-w-full rounded-2xl border bg-white p-6 shadow-sm space-y-4 dark:bg-slate-950">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b pb-3">
               <div>
                 <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">
@@ -1118,8 +1128,8 @@ export default function SalesInvoiceFormPage() {
               </div>
             )}
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="min-w-0 max-w-full overflow-x-auto overscroll-x-contain">
+              <table className="w-full min-w-[980px] text-left text-xs">
                 <thead className="border-b bg-slate-50 text-slate-600 font-semibold dark:bg-slate-900">
                   <tr>
                     <th className="py-2.5 px-3 w-10 text-center">No.</th>

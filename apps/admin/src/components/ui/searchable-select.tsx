@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { ChevronDown, Search, CheckCircle2, Plus, ExternalLink, Loader2 } from "lucide-react";
 
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
 export type SearchableSelectOption = {
   value: string;
   label?: string;
@@ -17,6 +20,7 @@ export interface SearchableSelectProps {
   placeholder?: string;
   searchPlaceholder?: string;
   className?: string;
+  buttonClassName?: string;
   addNewLabel?: string;
   addNewHref?: string;
   onAddNewClick?: () => void;
@@ -31,6 +35,7 @@ export function SearchableSelect({
   placeholder = "Pilih opsi...",
   searchPlaceholder = "Cari...",
   className = "",
+  buttonClassName = "",
   addNewLabel,
   addNewHref,
   onAddNewClick,
@@ -39,7 +44,6 @@ export function SearchableSelect({
   const [search, setSearch] = useState("");
   const [asyncOptions, setAsyncOptions] = useState<(string | SearchableSelectOption)[]>(initialOptions);
   const [loading, setLoading] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync initialOptions when changed outside
@@ -49,15 +53,10 @@ export function SearchableSelect({
     }
   }, [initialOptions, onSearch]);
 
-  // Click outside to close
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, []);
 
   // Handle remote fetch when onSearch provided
@@ -83,11 +82,10 @@ export function SearchableSelect({
   };
 
   // Open handler to trigger initial onSearch if needed
-  const handleToggle = () => {
-    if (disabled) return;
-    const nextState = !open;
-    setOpen(nextState);
-    if (nextState) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (disabled) return setOpen(false);
+    setOpen(nextOpen);
+    if (nextOpen) {
       setSearch("");
       if (onSearch) {
         setLoading(true);
@@ -119,48 +117,62 @@ export function SearchableSelect({
     : normalizedOptions.filter((opt) => {
         const q = search.toLowerCase();
         return (
-          opt.value.toLowerCase().includes(q) ||
-          (opt.label && opt.label.toLowerCase().includes(q)) ||
-          (opt.sublabel && opt.sublabel.toLowerCase().includes(q))
+          String(opt.value || "").toLowerCase().includes(q) ||
+          (opt.label && String(opt.label).toLowerCase().includes(q)) ||
+          (opt.sublabel && String(opt.sublabel).toLowerCase().includes(q))
         );
       });
 
   const selectedOption = normalizedOptions.find((opt) => opt.value === value);
 
   return (
-    <div className={`relative ${className}`} ref={dropdownRef}>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={handleToggle}
-        className={`flex h-9 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-normal text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 ${
-          open ? "ring-1 ring-blue-500 border-blue-500" : ""
-        }`}
-      >
-        <div className="truncate">
-          {selectedOption ? (
-            <span>
-              <span className="font-medium">{selectedOption.label || selectedOption.value}</span>
-              {selectedOption.sublabel && (
-                <span className="ml-1.5 text-slate-400 text-[11px]">({selectedOption.sublabel})</span>
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <div className={className}>
+        <input type="hidden" value={value} readOnly />
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            disabled={disabled}
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            className={cn(
+              "flex h-9 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-1.5 text-left text-xs font-normal text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:cursor-not-allowed disabled:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100",
+              open && "ring-1 ring-blue-500 border-blue-500",
+              buttonClassName
+            )}
+          >
+            <div className="truncate">
+              {selectedOption ? (
+                <span>
+                  <span className="font-medium">{selectedOption.label || selectedOption.value}</span>
+                  {selectedOption.sublabel && (
+                    <span className="ml-1.5 text-slate-400 text-[11px]">({selectedOption.sublabel})</span>
+                  )}
+                </span>
+              ) : value ? (
+                <span className="font-medium">{value}</span>
+              ) : (
+                <span className="text-slate-400">{placeholder}</span>
               )}
-            </span>
-          ) : value ? (
-            <span className="font-medium">{value}</span>
-          ) : (
-            <span className="text-slate-400">{placeholder}</span>
-          )}
-        </div>
-        <ChevronDown className="ml-2 size-3.5 shrink-0 opacity-50" />
-      </button>
+            </div>
+            <ChevronDown className="ml-2 size-3.5 shrink-0 opacity-50" />
+          </button>
+        </PopoverTrigger>
 
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-60 w-full min-w-[240px] rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex items-center gap-1.5 border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
+        <PopoverContent
+          align="start"
+          side="bottom"
+          sideOffset={6}
+          collisionPadding={12}
+          role="listbox"
+          aria-label={searchPlaceholder}
+          className="z-[100] max-h-60 w-[var(--radix-popover-trigger-width)] min-w-[240px] rounded-lg border-slate-200 p-1 shadow-xl dark:border-slate-800 dark:bg-slate-950"
+        >
+          <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
             {loading ? (
-              <Loader2 className="size-3.5 animate-spin text-blue-600" />
+              <Loader2 className="size-3.5 shrink-0 animate-spin text-blue-600" />
             ) : (
-              <Search className="size-3.5 text-slate-400" />
+              <Search className="size-3.5 shrink-0 text-slate-400" />
             )}
             <input
               autoFocus
@@ -168,7 +180,7 @@ export function SearchableSelect({
               value={search}
               onChange={(e) => handleQueryChange(e.target.value)}
               placeholder={searchPlaceholder}
-              className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
+              className="w-full bg-transparent pl-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
             />
           </div>
 
@@ -242,9 +254,9 @@ export function SearchableSelect({
               )}
             </div>
           )}
-        </div>
-      )}
-    </div>
+        </PopoverContent>
+      </div>
+    </Popover>
   );
 }
 

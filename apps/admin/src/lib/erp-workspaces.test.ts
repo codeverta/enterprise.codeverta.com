@@ -17,7 +17,7 @@ describe("ERPNext workspaces", () => {
   });
 
   it("contains the requested Selling, Buying, Stock, and HR navigation", () => {
-    expect(flattenWorkspaceNavigation(erpWorkspaces.selling).map((item) => item.name)).toContain("Sales Funnel");
+    expect(flattenWorkspaceNavigation(erpWorkspaces.selling).map((item) => item.name)).toContain("Sales Register");
     expect(flattenWorkspaceNavigation(erpWorkspaces.buying).map((item) => item.name)).toContain("Supplier Quotation Comparison");
     expect(flattenWorkspaceNavigation(erpWorkspaces.stock).map((item) => item.name)).toContain("Serial No and Batch Traceability");
     expect(flattenWorkspaceNavigation(erpWorkspaces["shift-and-attendance"]).map((item) => item.name)).toContain("Monthly Attendance Sheet");
@@ -35,6 +35,35 @@ describe("ERPNext workspaces", () => {
     const sellingItems = flattenWorkspaceNavigation(erpWorkspaces.selling);
     const icons = new Set(sellingItems.map((item) => item.icon));
     expect(icons.size).toBeGreaterThan(15);
+  });
+
+  it("contains Subscription workspace with Subscription and Setup groups", () => {
+    expect(erpWorkspaces.subscription).toBeDefined();
+    const subWs = erpWorkspaces.subscription;
+    expect(subWs.name).toBe("Subscription");
+    expect(subWs.slug).toBe("subscription");
+
+    const groupNames = subWs.navigation.filter((item) => item.items?.length).map((g) => g.name);
+    expect(groupNames).toEqual(["Subscription", "Setup"]);
+
+    const subGroup = subWs.navigation.find((g) => g.name === "Subscription");
+    expect(subGroup?.items?.map((item) => ({ name: item.name, href: item.href }))).toEqual([
+      { name: "Subscription", href: "/desk/subscription" },
+      { name: "Subscription Plan", href: "/desk/subscription-plan" },
+      { name: "Subscription Settings", href: "/desk/subscription-settings/Subscription%20Settings" },
+    ]);
+
+    const setupGroup = subWs.navigation.find((g) => g.name === "Setup");
+    expect(setupGroup?.items?.map((item) => ({ name: item.name, href: item.href }))).toEqual([
+      { name: "Customer", href: "/desk/customer" },
+      { name: "Supplier", href: "/desk/supplier" },
+      { name: "Item", href: "/desk/item" },
+    ]);
+
+    expect(getWorkspaceFromPath("/desk/subscription")?.slug).toBe("subscription");
+    expect(getWorkspaceFromPath("/desk/subscription", "Subscription")?.slug).toBe("subscription");
+    expect(getWorkspaceFromPath("/desk/subscription-plan")?.slug).toBe("subscription");
+    expect(getWorkspaceFromPath("/desk/subscription-settings/Subscription%20Settings")?.slug).toBe("subscription");
   });
 });
 

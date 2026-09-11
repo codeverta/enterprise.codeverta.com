@@ -352,15 +352,6 @@ export const posApi = {
     }
   },
 
-  async listClosings(): Promise<POSClosingEntry[]> {
-    try {
-      return unwrap<POSClosingEntry[]>(
-        (await api.get("/selling/pos/closing-entries")).data,
-      );
-    } catch {
-      return read<POSClosingEntry[]>(CLOSINGS_KEY, []);
-    }
-  },
 
   async createInvoice(input: POSInvoice): Promise<POSInvoice> {
     try {

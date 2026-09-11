@@ -10,8 +10,9 @@ import {
   Search,
   Sparkles,
   Users,
+  WalletCards,
 } from "lucide-react";
-import { accountingMenus, deskModules, frameworkSubmodules, hrSubmodules, isAdminRole } from "@/lib/erp-desk";
+import { accountingMenus, accountingSubmodules, deskModules, frameworkSubmodules, hrSubmodules, isAdminRole } from "@/lib/erp-desk";
 import { clearImpersonationStorage } from "@/lib/impersonation";
 import { erpWorkspaces, type WorkspaceNavigationItem } from "@/lib/erp-workspaces";
 import { useSettingsStore } from "@/store/useSettingsStore";
@@ -178,14 +179,24 @@ function buildSearchResults(): SearchResult[] {
     icon: item.icon,
   }));
 
-  const accountingFeatures = accountingMenus.map((item) => ({
-    type: "feature" as const,
-    name: item.name,
-    href: item.href,
-    moduleName: "Akuntansi & Keuangan",
-    moduleSlug: "accounting",
-    icon: item.icon,
-  }));
+  const accountingFeatures = [
+    ...accountingMenus.map((item) => ({
+      type: "feature" as const,
+      name: item.name,
+      href: item.href,
+      moduleName: "Akuntansi & Keuangan",
+      moduleSlug: "accounting",
+      icon: item.icon,
+    })),
+    ...accountingSubmodules.map((item) => ({
+      type: "feature" as const,
+      name: item.name,
+      href: item.href,
+      moduleName: "Akuntansi & Keuangan",
+      moduleSlug: "accounting",
+      icon: item.icon,
+    })),
+  ];
 
   const deduped = new Map<string, SearchResult>();
   [...modules, ...workspaceFeatures, ...hrFeatures, ...accountingFeatures].forEach((item) => {
@@ -361,7 +372,19 @@ const frameworkDescriptions: Record<string, string> = {
   website: "Halaman web, portal, dan konfigurasi website.",
 };
 
-function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; onSearchOpen: () => void }) {
+const accountingDescriptions: Record<string, string> = {
+  invoicing: "Faktur penjualan, penagihan, dan piutang usaha.",
+  payments: "Pencatatan dan rekonsiliasi pembayaran masuk dan keluar.",
+  "financial-reports": "Neraca, laba rugi, arus kas, dan laporan keuangan.",
+  "accounts-setup": "Bagan akun (COA), buku besar, dan akun standar.",
+  taxes: "Aturan tarif pajak dan template beban transaksi.",
+  banking: "Rekening koran, kliring bank, dan rekonsiliasi kas.",
+  budget: "Rencana anggaran biaya dan alokasi keuangan.",
+  "share-management": "Pencatatan pemegang saham dan transaksi modal.",
+  subscription: "Paket langganan, recurring billing, dan pengaturan.",
+};
+
+export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; onSearchOpen: () => void }) {
   const navigate = useNavigate();
   const [selectedModuleDialog, setSelectedModuleDialog] = useState<string | null>(null);
   const displayName = user?.display_name || user?.username || "Admin";
@@ -429,7 +452,7 @@ function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; onSearc
                   key={slug}
                   type="button"
                   onClick={() => {
-                    if (slug === "hr" || slug === "framework") {
+                    if (slug === "hr" || slug === "framework" || slug === "accounting") {
                       setSelectedModuleDialog(slug);
                     } else {
                       navigate(`/desk/${slug}`);
@@ -583,6 +606,73 @@ function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; onSearc
               className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white transition hover:bg-indigo-700"
             >
               Buka Printing <ArrowRight className="size-3.5" />
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={selectedModuleDialog === "accounting"} onOpenChange={(open) => !open && setSelectedModuleDialog(null)}>
+        <DialogContent className="max-h-[calc(100vh-2rem)] max-w-3xl grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden rounded-[28px] border-slate-200 bg-white p-0 shadow-2xl sm:max-w-3xl">
+          <div className="relative overflow-hidden border-b border-slate-100 bg-[#f8faff] px-6 py-6 sm:px-8 sm:py-7">
+            <div className="absolute -right-12 -top-16 size-44 rounded-full bg-blue-200/50 blur-3xl" />
+            <DialogHeader className="relative pr-8">
+              <div className="flex items-start gap-4">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_10px_25px_-10px_rgba(37,99,235,0.8)]">
+                  <WalletCards className="size-5.5" />
+                </span>
+                <div className="pt-0.5">
+                  <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                    <DialogTitle className="text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">Akuntansi & Keuangan</DialogTitle>
+                    <span className="rounded-full border border-blue-200 bg-white/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-blue-600">Finance</span>
+                  </div>
+                  <DialogDescription className="max-w-lg text-sm leading-6 text-slate-500">
+                    Arus kas, penagihan, jurnal, laporan keuangan, dan langganan bisnis Anda.
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+          </div>
+
+          <div className="min-h-0 overflow-y-auto px-4 py-4 sm:px-6 sm:py-6">
+            <div className="mb-3 flex items-center justify-between px-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">Pilih submodul</p>
+              <p className="text-xs text-slate-400">{accountingSubmodules.length} submodul tersedia</p>
+            </div>
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              {accountingSubmodules.map(({ name, slug, href, icon: Icon }, index) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => {
+                    setSelectedModuleDialog(null);
+                    navigate(href);
+                  }}
+                  className="group flex min-h-23 items-center gap-3.5 rounded-2xl border border-slate-200/80 bg-white p-3.5 text-left transition duration-200 hover:-translate-y-px hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-[0_12px_28px_-18px_rgba(37,99,235,0.45)] sm:p-4"
+                >
+                  <span className={`flex size-11 shrink-0 items-center justify-center rounded-xl border transition group-hover:scale-105 ${moduleStyles[(index + 1) % moduleStyles.length]}`}>
+                    <Icon className="size-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold leading-snug text-slate-900 transition group-hover:text-blue-700">{name}</span>
+                    <span className="mt-1 block text-[11px] leading-4.5 text-slate-500">{accountingDescriptions[slug]}</span>
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-blue-500" />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 border-t border-slate-100 bg-slate-50/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+            <p className="text-xs text-slate-500">Tidak yakin? Buka workspace Akuntansi untuk melihat semua transaksi.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedModuleDialog(null);
+                navigate("/desk/accounting");
+              }}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-xs font-semibold text-white transition hover:bg-blue-700"
+            >
+              Buka workspace Akuntansi <ArrowRight className="size-3.5" />
             </button>
           </div>
         </DialogContent>

@@ -26,6 +26,7 @@ import {
   Users,
   Workflow,
   WalletCards,
+  Repeat,
 } from "lucide-react";
 
 export const ADMIN_ROLE = 99;
@@ -89,3 +90,16 @@ export const accountingMenus = [
   { name: "Manajemen Saham", href: "/desk/shareholder?sidebar=Share%20Management", icon: Users },
   { name: "Langganan", href: "/desk/subscription?sidebar=Subscription", icon: Banknote },
 ] as const;
+
+export const accountingSubmodules = [
+  { name: "Invoicing", slug: "invoicing", href: "/desk/invoicing?sidebar=Invoicing", icon: ReceiptText },
+  { name: "Payments", slug: "payments", href: "/desk/dashboard-view/Payments?sidebar=Payments", icon: CreditCard },
+  { name: "Financial Reports", slug: "financial-reports", href: "/desk/query-report/Balance%20Sheet", icon: FileChartColumn },
+  { name: "Accounts Setup", slug: "accounts-setup", href: "/desk/account?sidebar=Accounts%20Setup", icon: CircleDollarSign },
+  { name: "Taxes", slug: "taxes", href: "/desk/sales-taxes-and-charges-template?sidebar=Taxes", icon: BadgeDollarSign },
+  { name: "Banking", slug: "banking", href: "/desk/bank-clearance/Bank%20Clearance?sidebar=Banking", icon: Landmark },
+  { name: "Budget", slug: "budget", href: "/desk/budget?sidebar=Budget", icon: PiggyBank },
+  { name: "Share Management", slug: "share-management", href: "/desk/shareholder?sidebar=Share%20Management", icon: Users },
+  { name: "Subscription", slug: "subscription", href: "/desk/subscription?sidebar=Subscription", icon: Repeat },
+] as const;
+

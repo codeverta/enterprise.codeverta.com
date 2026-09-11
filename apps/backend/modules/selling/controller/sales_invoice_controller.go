@@ -235,8 +235,71 @@ func (ctrl *SalesInvoiceController) Options(ctx *gin.Context) {
 	})
 }
 
+func syncPOSInvoicesToSalesInvoices(db *gorm.DB, tenant string) {
+	var posInvoices []sellingmodel.POSInvoice
+	_ = db.Preload("Items").Where("tenant_id = ?", tenant).Find(&posInvoices).Error
+
+	for _, posInv := range posInvoices {
+		var count int64
+		_ = db.Model(&sellingmodel.SalesInvoice{}).Where("tenant_id = ? AND number = ?", tenant, posInv.InvoiceNumber).Count(&count).Error
+		if count == 0 {
+			now := posInv.CreatedAt
+			if now.IsZero() {
+				now = time.Now()
+			}
+			sinvID := "sinv-" + uuid.New().String()[:8]
+			var items []sellingmodel.SalesInvoiceItem
+			var totalQty float64
+			for _, itm := range posInv.Items {
+				totalQty += itm.Quantity
+				items = append(items, sellingmodel.SalesInvoiceItem{
+					ID:             "sii-" + uuid.New().String()[:8],
+					SalesInvoiceID: sinvID,
+					ItemCode:       itm.ItemCode,
+					ItemName:       itm.ItemName,
+					Quantity:       itm.Quantity,
+					Rate:           itm.Rate,
+					Amount:         itm.Amount,
+					UOM:            "Nos",
+				})
+			}
+			cust := posInv.Customer
+			if cust == "" {
+				cust = "Walk-in Customer"
+			}
+			sinv := sellingmodel.SalesInvoice{
+				ID:                 sinvID,
+				TenantID:           tenant,
+				Number:             posInv.InvoiceNumber,
+				NamingSeries:       "ACC-SINV-.YYYY.-",
+				Status:             sellingmodel.SalesInvoiceStatusSubmitted,
+				Customer:           cust,
+				Company:            "PT ZENIT TECHNOLOGY SOLUTION",
+				PostingDate:        now,
+				PostingTime:        now.Format("15:04:05"),
+				IsPOS:              true,
+				IsPaid:             true,
+				Currency:           "IDR",
+				TotalQty:           totalQty,
+				NetTotal:           posInv.NetTotal,
+				GrandTotal:         posInv.GrandTotal,
+				RoundedTotal:       math.Round(posInv.GrandTotal),
+				RoundingAdjustment: math.Round(posInv.GrandTotal) - posInv.GrandTotal,
+				TotalAdvance:       posInv.GrandTotal,
+				OutstandingAmount:  0,
+				Items:              items,
+				CreatedAt:          now,
+				UpdatedAt:          now,
+			}
+			_ = db.Create(&sinv).Error
+		}
+	}
+}
+
 func (ctrl *SalesInvoiceController) List(ctx *gin.Context) {
 	db, tenant := posDB(ctx), tenantString(ctx)
+	syncPOSInvoicesToSalesInvoices(db, tenant)
+
 	var rows []sellingmodel.SalesInvoice
 	query := db.Preload("Items").Where("tenant_id = ?", tenant)
 	if value := strings.TrimSpace(ctx.Query("status")); value != "" {

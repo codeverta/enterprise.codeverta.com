@@ -21,6 +21,7 @@ export default defineConfig({
     globals: true, // Membuat API Vitest/Jest global
     environment: 'jsdom', // Lingkungan DOM untuk komponen React
     setupFiles: './src/setupTests.ts', // File setup untuk @testing-library/jest-dom
+    maxWorkers: 1, // Hindari timeout/flaky test pada komponen UI berat di CI dan desktop lokal
     css: true, // Memungkinkan pengujian CSS (opsional, tapi bagus untuk RTL)
     coverage: {
       reporter: ['text', 'json', 'html'], // Laporan cakupan kode (opsional)

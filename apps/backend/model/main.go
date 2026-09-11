@@ -6,9 +6,11 @@ import (
 	"gin-template/common"
 	crmmodel "gin-template/model/crm"
 	buyingmodel "gin-template/modules/buying/model"
+	hrmodel "gin-template/modules/hr/model"
 	printingmodel "gin-template/modules/printing/model"
 	sellingmodel "gin-template/modules/selling/model"
 	stockmodel "gin-template/modules/stock/model"
+	projectsmodel "gin-template/modules/projects/model"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -97,6 +99,12 @@ func InitDB() error {
 		return err
 	}
 	if err := stockmodel.Migrate(db); err != nil {
+		return err
+	}
+	if err := hrmodel.Migrate(db); err != nil {
+		return err
+	}
+	if err := projectsmodel.Migrate(db); err != nil {
 		return err
 	}
 

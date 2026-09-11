@@ -165,15 +165,15 @@ function SearchableItemSelect({
 
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 max-h-64 w-[320px] rounded-lg border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-800 dark:bg-slate-950">
-          <div className="flex items-center gap-1.5 border-b border-slate-100 px-2 py-1.5 dark:border-slate-800">
-            <Search className="size-3.5 text-slate-400" />
+          <div className="flex items-center gap-2 border-b border-slate-100 px-3 py-2 dark:border-slate-800">
+            <Search className="size-3.5 shrink-0 text-slate-400" />
             <input
               autoFocus
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Ketik kode, nama, atau barcode item..."
-              className="w-full bg-transparent text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
+              className="w-full bg-transparent pl-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none dark:text-slate-100"
             />
           </div>
 

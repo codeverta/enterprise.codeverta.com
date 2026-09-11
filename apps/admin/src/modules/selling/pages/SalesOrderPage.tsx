@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ChevronDown, Info, Plus, Save, Trash2, Truck } from "lucide-react";
+import { ArrowLeft, ChevronDown, Info, Plus, Save, Search, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import api from "@/lib/api";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
+import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
+import { customerApi, type Customer } from "../customerApi";
+import { salesInvoiceApi, type SalesInvoiceItemOption } from "../salesInvoiceApi";
 
 type Item = { item_code: string; item_name?: string; delivery_date?: string; quantity: number; rate: number; amount: number };
 type Tax = { charge_type: string; account_head: string; rate: number; net_amount: number; amount: number };
@@ -85,10 +89,49 @@ const fieldHelp: Record<string, string> = {
 };
 function Field({ label, name, children }: { label: string; name?: string; children: React.ReactNode }) { const help = fieldHelp[label] || `Informasi untuk kolom ${label}.`; return <div className="space-y-1.5">
 <div className="flex items-center gap-1.5"><Label>{label}</Label><Tooltip><TooltipTrigger asChild><button type="button" className="inline-flex rounded-full text-slate-400 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500" aria-label={`Info ${label}`}><Info className="size-3.5" /></button></TooltipTrigger><TooltipContent side="top" sideOffset={6} className="max-w-xs"><p>{help}</p>{name && <p className="mt-1 text-[11px] opacity-75"></p>}</TooltipContent></Tooltip></div>{children}</div>; }
-function Combo({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) { const id = useMemo(() => `sales-${Math.random().toString(36).slice(2)}`, []); return <>
-<Input list={id} value={value} onChange={e => onChange(e.target.value)} placeholder="Begin typing for results." />
-<datalist id={id}>{options.map(v => <ERPSelectOption key={v} value={v} />)}</datalist>
-</>; }
+export type ComboOption = { value: string; label?: string; sublabel?: string };
+
+function Combo({
+  value,
+  onChange,
+  options,
+  placeholder = "Begin typing for results.",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: (string | ComboOption)[];
+  placeholder?: string;
+}) {
+  const id = useMemo(() => `sales-${Math.random().toString(36).slice(2)}`, []);
+  return (
+    <>
+      <Input
+        list={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+      />
+      <datalist id={id}>
+        {options.map((opt, i) => {
+          const val = typeof opt === "string" ? opt : opt.value;
+          const label =
+            typeof opt === "string"
+              ? opt
+              : opt.label && opt.label !== opt.value
+              ? `${opt.value} - ${opt.label}`
+              : opt.value;
+          return (
+            <ERPSelectOption key={`${val}-${i}`} value={val}>
+              {label}
+            </ERPSelectOption>
+          );
+        })}
+      </datalist>
+    </>
+  );
+}
+
+
 
 export function SalesOrderListPage() { const nav = useNavigate(); const [rows, setRows] = useState<Order[]>([]); const [q, setQ] = useState(""); const load = async () => { try { const response = await api.get<{ data: Order[] }>("/crm/sales-orders", { params: { page_size: 100, q } }); setRows(response.data.data || []); } catch { setRows(Object.values(readCache())); } }; useEffect(() => { load(); }, []); const remove = async (id?: string) => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch { /* cache still makes local CRUD usable when API is unavailable */ } removeCache(id); toast.success("Sales Order dihapus"); load(); }; return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
 <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -141,35 +184,202 @@ export function SalesOrderListPage() { const nav = useNavigate(); const [rows, s
 </div>; }
 
 export default function SalesOrderFormPage() { const params = useParams(); const id = params.id || params["*"]?.split("/").filter(Boolean)[0]; const nav = useNavigate(); const isNew = !id || id === "new"; const [tab, setTab] = useState<Tab>("details"); const [order, setOrder] = useState<Order>(empty); const [loading, setLoading] = useState(!isNew); const [loadError, setLoadError] = useState(""); const [saving, setSaving] = useState(false); const update = <K extends keyof Order>(k: K, v: Order[K]) => setOrder(o => calculate({ ...o, [k]: v })); const updateItem = (i: number, p: Partial<Item>) => setOrder(o => calculate({ ...o, items: o.items.map((x, n) => n === i ? { ...x, ...p } : x) })); const updateTax = (i: number, p: Partial<Tax>) => setOrder(o => calculate({ ...o, taxes: o.taxes.map((x, n) => n === i ? { ...x, ...p } : x) }));
- useEffect(() => {
-   let active = true;
-   if (isNew || !id) {
-     setOrder(empty());
-     setLoadError("");
-     setLoading(false);
-     return () => { active = false; };
-   }
-   const cached = readCache()[id];
-   setLoading(true);
-   setLoadError("");
-   api.get<Order | { data: Order }>(`/crm/sales-orders/${id}`)
-     .then((response) => {
-       if (!active) return;
-       const serverOrder = unwrapOrderResponse(response.data);
-       setOrder(mergeServerOrder({ ...serverOrder, id: serverOrder.id || id }, cached));
-     })
-     .catch((error: any) => {
-       if (!active) return;
-       if (cached) {
-         setOrder(mergeServerOrder({ ...cached, id }, cached));
-         toast.warning("API detail Sales Order tidak dapat diakses. Menampilkan data tersimpan.");
-         return;
-       }
-       setLoadError(error?.response?.data?.error || "Gagal mengambil detail Sales Order");
-     })
-     .finally(() => { if (active) setLoading(false); });
-   return () => { active = false; };
- }, [id, isNew]);
+
+  const [companyList, setCompanyList] = useState<CompanyOption[]>([]);
+  const [customerList, setCustomerList] = useState<Customer[]>([]);
+  const [itemOptions, setItemOptions] = useState<SalesInvoiceItemOption[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    if (isNew || !id) {
+      setOrder(empty());
+      setLoadError("");
+      setLoading(false);
+      return () => { active = false; };
+    }
+    const cached = readCache()[id];
+    setLoading(true);
+    setLoadError("");
+    Promise.resolve(api.get<Order | { data: Order }>(`/crm/sales-orders/${id}`))
+      .then((response) => {
+        if (!active || !response) return;
+        const serverOrder = unwrapOrderResponse(response.data);
+        setOrder(mergeServerOrder({ ...serverOrder, id: serverOrder.id || id }, cached));
+      })
+      .catch((error: any) => {
+        if (!active) return;
+        if (cached) {
+          setOrder(mergeServerOrder({ ...cached, id }, cached));
+          toast.warning("API detail Sales Order tidak dapat diakses. Menampilkan data tersimpan.");
+          return;
+        }
+        setLoadError(error?.response?.data?.error || "Gagal mengambil detail Sales Order");
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [id, isNew]);
+
+  useEffect(() => {
+    let active = true;
+
+    const fetchCompanies = async () => {
+      try {
+        const res = await Promise.resolve(warehouseApi.listCompanies());
+        return res || [];
+      } catch {
+        return [];
+      }
+    };
+
+    const fetchCustomers = async () => {
+      try {
+        const res = await Promise.resolve(customerApi.list());
+        return res || [];
+      } catch {
+        return [];
+      }
+    };
+
+    const fetchInvoiceOptions = async () => {
+      try {
+        const res = await Promise.resolve(salesInvoiceApi.options());
+        return res || null;
+      } catch {
+        return null;
+      }
+    };
+
+    const fetchItems = async () => {
+      try {
+        const res = await Promise.resolve(api.get?.("/buying/items"));
+        return res?.data?.data || [];
+      } catch {
+        return [];
+      }
+    };
+
+    Promise.all([
+      fetchCompanies(),
+      fetchCustomers(),
+      fetchInvoiceOptions(),
+      fetchItems(),
+    ]).then(([companies, customers, invoiceOpts, buyingItems]) => {
+      if (!active) return;
+      if (companies && companies.length > 0) {
+        setCompanyList(companies);
+      }
+      if (customers && customers.length > 0) {
+        setCustomerList(customers);
+      } else if (invoiceOpts?.customers) {
+        setCustomerList(
+          invoiceOpts.customers.map((c) => ({
+            customer_name: c,
+            customer_type: "Company",
+            customer_group: "All Customer Groups",
+            territory: "All Territories",
+            tax_id: "",
+            email: "",
+            phone: "",
+            mobile_no: "",
+            website: "",
+            address: "",
+            default_currency: "IDR",
+            default_price_list: "Standard Selling",
+            payment_terms: "",
+            credit_limit: 0,
+            notes: "",
+            disabled: false,
+          }))
+        );
+      }
+
+      const map = new Map<string, SalesInvoiceItemOption>();
+      if (invoiceOpts?.items) {
+        for (const it of invoiceOpts.items) {
+          if (it.item_code) {
+            map.set(it.item_code.toLowerCase(), it);
+          }
+        }
+      }
+      for (const it of (buyingItems || [])) {
+        const code = it.item_code;
+        if (code && !map.has(code.toLowerCase())) {
+          map.set(code.toLowerCase(), {
+            item_code: code,
+            item_name: it.item_name || code,
+            uom: it.stock_uom || "Nos",
+            rate: it.standard_selling_rate || it.valuation_rate || 0,
+            barcode: it.barcode,
+            description: it.description,
+          });
+        }
+      }
+      setItemOptions(Array.from(map.values()));
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const companyOptions = useMemo<SearchableSelectOption[]>(() => {
+    if (companyList.length > 0) {
+      return companyList.map((c) => ({
+        value: c.name || (c as any).company_name,
+        label: c.name || (c as any).company_name,
+        badge: c.abbreviation || undefined,
+      }));
+    }
+    return [
+      { value: "PT ZENIT TECHNOLOGY SOLUTION", label: "PT ZENIT TECHNOLOGY SOLUTION", badge: "PZTS" },
+      { value: "UD MILLION CANDLES", label: "UD MILLION CANDLES", badge: "MC" },
+    ];
+  }, [companyList]);
+
+  const customerOptions = useMemo<SearchableSelectOption[]>(() => {
+    if (customerList.length > 0) {
+      return customerList.map((c) => ({
+        value: c.customer_name,
+        label: c.customer_name,
+        sublabel: c.email || c.phone || c.territory || undefined,
+        badge: c.customer_group || undefined,
+      }));
+    }
+    return [
+      { value: "Customer A", label: "Customer A" },
+      { value: "Customer B", label: "Customer B" },
+    ];
+  }, [customerList]);
+
+  const itemSelectOptions = useMemo<SearchableSelectOption[]>(() => {
+    return itemOptions.map((opt) => ({
+      value: opt.item_code,
+      label: opt.item_code,
+      sublabel: opt.item_name,
+      badge: opt.rate > 0 ? money(opt.rate) : undefined,
+    }));
+  }, [itemOptions]);
+
+  const handleCustomerChange = (val: string) => {
+    const found = customerList.find(
+      (c) => c.customer_name.toLowerCase() === val.toLowerCase()
+    );
+    setOrder((prev) => {
+      const updated: Order = {
+        ...prev,
+        customer: val,
+      };
+      if (found) {
+        if (found.address && !prev.shipping_address) {
+          updated.shipping_address = found.address;
+        }
+        if (found.email && !prev.customer_email) {
+          updated.customer_email = found.email;
+        }
+      }
+      return calculate(updated);
+    });
+  };
  const save = async () => { if (!order.company.trim() || !order.customer.trim()) return toast.error("Company dan Customer wajib diisi"); if (order.items.some(i => !i.item_code.trim() || i.quantity <= 0)) return toast.error("Lengkapi Item Code dan Quantity"); setSaving(true); const payload = calculate(order); try { const res = isNew ? await api.post<Order>("/crm/sales-orders", { order_number: `${order.naming_series.replace(".YYYY.", new Date().getFullYear().toString())}${Date.now().toString().slice(-5)}`, total_amount: payload.grand_total, status: "processing" }) : await api.patch<Order>(`/crm/sales-orders/${id}`, { total_amount: payload.grand_total, status: payload.status }); const savedId = id || res.data.id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: res.data.order_number || payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order berhasil disimpan"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } catch (e: any) { const savedId = id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order disimpan di browser"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } finally { setSaving(false); } };
  const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["PT ZENIT TECHNOLOGY SOLUTION", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (loading) return <div className="p-12 text-center text-slate-500">Memuat detail Sales Order...</div>; if (loadError) return <div className="mx-auto max-w-xl p-12 text-center"><p className="font-semibold text-red-600">{loadError}</p><div className="mt-4 flex justify-center gap-2"><Button variant="outline" onClick={() => nav("/desk/sales-order")}>Kembali ke daftar</Button><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div></div>;
  return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
@@ -216,13 +426,29 @@ export default function SalesOrderFormPage() { const params = useParams(); const
 <h2 className="text-sm font-bold">Details</h2>
 <div className="grid gap-4 md:grid-cols-3">
 <Field label="Company" name="company">
-<Combo value={order.company} onChange={v => update("company", v)} options={options} />
+<SearchableSelect
+  value={order.company}
+  options={companyOptions}
+  onChange={(val) => update("company", val)}
+  placeholder="Pilih Company..."
+  searchPlaceholder="Cari company..."
+  addNewLabel="+ Tambah Company"
+  addNewHref="/desk/company/new"
+/>
 </Field>
 <Field label="Series" name="naming_series">
 <Input value={order.naming_series} onChange={e => update("naming_series", e.target.value)} />
 </Field>
 <Field label="Customer" name="customer">
-<Combo value={order.customer} onChange={v => update("customer", v)} options={options} />
+<SearchableSelect
+  value={order.customer}
+  options={customerOptions}
+  onChange={handleCustomerChange}
+  placeholder="Pilih Customer..."
+  searchPlaceholder="Cari customer..."
+  addNewLabel="+ Tambah Customer"
+  addNewHref="/desk/customer/new"
+/>
 </Field>
 <Field label="Order Type" name="order_type">
 <ERPSelect className="h-10 w-full rounded-md border bg-white px-3 text-sm" value={order.order_type} onChange={e => update("order_type", e.target.value)}>
@@ -295,17 +521,63 @@ export default function SalesOrderFormPage() { const params = useParams(); const
 <tbody>{order.items.map((item, i) => <tr key={i} className="border-t">
 <td className="p-3">{i + 1}</td>
 <td className="p-3">
-<Input value={item.item_code} onChange={e => updateItem(i, { item_code: e.target.value })} placeholder="Item code" />
-{item.item_name && <p className="mt-1 text-xs text-slate-500">{item.item_name}</p>}
+  <div className="space-y-1 min-w-[220px]">
+    <SearchableSelect
+      value={item.item_code}
+      options={itemSelectOptions}
+      onChange={(val) => {
+        const matched = itemOptions.find(
+          (opt) => opt.item_code.toLowerCase() === val.toLowerCase()
+        );
+        if (matched) {
+          const qty = Number(item.quantity) || 1;
+          const rate = matched.rate || 0;
+          updateItem(i, {
+            item_code: matched.item_code,
+            item_name: matched.item_name,
+            rate: rate,
+            amount: round(qty * rate),
+          });
+        } else {
+          updateItem(i, { item_code: val });
+        }
+      }}
+      placeholder="Pilih Item Code..."
+      searchPlaceholder="Cari kode atau nama item..."
+      addNewLabel="+ Tambah Item Baru"
+      addNewHref="/desk/item/new"
+    />
+    {item.item_name && (
+      <p className="text-[11px] text-slate-500 truncate max-w-[240px]">
+        {item.item_name}
+      </p>
+    )}
+  </div>
 </td>
 <td className="p-3">
 <Input type="date" value={item.delivery_date || ""} onChange={e => updateItem(i, { delivery_date: e.target.value })} />
 </td>
 <td className="p-3">
-<Input type="number" min="0" value={item.quantity} onChange={e => updateItem(i, { quantity: Number(e.target.value) })} />
+<Input
+  type="number"
+  min="0"
+  value={item.quantity}
+  onChange={e => {
+    const qty = Number(e.target.value);
+    updateItem(i, { quantity: qty, amount: round(qty * (item.rate || 0)) });
+  }}
+/>
 </td>
 <td className="p-3">
-<Input type="number" min="0" value={item.rate} onChange={e => updateItem(i, { rate: Number(e.target.value) })} />
+<Input
+  type="number"
+  min="0"
+  value={item.rate}
+  onChange={e => {
+    const r = Number(e.target.value);
+    updateItem(i, { rate: r, amount: round((item.quantity || 0) * r) });
+  }}
+/>
 </td>
 <td className="p-3 font-medium">{money(item.amount)}</td>
 <td className="p-3">

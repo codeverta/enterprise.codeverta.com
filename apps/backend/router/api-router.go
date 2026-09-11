@@ -6,9 +6,11 @@ import (
 	"gin-template/middleware"
 	buyingmodule "gin-template/modules/buying"
 	frameworkmodule "gin-template/modules/framework"
+	hrmodule "gin-template/modules/hr"
 	printingmodule "gin-template/modules/printing"
 	sellingmodule "gin-template/modules/selling"
 	stockmodule "gin-template/modules/stock"
+	projectsmodule "gin-template/modules/projects"
 	"gin-template/repository"
 	"gin-template/services"
 	"net/http"
@@ -106,12 +108,14 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		registerCoreProfileAndMediaRoutes(tenantGroup, ctrls)
 		registerCRMRoutes(tenantGroup)
 		buyingmodule.RegisterRoutes(tenantGroup)
+		hrmodule.RegisterRoutes(tenantGroup)
 		if err := frameworkmodule.RegisterRoutes(tenantGroup, db); err != nil {
 			panic("Gagal mendaftarkan DocType framework: " + err.Error())
 		}
 		printingmodule.RegisterRoutes(tenantGroup)
 		sellingmodule.RegisterRoutes(tenantGroup)
 		stockmodule.RegisterRoutes(tenantGroup)
+		projectsmodule.RegisterRoutes(tenantGroup)
 		registerOrganizationRoutes(tenantGroup, db)
 
 		// Finance & Payout Settings

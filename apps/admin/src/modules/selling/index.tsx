@@ -27,6 +27,10 @@ import CustomerMasterPage from "./pages/CustomerMasterPage";
 import TerritoryFormPage, { TerritoryListPage } from "./pages/TerritoryPage";
 import SalesPartnerFormPage, { SalesPartnerListPage } from "./pages/SalesPartnerPage";
 import ItemGroupFormPage, { ItemGroupListPage } from "./pages/ItemGroupPage";
+import QuotationPage from "./pages/QuotationPage";
+import TaxCategoryPage from "./pages/TaxCategoryPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import SubscriptionPlanPage from "./pages/SubscriptionPlanPage";
 
 export default function SellingModule() {
   const { pathname } = useLocation();
@@ -82,6 +86,10 @@ export default function SellingModule() {
   } else if (pathname.startsWith("/desk/item")) {
     const isItemForm = pathname === "/desk/item/new" || /^\/desk\/item\/[^/]+$/.test(pathname);
     content = isItemForm ? <ItemFormPage workspace="selling" /> : <MasterListPage type="item" workspace="selling" />;
+  } else if (pathname.startsWith("/desk/quotation")) {
+    content = <QuotationPage />;
+  } else if (pathname.startsWith("/desk/tax-category")) {
+    content = <TaxCategoryPage />;
   } else if (pathname.startsWith("/desk/sales-order")) {
     const isForm = pathname === "/desk/sales-order/new" || /^\/desk\/sales-order\/[^/]+$/.test(pathname);
     content = isForm ? <SalesOrderFormPage /> : <SalesOrderListPage />;
@@ -112,11 +120,16 @@ export default function SellingModule() {
     content = isForm ? <LoyaltyProgramFormPage /> : <LoyaltyProgramListPage />;
   } else if (pathname.includes("/promotions")) {
     content = <PromoDashboard />;
+  } else if (pathname.startsWith("/desk/subscription-plan")) {
+    content = <SubscriptionPlanPage />;
+  } else if (pathname.startsWith("/desk/subscription")) {
+    content = <SubscriptionPage />;
   } else if (pathname.includes("/subscriptions")) {
     content = <SubscriptionsPage />;
   } else {
     content = <OrdersPage />;
   }
 
-  return <WorkspaceModuleLayout slug="selling">{content}</WorkspaceModuleLayout>;
+  const workspaceSlug = pathname.startsWith("/desk/subscription") ? "subscription" : "selling";
+  return <WorkspaceModuleLayout slug={workspaceSlug}>{content}</WorkspaceModuleLayout>;
 }
