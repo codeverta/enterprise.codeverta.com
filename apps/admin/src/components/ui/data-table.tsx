@@ -35,6 +35,7 @@ export interface DataTableProps<TData, TValue = unknown> {
   data: TData[];
   searchPlaceholder?: string;
   emptyMessage?: string;
+  loading?: boolean;
   toolbar?: boolean;
   pagination?: boolean;
   pageSize?: number;
@@ -62,6 +63,7 @@ export function DataTable<TData, TValue = unknown>({
   data,
   searchPlaceholder = "Cari di semua kolom...",
   emptyMessage = "Tidak ada data.",
+  loading = false,
   toolbar = true,
   pagination = true,
   pageSize = 10,
@@ -178,7 +180,7 @@ export function DataTable<TData, TValue = unknown>({
             })}</TableRow>)}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows.length ? table.getRowModel().rows.map((row) => <TableRow key={row.id} onClick={() => onRowClick?.(row.original)} className={cn(onRowClick && "cursor-pointer")}>{row.getVisibleCells().map((cell) => {
+            {loading ? <TableRow disableHover><TableCell colSpan={columns.length} className="h-24 text-center text-slate-500">Memuat data...</TableCell></TableRow> : table.getRowModel().rows.length ? table.getRowModel().rows.map((row) => <TableRow key={row.id} onClick={() => onRowClick?.(row.original)} className={cn(onRowClick && "cursor-pointer")}>{row.getVisibleCells().map((cell) => {
               const meta = cell.column.columnDef.meta as DataTableColumnMeta | undefined;
               return <TableCell key={cell.id} className={cn("px-3 py-2.5", meta?.cellClassName)}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</TableCell>;
             })}</TableRow>) : <TableRow disableHover><TableCell colSpan={columns.length} className="h-24 text-center text-slate-500">{emptyMessage}</TableCell></TableRow>}

@@ -9,9 +9,11 @@ import MasterListPage from "./pages/MasterListPage";
 import SupplierFormPage from "./pages/SupplierFormPage";
 import SupplierGroupsPage from "./pages/SupplierGroupsPage";
 import ItemFormPage from "./pages/ItemFormPage";
+import PurchaseAnalyticsPage from "./pages/PurchaseAnalyticsPage";
 
 export default function BuyingModule() {
   const { pathname } = useLocation();
+  if (pathname === "/desk/query-report/Purchase%20Analytics" || pathname === "/desk/query-report/Purchase Analytics") return <BuyingLayout><PurchaseAnalyticsPage /></BuyingLayout>;
   if (pathname.startsWith("/desk/supplier-group")) return <BuyingLayout><SupplierGroupsPage /></BuyingLayout>;
   if (pathname.startsWith("/desk/supplier")) {
     const isSupplierForm = pathname === "/desk/supplier/new" || /^\/desk\/supplier\/[^/]+$/.test(pathname);

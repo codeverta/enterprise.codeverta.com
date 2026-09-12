@@ -30,6 +30,7 @@ import {
   type TerritoryOptions,
   type TerritoryTreeNode,
 } from "../territoryApi";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 
 const formatRp = (value?: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -186,6 +187,18 @@ export function TerritoryListPage() {
       toast.error(e?.response?.data?.error || "Gagal menghapus territory");
     }
   };
+
+  const columns: ColumnDef<Territory>[] = [
+    { accessorKey: "territory_name", header: "Territory Name", cell: ({ row }) => <Link to={`/desk/territory/${row.original.id}`} className="font-semibold text-blue-600 hover:underline">{row.original.territory_name}</Link> },
+    { accessorKey: "parent_territory", header: "Parent Territory", cell: ({ row }) => row.original.parent_territory || "-" },
+    { id: "type", header: "Type", accessorFn: (row) => row.is_group ? "Group" : "Leaf Node" },
+    { accessorKey: "territory_manager", header: "Territory Manager", cell: ({ row }) => row.original.territory_manager || "-" },
+    { id: "targets", header: "Targets", accessorFn: (row) => row.targets?.length || 0, cell: ({ row }) => row.original.targets?.length ? `${row.original.targets.length} Target` : "-" },
+    { id: "status", header: "Status", accessorFn: (row) => row.disabled ? "Nonaktif" : "Aktif" },
+    { id: "actions", header: "Aksi", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <div className="flex justify-end"><Button size="icon" variant="ghost" asChild><Link to={`/desk/territory/${row.original.id}`}><Pencil className="size-4" /></Link></Button><Button size="icon" variant="ghost" onClick={() => handleDelete(row.original)}><Trash2 className="size-4 text-red-500" /></Button></div> },
+  ];
+
+  if (viewMode === "list") return <div className="mx-auto max-w-screen-2xl space-y-5 p-4 lg:p-7"><header className="flex items-center justify-between"><div><p className="text-sm text-slate-500">Selling / Territory</p><h1 className="text-2xl font-bold tracking-tight">Territory</h1><p className="mt-1 text-sm text-slate-500">Kelola wilayah geografis dan target penjualan.</p></div><div className="flex gap-2"><Button variant="outline" onClick={() => setViewMode("tree")}><Network className="mr-2 size-4" />Tree</Button><Button asChild className="bg-blue-600 hover:bg-blue-700"><Link to="/desk/territory/new"><Plus className="mr-2 size-4" />New Territory</Link></Button></div></header><DataTable columns={columns} data={rows} getRowId={(row) => row.id || row.territory_name} searchPlaceholder="Cari territory, parent, atau manager..." emptyMessage={loading ? "Memuat data territory..." : "Tidak ada territory yang cocok."} /></div>;
 
   return (
     <div className="mx-auto max-w-screen-2xl p-4 lg:p-7 space-y-5">

@@ -149,6 +149,8 @@ const router = createBrowserRouter([
           { path: "desk/query-report/Stock%20Ledger", element: <StockModule /> },
           { path: "desk/query-report/Stock Ledger", element: <StockModule /> },
           { path: "desk/query-report/Sales%20Register", element: <SellingModule /> },
+          { path: "desk/query-report/Purchase%20Analytics", element: <BuyingModule /> },
+          { path: "desk/query-report/Purchase Analytics", element: <BuyingModule /> },
           { path: "desk/query-report/*", element: <SellingModule /> },
           { path: "desk/loyalty-program/*", element: <SellingModule /> },
           { path: "desk/loyalty-point-entry/*", element: <SellingModule /> },

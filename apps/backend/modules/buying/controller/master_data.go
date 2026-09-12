@@ -435,5 +435,13 @@ func (h *MasterDataController) Options(c *gin.Context) {
 		currencies = []string{"IDR", "USD", "SGD", "EUR"}
 	}
 
-	c.JSON(http.StatusOK, gin.H{"supplier_groups": groups, "suppliers": distinct(&buyingmodel.Supplier{}, "supplier_name"), "items": distinct(&buyingmodel.Item{}, "item_code"), "item_groups": []string{"All Item Groups", "Products", "Raw Material", "Services", "Consumable", "Sub Assemblies"}, "countries": countries, "currencies": currencies, "price_lists": []string{"Standard Buying", "Standard Selling"}, "languages": []string{"English", "Bahasa Indonesia"}, "uoms": []string{"Nos", "Unit", "Pcs", "Box", "Kg", "Gram", "Meter", "Set"}, "weight_uoms": []string{"Kg", "Gram", "Pound"}, "warehouses": distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse")})
+	var priceListRows []string
+	if db.Migrator().HasTable("selling_price_lists") {
+		_ = db.Table("selling_price_lists").Where("enabled = ? AND (buying = ? OR buying IS NULL)", true, true).Order("price_list_name ASC").Pluck("price_list_name", &priceListRows)
+	}
+	if len(priceListRows) == 0 {
+		priceListRows = []string{"Standard Buying", "Standard Selling"}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"supplier_groups": groups, "suppliers": distinct(&buyingmodel.Supplier{}, "supplier_name"), "items": distinct(&buyingmodel.Item{}, "item_code"), "item_groups": []string{"All Item Groups", "Products", "Raw Material", "Services", "Consumable", "Sub Assemblies"}, "countries": countries, "currencies": currencies, "price_lists": priceListRows, "languages": []string{"English", "Bahasa Indonesia"}, "uoms": []string{"Nos", "Unit", "Pcs", "Box", "Kg", "Gram", "Meter", "Set"}, "weight_uoms": []string{"Kg", "Gram", "Pound"}, "warehouses": distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse")})
 }

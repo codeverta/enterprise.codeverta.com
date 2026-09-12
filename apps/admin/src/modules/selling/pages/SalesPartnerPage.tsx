@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import {
   salesPartnerApi,
   type SalesPartner,
@@ -96,6 +97,20 @@ export function SalesPartnerListPage() {
       toast.error(e?.response?.data?.error || "Gagal menghapus sales partner");
     }
   };
+
+  const columns: ColumnDef<SalesPartner>[] = [
+    { accessorKey: "partner_name", header: "Sales Partner Name", cell: ({ row }) => <Link to={`/desk/sales-partner/${row.original.id}`} className="font-semibold text-blue-600 hover:underline">{row.original.partner_name}</Link> },
+    { accessorKey: "partner_type", header: "Partner Type" },
+    { accessorKey: "territory", header: "Territory", cell: ({ row }) => row.original.territory || "-" },
+    { accessorKey: "commission_rate", header: "Commission Rate", cell: ({ row }) => `${row.original.commission_rate || 0}%` },
+    { id: "targets", header: "Targets", accessorFn: (row) => row.targets?.length || 0, cell: ({ row }) => row.original.targets?.length ? `${row.original.targets.length} Target` : "-" },
+    { accessorKey: "referral_code", header: "Referral Code", cell: ({ row }) => row.original.referral_code || "-" },
+    { id: "website", header: "Website", accessorFn: (row) => row.show_in_website ? "Tampil" : "-" },
+    { id: "status", header: "Status", accessorFn: (row) => row.disabled ? "Nonaktif" : "Aktif" },
+    { id: "actions", header: "Aksi", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <div className="flex justify-end"><Button size="icon" variant="ghost" asChild><Link to={`/desk/sales-partner/${row.original.id}`}><Pencil className="size-3.5" /></Link></Button><Button size="icon" variant="ghost" onClick={() => handleDelete(row.original)}><Trash2 className="size-3.5 text-rose-500" /></Button></div> },
+  ];
+
+  return <div className="mx-auto max-w-screen-2xl space-y-5 p-4 lg:p-7"><header className="flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:bg-slate-950"><div><p className="mb-1 text-sm text-slate-500">Selling / Sales Partner</p><h1 className="text-2xl font-bold tracking-tight">Sales Partner</h1><p className="mt-1 text-sm text-slate-500">Kelola mitra penjualan, agen, distributor, reseller, serta rate komisi dan target penjualannya.</p></div><Button asChild className="bg-blue-600 hover:bg-blue-700"><Link to="/desk/sales-partner/new"><Plus className="mr-2 size-4" />New Sales Partner</Link></Button></header><DataTable columns={columns} data={rows} getRowId={(row) => row.id || row.partner_name} searchPlaceholder="Cari sales partner, tipe, territory, atau referral code..." emptyMessage={loading ? "Memuat data Sales Partner..." : "Tidak ada Sales Partner yang ditemukan."} /></div>;
 
   return (
     <div className="mx-auto max-w-screen-2xl p-4 lg:p-7 space-y-5">

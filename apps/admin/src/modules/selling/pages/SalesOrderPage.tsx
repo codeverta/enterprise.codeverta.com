@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { ArrowLeft, ChevronDown, FileText, Info, Plus, Receipt, Save, Search, Trash2, Truck } from "lucide-react";
+import { ArrowLeft, ChevronDown, FileText, Info, Plus, Receipt, Save, Trash2, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { CompanySelect } from "@/components/CompanySelect";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { customerApi, type Customer } from "../customerApi";
 import { salesInvoiceApi, type SalesInvoiceItemOption } from "../salesInvoiceApi";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 
 type Item = { item_code: string; item_name?: string; delivery_date?: string; quantity: number; rate: number; amount: number };
 type Tax = { charge_type: string; account_head: string; rate: number; net_amount: number; amount: number };
@@ -134,7 +135,14 @@ function Combo({
 
 
 
-export function SalesOrderListPage() { const nav = useNavigate(); const [rows, setRows] = useState<Order[]>([]); const [q, setQ] = useState(""); const load = async () => { try { const response = await api.get<{ data: Order[] }>("/crm/sales-orders", { params: { page_size: 100, q } }); setRows(response.data.data || []); } catch { setRows(Object.values(readCache())); } }; useEffect(() => { load(); }, []); const remove = async (id?: string) => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch { /* cache still makes local CRUD usable when API is unavailable */ } removeCache(id); toast.success("Sales Order dihapus"); load(); }; return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
+export function SalesOrderListPage() { const nav = useNavigate(); const [rows, setRows] = useState<Order[]>([]); const load = async () => { try { const response = await api.get<{ data: Order[] }>("/crm/sales-orders", { params: { page_size: 100 } }); setRows(response.data.data || []); } catch { setRows(Object.values(readCache())); } }; useEffect(() => { load(); }, []); const remove = async (id?: string) => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch { /* cache still makes local CRUD usable when API is unavailable */ } removeCache(id); toast.success("Sales Order dihapus"); load(); }; const columns: ColumnDef<Order>[] = [
+{ id: "order", header: "Sales Order", accessorFn: (row) => row.order_number || row.id || "", cell: ({ row }) => <Link className="font-semibold text-blue-600 hover:underline" to={`/desk/sales-order/${row.original.id}`}>{row.original.order_number || row.original.id}</Link> },
+{ accessorKey: "customer", header: "Customer", cell: ({ row }) => row.original.customer || "—" },
+{ accessorKey: "transaction_date", header: "Date", cell: ({ row }) => row.original.transaction_date?.slice(0, 10) || "—" },
+{ id: "total", header: "Total", accessorFn: (row) => row.total_amount ?? row.grand_total ?? 0, cell: ({ row }) => money(row.original.total_amount ?? row.original.grand_total) },
+{ accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant="secondary">{row.original.status || "draft"}</Badge> },
+{ id: "actions", header: "Action", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <div className="flex justify-end" onClick={(event) => event.stopPropagation()}><Button variant="ghost" size="icon" onClick={() => remove(row.original.id)}><Trash2 className="size-4 text-red-500" /></Button></div> },
+]; return <div className="mx-auto max-w-screen-2xl space-y-5 p-4 lg:p-7">
 <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
 <div>
 <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Selling</p>
@@ -144,44 +152,7 @@ export function SalesOrderListPage() { const nav = useNavigate(); const [rows, s
 <Button onClick={() => nav("/desk/sales-order/new")} className="bg-blue-600 hover:bg-blue-700">
 <Plus className="size-4" /> New Sales Order</Button>
 </header>
-<div className="mb-4 flex gap-2">
-<Input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === "Enter" && load()} placeholder="Cari nomor order atau customer..." />
-<Button variant="outline" onClick={load}>Search</Button>
-</div>
-<div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-<div className="overflow-x-auto">
-<table className="w-full text-left text-sm">
-<thead className="bg-slate-50 text-xs uppercase text-slate-500">
-<tr>
-<th className="px-5 py-3">Sales Order</th>
-<th className="px-5 py-3">Customer</th>
-<th className="px-5 py-3">Date</th>
-<th className="px-5 py-3">Total</th>
-<th className="px-5 py-3">Status</th>
-<th className="px-5 py-3 text-right">Action</th>
-</tr>
-</thead>
-<tbody className="divide-y">{rows.map(r => <tr key={r.id} className="hover:bg-slate-50">
-<td className="px-5 py-4 font-semibold text-blue-600">
-<Link to={`/desk/sales-order/${r.id}`}>{r.order_number || r.id}</Link>
-</td>
-<td className="px-5 py-4">{r.customer || "—"}</td>
-<td className="px-5 py-4">{r.transaction_date?.slice(0, 10) || "—"}</td>
-<td className="px-5 py-4 font-semibold">{money(r.total_amount ?? r.grand_total)}</td>
-<td className="px-5 py-4">
-<Badge variant="secondary">{r.status || "draft"}</Badge>
-</td>
-<td className="px-5 py-4 text-right">
-<Button variant="ghost" size="icon" onClick={() => remove(r.id)}>
-<Trash2 className="size-4 text-red-500" />
-</Button>
-</td>
-</tr>)}{rows.length === 0 && <tr>
-<td colSpan={6} className="px-5 py-14 text-center text-slate-500">Belum ada Sales Order.</td>
-</tr>}</tbody>
-</table>
-</div>
-</div>
+<DataTable columns={columns} data={rows} getRowId={(row) => row.id || row.order_number || "sales-order"} onRowClick={(row) => nav(`/desk/sales-order/${row.id}`)} searchPlaceholder="Cari nomor order atau customer..." emptyMessage="Belum ada Sales Order." />
 </div>; }
 
 export default function SalesOrderFormPage() { const params = useParams(); const id = params.id || params["*"]?.split("/").filter(Boolean)[0]; const nav = useNavigate(); const isNew = !id || id === "new"; const [tab, setTab] = useState<Tab>("details"); const [order, setOrder] = useState<Order>(empty); const [loading, setLoading] = useState(!isNew); const [loadError, setLoadError] = useState(""); const [saving, setSaving] = useState(false); const update = <K extends keyof Order>(k: K, v: Order[K]) => setOrder(o => calculate({ ...o, [k]: v })); const updateItem = (i: number, p: Partial<Item>) => setOrder(o => calculate({ ...o, items: o.items.map((x, n) => n === i ? { ...x, ...p } : x) })); const updateTax = (i: number, p: Partial<Tax>) => setOrder(o => calculate({ ...o, taxes: o.taxes.map((x, n) => n === i ? { ...x, ...p } : x) }));
