@@ -797,7 +797,7 @@ const assets = workspace("Assets", "assets", ["Asset", "Asset Movement", "Asset 
 ]);
 
 const manufacturingHome = "/desk/manufacturing";
-const manufacturing = workspace("Manufacturing", "manufacturing", ["Bill of Materials", "Production Plan", "Work Order", "Job Card", "Stock Entry"], [
+const manufacturing = workspace("Manufacturing", "manufacturing", [["Bill of Materials", "/desk/bom"], "Production Plan", "Work Order", "Job Card", "Stock Entry"], [
   group("Setup", manufacturingHome, documentLinks(["Operation", "Routing", "Workstation", "Workstation Type", "BOM Update Tool"]), Layers),
   group("Reports", manufacturingHome, reportLinks(["Production Analytics", "Work Order Summary", "BOM Stock Report", "BOM Explorer"]), TrendingUp),
   group("Settings", manufacturingHome, documentLinks(["Manufacturing Settings"]), SlidersHorizontal),

@@ -8,6 +8,7 @@ import (
 	accountingmodel "gin-template/modules/accounting/model"
 	buyingmodel "gin-template/modules/buying/model"
 	hrmodel "gin-template/modules/hr/model"
+	manufacturingmodel "gin-template/modules/manufacturing/model"
 	printingmodel "gin-template/modules/printing/model"
 	projectsmodel "gin-template/modules/projects/model"
 	sellingmodel "gin-template/modules/selling/model"
@@ -113,6 +114,9 @@ func InitDB() error {
 		return err
 	}
 	if err := projectsmodel.Migrate(db); err != nil {
+		return err
+	}
+	if err := manufacturingmodel.Migrate(db); err != nil {
 		return err
 	}
 

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { buyingApi, dateForInput, type PurchaseOrder } from "../api";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 
 const money = (value: number, currency = "IDR") =>
   new Intl.NumberFormat("id-ID", {
@@ -148,23 +149,12 @@ export default function PurchaseOrdersPage() {
   );
 
   return (
-    <div className="mx-auto max-w-screen-2xl space-y-6 p-5 lg:p-8">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-blue-600">Buying</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">
-            Purchase Order
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Kelola pesanan pembelian supplier dalam satu workflow.
-          </p>
-        </div>
-        <Button asChild className="bg-blue-600 hover:bg-blue-700">
+    <ERPPage>
+      <ERPPageHeader title="Purchase Order" description="Kelola pesanan pembelian supplier dalam satu workflow." breadcrumbs={[{ label: "Buying", href: "/desk/buying" }, { label: "Purchase Order" }]} actions={<Button asChild className="bg-blue-600 hover:bg-blue-700">
           <Link to="/desk/purchase-order/new">
             <FilePlus2 className="size-4" /> New Purchase Order
           </Link>
-        </Button>
-      </header>
+        </Button>}/>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
@@ -232,6 +222,6 @@ export default function PurchaseOrdersPage() {
           }
         />
       </section>
-    </div>
+    </ERPPage>
   );
 }

@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 import { currencyApi, type Currency } from "@/modules/accounting/currencyApi";
 import {
   itemPriceApi,
@@ -814,32 +815,9 @@ export default function ItemPricePage() {
   // LIST VIEW
   // ==========================================
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-6 lg:p-10">
+    <ERPPage>
       {/* Header & Breadcrumb */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-            <Link
-              to="/desk/selling"
-              className="font-medium text-blue-600 hover:underline dark:text-blue-400"
-            >
-              Selling
-            </Link>
-            <ChevronRight className="size-3 text-slate-400" />
-            <span className="font-semibold text-slate-800 dark:text-slate-200">
-              Item Price
-            </span>
-          </div>
-
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">
-            Item Price
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Daftar harga jual & beli barang berdasarkan Price List, UOM, dan masa berlaku.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
+      <ERPPageHeader title="Item Price" description="Daftar harga jual dan beli barang berdasarkan Price List, UOM, dan masa berlaku." breadcrumbs={[{ label: "Selling", href: "/desk/selling" }, { label: "Item Price" }]} actions={<>
           <Button
             variant="outline"
             size="sm"
@@ -861,8 +839,7 @@ export default function ItemPricePage() {
               <span>Add Item Price</span>
             </Link>
           </Button>
-        </div>
-      </div>
+        </>}/>
 
       {/* Stats Summary Bar */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -1132,6 +1109,6 @@ export default function ItemPricePage() {
           </table>
         </div>
       </div>
-    </div>
+    </ERPPage>
   );
 }

@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1143,17 +1144,9 @@ export default function PricingRulePage() {
 
   // RENDER LIST VIEW
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
+    <ERPPage>
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Pricing Rule</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Atur skema diskon, margin, dan promosi harga untuk penjualan dan pembelian
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <ERPPageHeader title="Pricing Rule" description="Atur skema diskon, margin, dan promosi harga untuk penjualan dan pembelian." breadcrumbs={[{ label: "Selling", href: "/desk/selling" }, { label: "Pricing Rule" }]} actions={<>
           <Button
             variant="outline"
             size="sm"
@@ -1174,8 +1167,7 @@ export default function PricingRulePage() {
               Add Pricing Rule
             </Link>
           </Button>
-        </div>
-      </div>
+        </>}/>
 
       {/* Filters */}
       <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col md:flex-row items-center gap-4">
@@ -1317,6 +1309,6 @@ export default function PricingRulePage() {
           </table>
         </div>
       </div>
-    </div>
+    </ERPPage>
   );
 }

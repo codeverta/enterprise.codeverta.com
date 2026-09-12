@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loyaltyApi, type LoyaltyProgram } from "../loyaltyApi";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 
 export default function LoyaltyProgramListPage() {
   const navigate = useNavigate();
@@ -46,25 +47,9 @@ export default function LoyaltyProgramListPage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl space-y-6 p-4 lg:p-6">
+    <ERPPage>
       {/* Top Header */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-blue-600">Selling</span>
-            <span className="text-xs text-slate-400">/</span>
-            <span className="text-xs text-slate-500">Loyalty Program</span>
-          </div>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            <Gift className="size-6 text-blue-600" />
-            Loyalty Program
-          </h1>
-          <p className="mt-1 text-xs text-slate-500">
-            Kelola skema poin belanja dan tingkat reward (tier) untuk pelanggan di modul Selling.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <ERPPageHeader title="Loyalty Program" description="Kelola skema poin belanja dan tingkat reward (tier) untuk pelanggan di modul Selling." breadcrumbs={[{ label: "Selling", href: "/desk/selling" }, { label: "Loyalty Program" }]} actions={<>
           <Button
             variant="outline"
             size="sm"
@@ -81,8 +66,7 @@ export default function LoyaltyProgramListPage() {
             <Plus className="size-4" />
             New Loyalty Program
           </Button>
-        </div>
-      </div>
+        </>}/>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
@@ -223,6 +207,6 @@ export default function LoyaltyProgramListPage() {
           </table>
         </div>
       </div>
-    </div>
+    </ERPPage>
   );
 }

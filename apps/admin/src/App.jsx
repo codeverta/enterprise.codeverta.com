@@ -25,6 +25,7 @@ import SettingsModule from "./modules/settings";
 import PrintingModule from "./modules/printing";
 import HRModule from "./modules/hr";
 import ProjectsModule from "./modules/projects";
+import ManufacturingModule from "./modules/manufacturing";
 import { isAdminRole } from "./lib/erp-desk";
 import { isTauri } from "@tauri-apps/api/core";
 import DesktopTitleBar from "./components/DesktopTitleBar";
@@ -173,6 +174,12 @@ const router = createBrowserRouter([
           { path: "desk/task/*", element: <ProjectsModule /> },
           { path: "desk/timesheet/*", element: <ProjectsModule /> },
           { path: "desk/projects/*", element: <ProjectsModule /> },
+          { path: "desk/manufacturing/*", element: <ManufacturingModule /> },
+          { path: "desk/bom/*", element: <ManufacturingModule /> },
+          { path: "desk/work-order/*", element: <ManufacturingModule /> },
+          { path: "desk/operation/*", element: <ManufacturingModule /> },
+          { path: "desk/workstation/*", element: <ManufacturingModule /> },
+          { path: "desk/workstation-type/*", element: <ManufacturingModule /> },
           { path: "desk/*", element: <ErpWorkspacePage /> },
           { path: "dashboard", element: <LegacyDashboardHome /> },
           { path: "dashboard/users/*", element: <Navigate to="/desk/organization/users" replace /> },

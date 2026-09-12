@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 import {
   Dialog,
   DialogContent,
@@ -234,44 +235,9 @@ export default function LoyaltyPointEntryListPage() {
   };
 
   return (
-    <div className="mx-auto max-w-screen-xl space-y-6 p-4 lg:p-6">
+    <ERPPage>
       {/* Header */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/desk/loyalty-program")}
-            title="Kembali ke Loyalty Program"
-          >
-            <ArrowLeft className="size-4" />
-          </Button>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-blue-600">Selling</span>
-              <span className="text-xs text-slate-400">/</span>
-              <Link
-                to="/desk/loyalty-program"
-                className="text-xs text-slate-500 hover:text-blue-600 transition-colors"
-              >
-                Loyalty Program
-              </Link>
-              <span className="text-xs text-slate-400">/</span>
-              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                Point Entries
-              </span>
-            </div>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <Coins className="size-6 text-amber-500" />
-              Loyalty Point Entries
-            </h1>
-            <p className="mt-1 text-xs text-slate-500">
-              Riwayat transaksi perolehan, penukaran, dan kadaluarsa poin pelanggan yang terintegrasi langsung dengan Program Loyalty.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <ERPPageHeader title="Loyalty Point Entries" description="Riwayat transaksi perolehan, penukaran, dan kedaluwarsa poin pelanggan." breadcrumbs={[{ label: "Selling", href: "/desk/selling" }, { label: "Loyalty Program", href: "/desk/loyalty-program" }, { label: "Point Entries" }]} actions={<>
           <Button
             variant="outline"
             size="sm"
@@ -298,8 +264,7 @@ export default function LoyaltyPointEntryListPage() {
             <Plus className="size-4" />
             Tambah Point Entry
           </Button>
-        </div>
-      </div>
+        </>}/>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -709,6 +674,6 @@ export default function LoyaltyPointEntryListPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </ERPPage>
   );
 }

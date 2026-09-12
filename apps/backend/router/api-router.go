@@ -8,6 +8,7 @@ import (
 	buyingmodule "gin-template/modules/buying"
 	frameworkmodule "gin-template/modules/framework"
 	hrmodule "gin-template/modules/hr"
+	manufacturingmodule "gin-template/modules/manufacturing"
 	printingmodule "gin-template/modules/printing"
 	projectsmodule "gin-template/modules/projects"
 	sellingmodule "gin-template/modules/selling"
@@ -113,6 +114,7 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		accountingmodule.RegisterRoutes(tenantGroup)
 		buyingmodule.RegisterRoutes(tenantGroup)
 		hrmodule.RegisterRoutes(tenantGroup)
+		manufacturingmodule.RegisterRoutes(tenantGroup)
 		if err := frameworkmodule.RegisterRoutes(tenantGroup, db); err != nil {
 			panic("Gagal mendaftarkan DocType framework: " + err.Error())
 		}
