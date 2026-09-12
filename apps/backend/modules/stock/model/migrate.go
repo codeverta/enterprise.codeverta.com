@@ -29,6 +29,8 @@ func Migrate(db *gorm.DB) error {
 		&PickList{},
 		&PickListItem{},
 		&Brand{},
+		&StockReconciliation{},
+		&StockReconciliationItem{},
 	); err != nil {
 		return fmt.Errorf("auto migrate Stock models: %w", err)
 	}

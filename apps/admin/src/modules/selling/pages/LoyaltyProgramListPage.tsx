@@ -189,14 +189,32 @@ export default function LoyaltyProgramListPage() {
                       )}
                     </td>
                     <td className="p-4 text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(p.id!, p.loyalty_program_name)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            navigate(
+                              `/desk/loyalty-point-entry?program=${encodeURIComponent(
+                                p.loyalty_program_name,
+                              )}`,
+                            )
+                          }
+                          className="text-amber-600 hover:text-amber-700"
+                          title="Lihat riwayat poin untuk program ini"
+                        >
+                          <Coins className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(p.id!, p.loyalty_program_name)}
+                          className="text-red-500 hover:text-red-700"
+                          title="Hapus Loyalty Program"
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))

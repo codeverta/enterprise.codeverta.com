@@ -103,11 +103,11 @@ describe("PointOfSalePage", () => {
     // Verify Item Group SearchableSelect trigger is rendered
     expect(screen.getByText("All Item Groups")).toBeInTheDocument();
 
-    // Verify Customer SearchableSelect trigger is rendered
-    expect(screen.getByText("Pilih atau cari customer...")).toBeInTheDocument();
+    // Verify Customer SearchableSelect defaults to Walk-in Customer
+    expect(screen.getByText("Walk-in Customer")).toBeInTheDocument();
 
     // Click Customer select and select Rabih
-    fireEvent.click(screen.getByText("Pilih atau cari customer..."));
+    fireEvent.click(screen.getByText("Walk-in Customer"));
     const customerOption = await screen.findByRole("button", { name: /Rabih/i });
     fireEvent.click(customerOption);
 
@@ -186,7 +186,7 @@ describe("PointOfSalePage", () => {
     );
 
     // Select customer Rabih
-    fireEvent.click(await screen.findByText("Pilih atau cari customer..."));
+    fireEvent.click(await screen.findByText("Walk-in Customer"));
     const customerOption = await screen.findByRole("button", { name: /Rabih/i });
     fireEvent.click(customerOption);
 
@@ -237,9 +237,9 @@ describe("PointOfSalePage", () => {
     expect(await screen.findByRole("heading", { name: "All Items" })).toBeInTheDocument();
 
     printSpy.mockRestore();
-  });
+  }, 15000);
 
-  it("auto-selects customer marked as is_default_for_pos", async () => {
+  it("defaults to Walk-in Customer even when another POS default exists", async () => {
     mockApi();
     apiGet.mockImplementation((url: string) => {
       if (url === "/selling/pos/opening-entries/current") {
@@ -276,7 +276,78 @@ describe("PointOfSalePage", () => {
       </MemoryRouter>
     );
 
-    expect(await screen.findByText("Default POS Customer")).toBeInTheDocument();
+    expect(await screen.findByText("Walk-in Customer")).toBeInTheDocument();
+    expect(screen.queryByText("Default POS Customer")).not.toBeInTheDocument();
+  });
+
+  it("renders item image in catalog card, side cart, and checkout view when item has an image", async () => {
+    mockApi();
+    apiGet.mockImplementation((url: string) => {
+      if (url === "/selling/pos/opening-entries/current") {
+        return Promise.resolve({
+          data: {
+            data: {
+              id: "opening-123",
+              pos_profile: "Usaha Jualan Lilin",
+              company: "Test Corp",
+              balance_details: [
+                { mode_of_payment: "Cash", opening_amount: 0 },
+                { mode_of_payment: "Bank Transfer", opening_amount: 0 },
+              ],
+            },
+            is_outdated: false,
+          },
+        });
+      }
+      if (url === "/selling/pos/items" || url.includes("/selling/point-of-sale/items")) {
+        return Promise.resolve({
+          data: {
+            data: [
+              {
+                id: "item-img-1",
+                item_code: "LILIN-FOTO",
+                item_name: "Lilin Aroma Foto",
+                item_group: "Products",
+                rate: 25000,
+                unit: "Nos",
+                image: "uploads/items/lilin-foto.png",
+                barcodes: [],
+              },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: [] } });
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/desk/point-of-sale"]}>
+        <Routes>
+          <Route path="/desk/point-of-sale" element={<PointOfSalePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    // 1. In catalog card
+    const catalogImages = await screen.findAllByAltText("Lilin Aroma Foto");
+    expect(catalogImages.length).toBeGreaterThanOrEqual(1);
+    expect(catalogImages[0]).toHaveAttribute(
+      "src",
+      expect.stringContaining("uploads/items/lilin-foto.png")
+    );
+
+    // 2. Click to add to cart
+    fireEvent.click(screen.getByText("Lilin Aroma Foto"));
+
+    // Verify side cart now also shows the image
+    const cartImages = screen.getAllByAltText("Lilin Aroma Foto");
+    expect(cartImages.length).toBe(2);
+
+    // 3. Go to checkout view
+    fireEvent.click(screen.getByRole("button", { name: "Checkout" }));
+
+    // Verify checkout view shows image
+    const checkoutImages = screen.getAllByAltText("Lilin Aroma Foto");
+    expect(checkoutImages.length).toBeGreaterThanOrEqual(1);
   });
 });
-

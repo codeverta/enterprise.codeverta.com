@@ -207,7 +207,7 @@ describe("PurchaseOrderFormPage", () => {
 
     // Verify detail is loaded and header shows PUR-ORD-2026-00001
     await waitFor(() => {
-      expect(screen.getByText("PUR-ORD-2026-00001")).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: "PUR-ORD-2026-00001" })).toBeInTheDocument();
       expect(screen.getByText("PT Mitra Perkasa")).toBeInTheDocument();
       expect(screen.getByText("Laptop Asus ROG")).toBeInTheDocument();
     });

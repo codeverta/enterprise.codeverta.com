@@ -208,7 +208,7 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.07] px-3 py-1.5 text-xs font-medium text-violet-100">
                   <Sparkles className="size-3.5" /> Workspace utama
                 </span>
-                <p className="mt-6 text-sm font-medium text-violet-200">Selamat datang, {displayName}</p>
+                <p className="mt-6 text-sm font-medium text-violet-200">Selamat bekerja, {displayName}</p>
                 <h1 className="mt-2 text-3xl font-bold leading-tight tracking-[-0.04em] text-white sm:text-4xl lg:text-[44px]">
                   Semua operasional bisnis,<br className="hidden sm:block" /> dalam satu tempat.
                 </h1>

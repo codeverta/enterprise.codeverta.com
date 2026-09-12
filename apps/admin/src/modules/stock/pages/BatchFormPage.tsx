@@ -88,7 +88,7 @@ export default function BatchFormPage() {
       return rows.map((item) => ({
         value: item.item_code,
         label: `${item.item_code} - ${item.item_name || ""}`,
-        sublabel: item.stock_uom ? `UOM: ${item.stock_uom}` : undefined,
+        sublabel: item.stock_uom ? `Unit: ${item.stock_uom}` : undefined,
       }));
     } catch {
       return (options.items || [])
@@ -100,7 +100,7 @@ export default function BatchFormPage() {
         .map((it) => ({
           value: it.item_code,
           label: `${it.item_code} - ${it.item_name}`,
-          sublabel: it.stock_uom ? `UOM: ${it.stock_uom}` : undefined,
+          sublabel: it.stock_uom ? `Unit: ${it.stock_uom}` : undefined,
         }));
     }
   };
@@ -332,7 +332,7 @@ export default function BatchFormPage() {
                   options={(options.items || []).map((it) => ({
                     value: it.item_code,
                     label: `${it.item_code} - ${it.item_name}`,
-                    sublabel: it.stock_uom ? `UOM: ${it.stock_uom}` : undefined,
+                    sublabel: it.stock_uom ? `Unit: ${it.stock_uom}` : undefined,
                   }))}
                   actionLabel="+ Tambah Item Baru"
                   actionHref="/desk/item/new"

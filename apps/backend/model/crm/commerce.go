@@ -1,6 +1,8 @@
 package crm
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -61,6 +63,33 @@ type SalesOrder struct {
 	PaidAt           *time.Time       `json:"paid_at"`
 	Status           string           `json:"status" gorm:"type:varchar(20);not null;default:'processing';index" binding:"omitempty,oneof=processing confirmed completed cancelled"`
 	Items            []SalesOrderItem `json:"items" gorm:"foreignKey:SalesOrderID;constraint:OnDelete:CASCADE"`
+}
+
+// UnmarshalJSON accepts HTML date input as well as full API timestamps.
+func (order *SalesOrder) UnmarshalJSON(data []byte) error {
+	type alias SalesOrder
+	var payload struct {
+		TransactionDate json.RawMessage `json:"transaction_date"`
+		*alias
+	}
+	payload.alias = (*alias)(order)
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return err
+	}
+	if len(payload.TransactionDate) == 0 || string(payload.TransactionDate) == "null" {
+		return nil
+	}
+	var value string
+	if err := json.Unmarshal(payload.TransactionDate, &value); err != nil {
+		return err
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02", "2006-01-02 15:04:05"} {
+		if parsed, err := time.Parse(layout, value); err == nil {
+			order.TransactionDate = parsed
+			return nil
+		}
+	}
+	return fmt.Errorf("invalid transaction_date: %s", value)
 }
 
 func (SalesOrder) TableName() string { return "crm_sales_orders" }

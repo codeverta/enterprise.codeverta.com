@@ -126,6 +126,17 @@ func ensureStoreCatalog(db *gorm.DB, tenant string) error {
 		return nil
 	}
 
+	var itemPrices []sellingmodel.ItemPrice
+	_ = db.Where("selling = ? AND is_active = ?", true, true).
+		Order("valid_from desc, created_at desc").
+		Find(&itemPrices).Error
+	latestPrices := make(map[string]float64)
+	for _, ip := range itemPrices {
+		if _, exists := latestPrices[ip.ItemCode]; !exists {
+			latestPrices[ip.ItemCode] = ip.PriceListRate
+		}
+	}
+
 	prefix := storePrefix(tenant)
 	return db.Transaction(func(tx *gorm.DB) error {
 		categoryMap := map[string]string{}
@@ -166,7 +177,7 @@ func ensureStoreCatalog(db *gorm.DB, tenant string) error {
 				SKU:         item.ItemCode,
 				Brand:       item.Brand,
 				Description: item.Description,
-				Price:       item.StandardRate,
+				Price:       latestPrices[item.ItemCode],
 				Stock:       int(item.OpeningStock),
 				IsActive:    true,
 			}

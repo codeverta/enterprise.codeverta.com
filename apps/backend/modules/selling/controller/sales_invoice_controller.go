@@ -209,9 +209,6 @@ func (ctrl *SalesInvoiceController) Options(ctx *gin.Context) {
 			uom = itm.StockUOM
 		}
 		rate := priceMap[itm.ItemCode]
-		if rate == 0 && itm.StandardRate > 0 {
-			rate = itm.StandardRate
-		}
 		itemOptions = append(itemOptions, SalesInvoiceItemOption{
 			ItemCode:    itm.ItemCode,
 			ItemName:    itm.ItemName,

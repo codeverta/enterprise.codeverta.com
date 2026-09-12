@@ -17,6 +17,54 @@ type Controller struct {
 	Service  *Service
 }
 
+// Schema exposes the read-only database structure used by the Desk DocType browser.
+func (controller *Controller) Schema(ctx *gin.Context) {
+	tables, err := controller.Service.DB.Migrator().GetTables()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membaca struktur database"})
+		return
+	}
+	search := strings.ToLower(strings.TrimSpace(ctx.Query("q")))
+	type columnInfo struct {
+		Name       string  `json:"name"`
+		Type       string  `json:"type"`
+		Nullable   bool    `json:"nullable"`
+		PrimaryKey bool    `json:"primary_key"`
+		Default    *string `json:"default"`
+	}
+	type tableInfo struct {
+		Name    string       `json:"name"`
+		Columns []columnInfo `json:"columns"`
+	}
+	result := make([]tableInfo, 0, len(tables))
+	for _, table := range tables {
+		if search != "" && !strings.Contains(strings.ToLower(table), search) {
+			continue
+		}
+		columns, err := controller.Service.DB.Migrator().ColumnTypes(table)
+		if err != nil {
+			continue
+		}
+		info := tableInfo{Name: table, Columns: make([]columnInfo, 0, len(columns))}
+		for _, column := range columns {
+			nullable, _ := column.Nullable()
+			primary, _ := column.PrimaryKey()
+			defaultValue, hasDefault := column.DefaultValue()
+			var defaultPtr *string
+			if hasDefault {
+				defaultPtr = &defaultValue
+			}
+			typeName := column.DatabaseTypeName()
+			if typeName == "" {
+				typeName, _ = column.ColumnType()
+			}
+			info.Columns = append(info.Columns, columnInfo{Name: column.Name(), Type: typeName, Nullable: nullable, PrimaryKey: primary, Default: defaultPtr})
+		}
+		result = append(result, info)
+	}
+	ctx.JSON(http.StatusOK, gin.H{"data": result})
+}
+
 func NewController(registry *Registry, db *gorm.DB) *Controller {
 	return &Controller{Registry: registry, Service: NewService(db)}
 }

@@ -85,8 +85,34 @@ func (ctrl *StockEntryController) Get(ctx *gin.Context) {
 func (ctrl *StockEntryController) Create(ctx *gin.Context) {
 	var input stockmodel.StockEntry
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Stock Entry tidak valid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   fmt.Sprintf("Data Stock Entry tidak valid: %v", err),
+			"details": err.Error(),
+		})
 		return
+	}
+
+	if strings.TrimSpace(input.Company) == "" && strings.TrimSpace(input.CompanyID) == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Company wajib diisi"})
+		return
+	}
+	if strings.TrimSpace(input.StockEntryType) == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Stock Entry Type wajib diisi"})
+		return
+	}
+	if len(input.Items) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Stock Entry wajib memiliki minimal 1 item"})
+		return
+	}
+	for i, it := range input.Items {
+		if strings.TrimSpace(it.ItemCode) == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Item Code pada baris %d wajib diisi", i+1)})
+			return
+		}
+		if it.Qty <= 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Quantity pada baris %d (%s) harus lebih besar dari 0", i+1, it.ItemCode)})
+			return
+		}
 	}
 
 	db, tenant := stockDB(ctx), stockTenant(ctx)
@@ -152,8 +178,34 @@ func (ctrl *StockEntryController) Update(ctx *gin.Context) {
 	id := ctx.Param("id")
 	var input stockmodel.StockEntry
 	if err := ctx.ShouldBindJSON(&input); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Data Stock Entry tidak valid"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   fmt.Sprintf("Data Stock Entry tidak valid: %v", err),
+			"details": err.Error(),
+		})
 		return
+	}
+
+	if strings.TrimSpace(input.Company) == "" && strings.TrimSpace(input.CompanyID) == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Company wajib diisi"})
+		return
+	}
+	if strings.TrimSpace(input.StockEntryType) == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Stock Entry Type wajib diisi"})
+		return
+	}
+	if len(input.Items) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Stock Entry wajib memiliki minimal 1 item"})
+		return
+	}
+	for i, it := range input.Items {
+		if strings.TrimSpace(it.ItemCode) == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Item Code pada baris %d wajib diisi", i+1)})
+			return
+		}
+		if it.Qty <= 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Quantity pada baris %d (%s) harus lebih besar dari 0", i+1, it.ItemCode)})
+			return
+		}
 	}
 
 	db, tenant := stockDB(ctx), stockTenant(ctx)

@@ -20,6 +20,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 	stockEntryTypeHandler := controller.NewStockEntryTypeController()
 	pickListHandler := controller.NewPickListController()
 	brandHandler := controller.NewBrandController()
+	stockReconciliationHandler := controller.NewStockReconciliationController()
 
 	group := parent.Group("/stock")
 	group.Use(middleware.AdminAuth())
@@ -115,5 +116,14 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.DELETE("/pick-lists/:id", pickListHandler.Delete)
 		group.POST("/pick-lists/:id/submit", pickListHandler.Submit)
 		group.POST("/pick-lists/:id/cancel", pickListHandler.Cancel)
+
+		group.GET("/stock-reconciliations/options", stockReconciliationHandler.Options)
+		group.GET("/stock-reconciliations", stockReconciliationHandler.List)
+		group.GET("/stock-reconciliations/:id", stockReconciliationHandler.Get)
+		group.POST("/stock-reconciliations", stockReconciliationHandler.Create)
+		group.PUT("/stock-reconciliations/:id", stockReconciliationHandler.Update)
+		group.POST("/stock-reconciliations/:id/submit", stockReconciliationHandler.Submit)
+		group.POST("/stock-reconciliations/:id/cancel", stockReconciliationHandler.Cancel)
+		group.DELETE("/stock-reconciliations/:id", stockReconciliationHandler.Delete)
 	}
 }

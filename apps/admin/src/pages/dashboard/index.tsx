@@ -25,7 +25,7 @@ function DashboardPage() {
     <div className="mx-auto max-w-screen-2xl space-y-6 p-6 lg:p-8">
       <div>
         <p className="text-sm font-medium text-blue-600">Codeverta Enterprise System</p>
-        <h1 className="text-3xl font-bold tracking-tight">Selamat datang, {user.display_name || user.username || "Pengguna"}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Selamat bekerja, {user.display_name || user.username || "Pengguna"}</h1>
         <p className="mt-2 text-slate-500">Kelola layanan inti lintas modul ERP dari satu tempat.</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

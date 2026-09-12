@@ -316,7 +316,7 @@ export default function PriceListPage() {
                   <th className="p-4">Item Name</th>
                   <th className="p-4">Price List</th>
                   <th className="p-4 text-right">Rate</th>
-                  <th className="p-4">UOM</th>
+                  <th className="p-4">Unit</th>
                   <th className="p-4 text-right">Aksi</th>
                 </tr>
               </thead>

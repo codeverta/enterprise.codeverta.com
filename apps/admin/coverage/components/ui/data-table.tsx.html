@@ -1,0 +1,673 @@
+
+<!doctype html>
+<html lang="en">
+
+<head>
+    <title>Code coverage report for components/ui/data-table.tsx</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+    
+<body>
+<div class='wrapper'>
+    <div class='pad1'>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">components/ui</a> data-table.tsx</h1>
+        <div class='clearfix'>
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">35.44% </span>
+                <span class="quiet">Statements</span>
+                <span class='fraction'>28/79</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">24.71% </span>
+                <span class="quiet">Branches</span>
+                <span class='fraction'>22/89</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">34.14% </span>
+                <span class="quiet">Functions</span>
+                <span class='fraction'>14/41</span>
+            </div>
+        
+            
+            <div class='fl pad1y space-right2'>
+                <span class="strong">38.88% </span>
+                <span class="quiet">Lines</span>
+                <span class='fraction'>21/54</span>
+            </div>
+        
+            
+        </div>
+        <p class="quiet">
+            Press <em>n</em> or <em>j</em> to go to the next uncovered block, <em>b</em>, <em>p</em> or <em>k</em> for the previous block.
+        </p>
+        <template id="filterTemplate">
+            <div class="quiet">
+                Filter:
+                <input type="search" id="fileSearch">
+            </div>
+        </template>
+    </div>
+    <div class='status-line low'></div>
+    <pre><table class="coverage">
+<tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
+<a name='L2'></a><a href='#L2'>2</a>
+<a name='L3'></a><a href='#L3'>3</a>
+<a name='L4'></a><a href='#L4'>4</a>
+<a name='L5'></a><a href='#L5'>5</a>
+<a name='L6'></a><a href='#L6'>6</a>
+<a name='L7'></a><a href='#L7'>7</a>
+<a name='L8'></a><a href='#L8'>8</a>
+<a name='L9'></a><a href='#L9'>9</a>
+<a name='L10'></a><a href='#L10'>10</a>
+<a name='L11'></a><a href='#L11'>11</a>
+<a name='L12'></a><a href='#L12'>12</a>
+<a name='L13'></a><a href='#L13'>13</a>
+<a name='L14'></a><a href='#L14'>14</a>
+<a name='L15'></a><a href='#L15'>15</a>
+<a name='L16'></a><a href='#L16'>16</a>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a>
+<a name='L19'></a><a href='#L19'>19</a>
+<a name='L20'></a><a href='#L20'>20</a>
+<a name='L21'></a><a href='#L21'>21</a>
+<a name='L22'></a><a href='#L22'>22</a>
+<a name='L23'></a><a href='#L23'>23</a>
+<a name='L24'></a><a href='#L24'>24</a>
+<a name='L25'></a><a href='#L25'>25</a>
+<a name='L26'></a><a href='#L26'>26</a>
+<a name='L27'></a><a href='#L27'>27</a>
+<a name='L28'></a><a href='#L28'>28</a>
+<a name='L29'></a><a href='#L29'>29</a>
+<a name='L30'></a><a href='#L30'>30</a>
+<a name='L31'></a><a href='#L31'>31</a>
+<a name='L32'></a><a href='#L32'>32</a>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a>
+<a name='L38'></a><a href='#L38'>38</a>
+<a name='L39'></a><a href='#L39'>39</a>
+<a name='L40'></a><a href='#L40'>40</a>
+<a name='L41'></a><a href='#L41'>41</a>
+<a name='L42'></a><a href='#L42'>42</a>
+<a name='L43'></a><a href='#L43'>43</a>
+<a name='L44'></a><a href='#L44'>44</a>
+<a name='L45'></a><a href='#L45'>45</a>
+<a name='L46'></a><a href='#L46'>46</a>
+<a name='L47'></a><a href='#L47'>47</a>
+<a name='L48'></a><a href='#L48'>48</a>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a>
+<a name='L52'></a><a href='#L52'>52</a>
+<a name='L53'></a><a href='#L53'>53</a>
+<a name='L54'></a><a href='#L54'>54</a>
+<a name='L55'></a><a href='#L55'>55</a>
+<a name='L56'></a><a href='#L56'>56</a>
+<a name='L57'></a><a href='#L57'>57</a>
+<a name='L58'></a><a href='#L58'>58</a>
+<a name='L59'></a><a href='#L59'>59</a>
+<a name='L60'></a><a href='#L60'>60</a>
+<a name='L61'></a><a href='#L61'>61</a>
+<a name='L62'></a><a href='#L62'>62</a>
+<a name='L63'></a><a href='#L63'>63</a>
+<a name='L64'></a><a href='#L64'>64</a>
+<a name='L65'></a><a href='#L65'>65</a>
+<a name='L66'></a><a href='#L66'>66</a>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a>
+<a name='L81'></a><a href='#L81'>81</a>
+<a name='L82'></a><a href='#L82'>82</a>
+<a name='L83'></a><a href='#L83'>83</a>
+<a name='L84'></a><a href='#L84'>84</a>
+<a name='L85'></a><a href='#L85'>85</a>
+<a name='L86'></a><a href='#L86'>86</a>
+<a name='L87'></a><a href='#L87'>87</a>
+<a name='L88'></a><a href='#L88'>88</a>
+<a name='L89'></a><a href='#L89'>89</a>
+<a name='L90'></a><a href='#L90'>90</a>
+<a name='L91'></a><a href='#L91'>91</a>
+<a name='L92'></a><a href='#L92'>92</a>
+<a name='L93'></a><a href='#L93'>93</a>
+<a name='L94'></a><a href='#L94'>94</a>
+<a name='L95'></a><a href='#L95'>95</a>
+<a name='L96'></a><a href='#L96'>96</a>
+<a name='L97'></a><a href='#L97'>97</a>
+<a name='L98'></a><a href='#L98'>98</a>
+<a name='L99'></a><a href='#L99'>99</a>
+<a name='L100'></a><a href='#L100'>100</a>
+<a name='L101'></a><a href='#L101'>101</a>
+<a name='L102'></a><a href='#L102'>102</a>
+<a name='L103'></a><a href='#L103'>103</a>
+<a name='L104'></a><a href='#L104'>104</a>
+<a name='L105'></a><a href='#L105'>105</a>
+<a name='L106'></a><a href='#L106'>106</a>
+<a name='L107'></a><a href='#L107'>107</a>
+<a name='L108'></a><a href='#L108'>108</a>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a>
+<a name='L111'></a><a href='#L111'>111</a>
+<a name='L112'></a><a href='#L112'>112</a>
+<a name='L113'></a><a href='#L113'>113</a>
+<a name='L114'></a><a href='#L114'>114</a>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a>
+<a name='L117'></a><a href='#L117'>117</a>
+<a name='L118'></a><a href='#L118'>118</a>
+<a name='L119'></a><a href='#L119'>119</a>
+<a name='L120'></a><a href='#L120'>120</a>
+<a name='L121'></a><a href='#L121'>121</a>
+<a name='L122'></a><a href='#L122'>122</a>
+<a name='L123'></a><a href='#L123'>123</a>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a>
+<a name='L126'></a><a href='#L126'>126</a>
+<a name='L127'></a><a href='#L127'>127</a>
+<a name='L128'></a><a href='#L128'>128</a>
+<a name='L129'></a><a href='#L129'>129</a>
+<a name='L130'></a><a href='#L130'>130</a>
+<a name='L131'></a><a href='#L131'>131</a>
+<a name='L132'></a><a href='#L132'>132</a>
+<a name='L133'></a><a href='#L133'>133</a>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a>
+<a name='L136'></a><a href='#L136'>136</a>
+<a name='L137'></a><a href='#L137'>137</a>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a>
+<a name='L157'></a><a href='#L157'>157</a>
+<a name='L158'></a><a href='#L158'>158</a>
+<a name='L159'></a><a href='#L159'>159</a>
+<a name='L160'></a><a href='#L160'>160</a>
+<a name='L161'></a><a href='#L161'>161</a>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a>
+<a name='L192'></a><a href='#L192'>192</a>
+<a name='L193'></a><a href='#L193'>193</a>
+<a name='L194'></a><a href='#L194'>194</a>
+<a name='L195'></a><a href='#L195'>195</a>
+<a name='L196'></a><a href='#L196'>196</a>
+<a name='L197'></a><a href='#L197'>197</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">204x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">204x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">204x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">289x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34x</span>
+<span class="cline-any cline-yes">289x</span>
+<span class="cline-any cline-yes">289x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21x</span>
+<span class="cline-any cline-yes">170x</span>
+<span class="cline-any cline-yes">170x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">"use client";
+&nbsp;
+import * as React from "react";
+import {
+  type ColumnDef,
+  type ColumnFiltersState,
+  type SortingState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import { ArrowDownWideNarrow, ChevronDown, ListFilter, Plus, Search, X } from "lucide-react";
+&nbsp;
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+&nbsp;
+export type DataTableColumnMeta = {
+  label?: string;
+  headerClassName?: string;
+  cellClassName?: string;
+};
+&nbsp;
+type FilterOperator = "contains" | "equals" | "startsWith" | "greaterThan" | "lessThan";
+type FilterValue = { operator: FilterOperator; value: string };
+&nbsp;
+export interface DataTableProps&lt;TData, TValue = unknown&gt; {
+  columns: ColumnDef&lt;TData, TValue&gt;[];
+  data: TData[];
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  loading?: boolean;
+  toolbar?: boolean;
+  pagination?: boolean;
+  pageSize?: number;
+  className?: string;
+  tableClassName?: string;
+  getRowId?: (row: TData, index: number) =&gt; string;
+  onRowClick?: (row: TData) =&gt; void;
+}
+&nbsp;
+const smartFilter = <span class="fstat-no" title="function not covered" >(r</span>ow: any, columnId: string, filter: FilterValue | string) =&gt; {
+  const raw = <span class="cstat-no" title="statement not covered" >row.getValue(columnId);</span>
+  const actual = <span class="cstat-no" title="statement not covered" >String(raw ?? "").toLocaleLowerCase();</span>
+  const config: FilterValue = <span class="cstat-no" title="statement not covered" >typeof filter === "string" ? { operator: "contains", value: filter } : filter;</span>
+  const expected = <span class="cstat-no" title="statement not covered" >String(config?.value ?? "").toLocaleLowerCase();</span>
+<span class="cstat-no" title="statement not covered" >  if (!expected) <span class="cstat-no" title="statement not covered" >return true;</span></span>
+<span class="cstat-no" title="statement not covered" >  if (config.operator === "equals") <span class="cstat-no" title="statement not covered" >return actual === expected;</span></span>
+<span class="cstat-no" title="statement not covered" >  if (config.operator === "startsWith") <span class="cstat-no" title="statement not covered" >return actual.startsWith(expected);</span></span>
+<span class="cstat-no" title="statement not covered" >  if (config.operator === "greaterThan") <span class="cstat-no" title="statement not covered" >return Number(raw) &gt; Number(config.value);</span></span>
+<span class="cstat-no" title="statement not covered" >  if (config.operator === "lessThan") <span class="cstat-no" title="statement not covered" >return Number(raw) &lt; Number(config.value);</span></span>
+<span class="cstat-no" title="statement not covered" >  return actual.includes(expected);</span>
+};
+&nbsp;
+export function DataTable&lt;TData, TValue = unknown&gt;({
+  columns,
+  data,
+  searchPlaceholder = "Cari di semua kolom...",
+  emptyMessage = "Tidak ada data.",
+  loading = false,
+  toolbar = true,
+  pagination = true,
+  pageSize = 10,
+  className,
+  tableClassName,
+  getRowId,
+  onRowClick,
+}: DataTableProps&lt;TData, TValue&gt;) {
+  const [sorting, setSorting] = React.useState&lt;SortingState&gt;([]);
+  const [columnFilters, setColumnFilters] = React.useState&lt;ColumnFiltersState&gt;([]);
+  const [globalFilter, setGlobalFilter] = React.useState("");
+  const [filterOpen, setFilterOpen] = React.useState(false);
+&nbsp;
+  const filterableColumns = React.useMemo(
+    () =&gt; columns.filter((column: any) =&gt; column.enableColumnFilter !== false &amp;&amp; (column.accessorKey || column.id)),
+    [columns],
+  );
+  const sortableColumns = React.useMemo(
+    () =&gt; columns.filter((column: any) =&gt; column.enableSorting !== false &amp;&amp; (column.accessorKey || column.id)),
+    [columns],
+  );
+  const normalizedColumns = React.useMemo(() =&gt; columns.map((column) =&gt; ({ filterFn: smartFilter, ...column })), [columns]);
+&nbsp;
+  const table = useReactTable({
+    data,
+    columns: normalizedColumns,
+    getRowId,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    ...(pagination ? <span class="branch-0 cbranch-no" title="branch not covered" >{ getPaginationRowModel: getPaginationRowModel() } : {</span>}),
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    initialState: { pagination: { pageSize } },
+    state: { sorting, columnFilters, globalFilter },
+  });
+&nbsp;
+  const addFilter = <span class="fstat-no" title="function not covered" >() =&gt; {</span>
+    const first = <span class="cstat-no" title="statement not covered" >filterableColumns.find(<span class="fstat-no" title="function not covered" >(c</span>olumn: any) =&gt; <span class="cstat-no" title="statement not covered" >!columnFilters.some(<span class="fstat-no" title="function not covered" >(f</span>ilter) =&gt; <span class="cstat-no" title="statement not covered" >filter.id === (column.accessorKey || column.id))</span>)</span> as any;</span>
+    const id = <span class="cstat-no" title="statement not covered" >first?.accessorKey || first?.id;</span>
+<span class="cstat-no" title="statement not covered" >    if (id) <span class="cstat-no" title="statement not covered" >setColumnFilters(<span class="fstat-no" title="function not covered" >(c</span>urrent) =&gt; <span class="cstat-no" title="statement not covered" >[...current, { id, value: { operator: "contains", value: "" } }])</span>;</span></span>
+  };
+  const updateFilter = <span class="fstat-no" title="function not covered" >(i</span>ndex: number, patch: Partial&lt;FilterValue&gt; &amp; { id?: string }) =&gt; {
+<span class="cstat-no" title="statement not covered" >    setColumnFilters(<span class="fstat-no" title="function not covered" >(c</span>urrent) =&gt; <span class="cstat-no" title="statement not covered" >current.map(<span class="fstat-no" title="function not covered" >(f</span>ilter, filterIndex) =&gt; {</span></span>
+<span class="cstat-no" title="statement not covered" >      if (filterIndex !== index) <span class="cstat-no" title="statement not covered" >return filter;</span></span>
+      const value = (<span class="cstat-no" title="statement not covered" >filter.value || { operator: "contains", value: "" }) as FilterValue;</span>
+<span class="cstat-no" title="statement not covered" >      return { id: patch.id || filter.id, value: { ...value, ...patch } };</span>
+    }));
+  };
+  const hasFooter = table.getFooterGroups().some((group) =&gt; group.headers.some((header) =&gt; Boolean(header.column.columnDef.footer)));
+&nbsp;
+  return (
+    &lt;div className={cn("space-y-3", className)}&gt;
+      {toolbar &amp;&amp; (
+<span class="branch-1 cbranch-no" title="branch not covered" >        &lt;div className="flex flex-wrap items-center gap-2"&gt;</span>
+          &lt;div className="relative min-w-[220px] flex-1 sm:max-w-sm"&gt;
+            &lt;Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" /&gt;
+            &lt;Input aria-label="Search table" value={globalFilter} onChange={<span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; <span class="cstat-no" title="statement not covered" >setGlobalFilter(event.target.value)} p</span>laceholder={searchPlaceholder} className="h-10 rounded-xl bg-slate-50 pl-9" /&gt;
+          &lt;/div&gt;
+          &lt;Popover open={filterOpen} onOpenChange={setFilterOpen}&gt;
+            &lt;PopoverTrigger asChild&gt;
+              &lt;Button aria-label="Filter" variant="outline" className="h-10 rounded-xl bg-slate-50" onClick={<span class="fstat-no" title="function not covered" >() =&gt; {</span> <span class="cstat-no" title="statement not covered" >if (columnFilters.length === 0) <span class="cstat-no" title="statement not covered" >addFilter(); }</span></span>}&gt;
+                &lt;ListFilter className="size-4" /&gt; Filter
+                {columnFilters.length &gt; 0 &amp;&amp; &lt;span className="rounded-full bg-slate-900 px-1.5 text-[10px] text-white"&gt;{columnFilters.length}&lt;/span&gt;}
+              &lt;/Button&gt;
+            &lt;/PopoverTrigger&gt;
+            &lt;PopoverContent align="end" className="w-[min(520px,calc(100vw-2rem))] rounded-xl p-3 shadow-lg"&gt;
+              &lt;div className="space-y-3"&gt;
+                {columnFilters.map(<span class="fstat-no" title="function not covered" >(f</span>ilter, index) =&gt; {
+                  const value = <span class="cstat-no" title="statement not covered" >filter.value as FilterValue;</span>
+<span class="cstat-no" title="statement not covered" >                  return (</span>
+                    &lt;div key={`${filter.id}-${index}`} className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_120px_minmax(0,1fr)_32px]"&gt;
+                      &lt;Select value={filter.id} onValueChange={<span class="fstat-no" title="function not covered" >(s</span>elected) =&gt; <span class="cstat-no" title="statement not covered" >updateFilter(index, { id: selected })}&gt;</span>
+                        &lt;SelectTrigger aria-label="Filter column" className="h-9 min-w-0 rounded-lg bg-slate-50 px-2.5"&gt;&lt;SelectValue /&gt;&lt;/SelectTrigger&gt;
+                        &lt;SelectContent&gt;{filterableColumns.map(<span class="fstat-no" title="function not covered" >(c</span>olumn: any) =&gt; { const id = <span class="cstat-no" title="statement not covered" >column.accessorKey || column.id; <span class="cstat-no" title="statement not covered" >r</span>eturn &lt;SelectItem key={id} value={id}&gt;{column.meta?.label || (typeof column.header === "string" ? column.header : id)}&lt;/SelectItem&gt;; }</span>)}&lt;/SelectContent&gt;
+                      &lt;/Select&gt;
+                      &lt;Select value={value.operator} onValueChange={<span class="fstat-no" title="function not covered" >(s</span>elected) =&gt; <span class="cstat-no" title="statement not covered" >updateFilter(index, { operator: selected as FilterOperator })}&gt;</span>
+                        &lt;SelectTrigger aria-label="Filter operator" className="h-9 min-w-0 rounded-lg bg-slate-50 px-2.5"&gt;&lt;SelectValue /&gt;&lt;/SelectTrigger&gt;
+                        &lt;SelectContent&gt;&lt;SelectItem value="contains"&gt;Contains&lt;/SelectItem&gt;&lt;SelectItem value="equals"&gt;Equals&lt;/SelectItem&gt;&lt;SelectItem value="startsWith"&gt;Starts with&lt;/SelectItem&gt;&lt;SelectItem value="greaterThan"&gt;Greater than&lt;/SelectItem&gt;&lt;SelectItem value="lessThan"&gt;Less than&lt;/SelectItem&gt;&lt;/SelectContent&gt;
+                      &lt;/Select&gt;
+                      &lt;Input aria-label="Filter value" value={value.value} onChange={<span class="fstat-no" title="function not covered" >(e</span>vent) =&gt; <span class="cstat-no" title="statement not covered" >updateFilter(index, { value: event.target.value })} c</span>lassName="h-9 min-w-0 rounded-lg bg-slate-50" placeholder="Nilai filter" /&gt;
+                      &lt;Button aria-label="Hapus filter" size="icon" variant="ghost" className="size-8" onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etColumnFilters(<span class="fstat-no" title="function not covered" >(c</span>urrent) =&gt; <span class="cstat-no" title="statement not covered" >current.filter(<span class="fstat-no" title="function not covered" >(_</span>, itemIndex) =&gt; <span class="cstat-no" title="statement not covered" >itemIndex !== index)</span>)</span>}&gt;&lt;</span>X className="size-4" /&gt;&lt;/Button&gt;
+                    &lt;/div&gt;
+                  );
+                })}
+                &lt;div className="flex items-center justify-between border-t pt-3"&gt;
+                  &lt;Button variant="ghost" onClick={addFilter} disabled={columnFilters.length &gt;= filterableColumns.length}&gt;&lt;Plus className="size-4" /&gt; Add a Filter&lt;/Button&gt;
+                  &lt;div className="flex gap-2"&gt;
+                    &lt;Button variant="outline" onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etColumnFilters([])}&gt;C</span>lear Filters&lt;/Button&gt;
+                    &lt;Button className="bg-slate-950 text-white hover:bg-slate-800" onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etFilterOpen(false)}&gt;A</span>pply Filters&lt;/Button&gt;
+                  &lt;/div&gt;
+                &lt;/div&gt;
+              &lt;/div&gt;
+            &lt;/PopoverContent&gt;
+          &lt;/Popover&gt;
+          &lt;div className="flex h-10 items-center rounded-xl border bg-slate-50"&gt;
+            &lt;ArrowDownWideNarrow className="ml-3 size-4 text-slate-600" /&gt;
+            &lt;Select value={sorting[0]?.id || "none"} onValueChange={<span class="fstat-no" title="function not covered" >(s</span>elected) =&gt; <span class="cstat-no" title="statement not covered" >setSorting(selected === "none" ? [] : [{ id: selected, desc: sorting[0]?.desc ?? true }])}&gt;</span>
+              &lt;SelectTrigger aria-label="Sort table" className="h-full min-w-32 border-0 bg-transparent px-2 shadow-none"&gt;&lt;SelectValue placeholder="Sort" /&gt;&lt;/SelectTrigger&gt;
+              &lt;SelectContent align="end"&gt;&lt;SelectItem value="none"&gt;Sort&lt;/SelectItem&gt;{sortableColumns.map(<span class="fstat-no" title="function not covered" >(c</span>olumn: any) =&gt; { const id = <span class="cstat-no" title="statement not covered" >column.accessorKey || column.id; <span class="cstat-no" title="statement not covered" >r</span>eturn &lt;SelectItem key={id} value={id}&gt;{column.meta?.label || (typeof column.header === "string" ? column.header : id)}&lt;/SelectItem&gt;; }</span>)}&lt;/SelectContent&gt;
+            &lt;/Select&gt;
+            {sorting[0] &amp;&amp; &lt;Button aria-label="Ubah arah sort" size="icon" variant="ghost" className="size-9 border-l" onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>etSorting([{ ...sorting[0], desc: !sorting[0].desc }])}&gt;&lt;</span>ChevronDown className={cn("size-4 transition", !sorting[0].desc &amp;&amp; "rotate-180")} /&gt;&lt;/Button&gt;}
+          &lt;/div&gt;
+        &lt;/div&gt;
+      )}
+&nbsp;
+      &lt;div className="overflow-hidden rounded-xl border"&gt;
+        &lt;Table className={cn("text-left text-xs", tableClassName)}&gt;
+          &lt;TableHeader className="bg-slate-50 text-slate-600 dark:bg-slate-900"&gt;
+            {table.getHeaderGroups().map((headerGroup) =&gt; &lt;TableRow key={headerGroup.id} disableHover&gt;{headerGroup.headers.map((header) =&gt; {
+              const meta = header.column.columnDef.meta as DataTableColumnMeta | undefined;
+              return &lt;TableHead key={header.id} className={cn("h-10 px-3 text-xs font-semibold", meta?.headerClassName)}&gt;{header.isPlaceholder ? <span class="branch-0 cbranch-no" title="branch not covered" >null : &lt;</span>button type="button" disabled={!header.column.getCanSort()} onClick={header.column.getToggleSortingHandler()} className="inline-flex items-center gap-1.5 disabled:cursor-default"&gt;{flexRender(header.column.columnDef.header, header.getContext())}{header.column.getIsSorted() &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >&lt;ChevronDown className={cn("size-3.5", header.column.getIsSorted() === "asc" &amp;&amp; "rotate-180")} /&gt;}&lt;</span>/button&gt;}&lt;/TableHead&gt;;
+            })}&lt;/TableRow&gt;)}
+          &lt;/TableHeader&gt;
+          &lt;TableBody&gt;
+            {loading ? <span class="branch-0 cbranch-no" title="branch not covered" >&lt;TableRow disableHover&gt;&lt;TableCell colSpan={columns.length} className="h-24 text-center text-slate-500"&gt;Memuat data...&lt;/TableCell&gt;&lt;/TableRow&gt; : t</span>able.getRowModel().rows.length ? table.getRowModel().rows.map((row) =&gt; &lt;TableRow key={row.id} onClick={() =&gt; onRowClick?.(row.original)} className={cn(onRowClick &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >"cursor-pointer")</span>}&gt;{row.getVisibleCells().map((cell) =&gt; {
+              const meta = cell.column.columnDef.meta as DataTableColumnMeta | undefined;
+              return &lt;TableCell key={cell.id} className={cn("px-3 py-2.5", meta?.cellClassName)}&gt;{flexRender(cell.column.columnDef.cell, cell.getContext())}&lt;/TableCell&gt;;
+            })}&lt;/TableRow&gt;) : &lt;TableRow disableHover&gt;&lt;TableCell colSpan={columns.length} className="h-24 text-center text-slate-500"&gt;{emptyMessage}&lt;/TableCell&gt;&lt;/TableRow&gt;}
+          &lt;/TableBody&gt;
+          {hasFooter &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >&lt;TableFooter&gt;{table.getFooterGroups().map(<span class="fstat-no" title="function not covered" >(f</span>ooterGroup) =&gt; <span class="cstat-no" title="statement not covered" >&lt;TableRow key={footerGroup.id} disableHover&gt;{footerGroup.headers.map(<span class="fstat-no" title="function not covered" >(h</span>eader) =&gt; <span class="cstat-no" title="statement not covered" >&lt;TableCell key={header.id} className="px-3 py-3"&gt;{header.isPlaceholder ? null : flexRender(header.column.columnDef.footer, header.getContext())}&lt;/TableCell&gt;)</span>}&lt;/TableRow&gt;)</span>}&lt;/TableFooter&gt;}</span>
+        &lt;/Table&gt;
+      &lt;/div&gt;
+      {pagination &amp;&amp; <span class="branch-1 cbranch-no" title="branch not covered" >table.getPageCount() &gt; 1 &amp;&amp; <span class="branch-2 cbranch-no" title="branch not covered" >&lt;</span>div className="flex items-center justify-between text-xs text-slate-500"&gt;&lt;span&gt;{table.getFilteredRowModel().rows.length} data&lt;/span&gt;&lt;div className="flex items-center gap-2"&gt;&lt;Button size="sm" variant="outline" onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >t</span>able.previousPage()} d</span>isabled={!table.getCanPreviousPage()}&gt;Previous&lt;/Button&gt;&lt;span&gt;{table.getState().pagination.pageIndex + 1} / {table.getPageCount()}&lt;/span&gt;&lt;Button size="sm" variant="outline" onClick={<span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >t</span>able.nextPage()} d</span>isabled={!table.getCanNextPage()}&gt;Next&lt;/Button&gt;&lt;/div&gt;&lt;/div&gt;}</span>
+    &lt;/div&gt;
+  );
+}
+&nbsp;
+export type { ColumnDef };
+&nbsp;</pre></td></tr></table></pre>
+
+                <div class='push'></div><!-- for sticky footer -->
+            </div><!-- /wrapper -->
+            <div class='footer quiet pad2 space-top1 center small'>
+                Code coverage generated by
+                <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
+                at 2026-09-12T05:29:19.810Z
+            </div>
+        <script src="../../prettify.js"></script>
+        <script>
+            window.onload = function () {
+                prettyPrint();
+            };
+        </script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
+    </body>
+</html>
+    

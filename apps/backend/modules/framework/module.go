@@ -29,6 +29,7 @@ func RegisterRoutes(parent *gin.RouterGroup, db *gorm.DB) error {
 	group.Use(middleware.AdminAuth())
 	{
 		group.GET("/definitions", controller.Definitions)
+		group.GET("/schema", controller.Schema)
 		group.GET("/:doctype", controller.List)
 		group.POST("/:doctype", controller.Create)
 		group.GET("/:doctype/:id", controller.Get)

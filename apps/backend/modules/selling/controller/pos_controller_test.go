@@ -239,15 +239,15 @@ func TestPOSClosingLinkedSalesInvoices(t *testing.T) {
 func TestPOSItemsUsesLatestItemPrice(t *testing.T) {
 	router, db := setupPOSTestRouter(t)
 
-	// 1. Seed Item with StandardRate 10,000
+	// 1. Seed Item
 	item := buyingmodel.Item{
 		Base:         buyingmodel.Base{ID: uuid.New(), TenantID: uuid.New()},
 		ItemCode:     "MK",
 		ItemName:     "Lilin Million Kecil",
 		ItemGroup:    "Products",
-		StandardRate: 10000,
 		OpeningStock: 50,
 		StockUOM:     "Nos",
+		ImageURL:     "uploads/items/lilin-small.png",
 		IsStockItem:  true,
 		Disabled:     false,
 	}
@@ -298,4 +298,55 @@ func TestPOSItemsUsesLatestItemPrice(t *testing.T) {
 	assert.Len(t, resp.Data, 1)
 	assert.Equal(t, "MK", resp.Data[0].ItemCode)
 	assert.Equal(t, 2000.0, resp.Data[0].Rate)
+	assert.Equal(t, "uploads/items/lilin-small.png", resp.Data[0].Image)
+	assert.Equal(t, "uploads/items/lilin-small.png", resp.Data[0].ImageURL)
+}
+
+func TestPOSInvoiceRecomputesCatalogPriceAndDiscount(t *testing.T) {
+	router, db := setupPOSTestRouter(t)
+
+	item := buyingmodel.Item{
+		Base:      buyingmodel.Base{ID: uuid.New(), TenantID: uuid.New()},
+		ItemCode:  "MK",
+		ItemName:  "Lilin Million Kecil",
+		ItemGroup: "Products",
+		StockUOM:  "Nos",
+		Disabled:  false,
+	}
+	assert.NoError(t, db.Create(&item).Error)
+	assert.NoError(t, db.Create(&sellingmodel.ItemPrice{
+		ID: "ip-pos", TenantID: "test-pos-tenant", ItemCode: "MK", ItemName: item.ItemName,
+		PriceList: "Standard Selling", PriceListRate: 2000, Selling: true, IsActive: true,
+		CreatedAt: time.Now(),
+	}).Error)
+	assert.NoError(t, db.Create(&sellingmodel.POSOpeningEntry{
+		ID: "opening-pos-price", TenantID: "test-pos-tenant", PeriodStartDate: time.Now(),
+		PostingDate: time.Now(), Company: "UD MILLION CANDLES", POSProfile: "Usaha Jualan Lilin",
+		User: "Administrator", Status: sellingmodel.POSOpeningStatusOpen,
+	}).Error)
+
+	body, err := json.Marshal(map[string]any{
+		"opening_entry_id": "opening-pos-price",
+		"customer":         "Walk-in Customer",
+		"mode_of_payment":  "Cash",
+		"discount_amount":  1000,
+		"items": []map[string]any{{
+			"item_code": "MK", "item_name": "Client supplied name", "quantity": 2, "rate": 999999,
+		}},
+	})
+	assert.NoError(t, err)
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/pos/invoices", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	var invoice sellingmodel.POSInvoice
+	assert.NoError(t, json.Unmarshal(w.Body.Bytes(), &invoice))
+	assert.Len(t, invoice.Items, 1)
+	assert.Equal(t, 2000.0, invoice.Items[0].Rate)
+	assert.Equal(t, 4000.0, invoice.NetTotal)
+	assert.Equal(t, 1000.0, invoice.DiscountAmount)
+	assert.Equal(t, 3000.0, invoice.GrandTotal)
+	assert.Equal(t, 3000.0, invoice.PaidAmount)
 }

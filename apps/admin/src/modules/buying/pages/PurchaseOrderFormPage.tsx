@@ -848,7 +848,7 @@ export default function PurchaseOrderFormPage() {
                         <th className="p-3 text-left">Item Code</th>
                         <th className="p-3 text-left">Required By</th>
                         <th className="p-3 text-left">Quantity</th>
-                        <th className="p-3 text-left">UOM</th>
+                        <th className="p-3 text-left">Unit</th>
                         <th className="p-3 text-left">
                           Rate ({order.currency})
                         </th>

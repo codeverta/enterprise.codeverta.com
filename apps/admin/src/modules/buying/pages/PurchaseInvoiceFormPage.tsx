@@ -12,6 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanySelect } from "@/components/CompanySelect";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
 import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import {
   buyingApi,
   dateForApi,
@@ -718,6 +719,29 @@ export default function PurchaseInvoiceFormPage() {
     );
   }, [options.modes_of_payment]);
 
+  const itemColumns: ColumnDef<PurchaseInvoiceItem>[] = [
+    { id: "no", header: "No.", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => row.index + 1 },
+    { accessorKey: "item_code", header: "Item", cell: ({ row }) => <div className="min-w-[260px]"><SearchableSelect value={row.original.item_code} options={itemOptions} onChange={(value) => handleSelectItem(row.index, value)} placeholder="Pilih Item..." searchPlaceholder="Cari item kode/nama..." buttonClassName="h-9 text-xs" addNewLabel="Tambah Item Baru" addNewHref="/desk/item/new-item" />{row.original.item_name && row.original.item_name !== row.original.item_code && <p className="mt-0.5 max-w-[250px] truncate text-[11px] text-slate-500">{row.original.item_name}</p>}</div> },
+    { accessorKey: "warehouse", header: "Warehouse", cell: ({ row }) => <div className="min-w-[180px]"><SearchableSelect value={row.original.warehouse} options={warehouseOptions} onChange={(value) => updateItem(row.index, { warehouse: value })} placeholder="Pilih Gudang..." searchPlaceholder="Cari gudang..." buttonClassName="h-9 text-xs" addNewLabel="Tambah Gudang" addNewHref="/desk/warehouse" /></div> },
+    { accessorKey: "accepted_qty", header: "Accepted Qty", cell: ({ row }) => <Input type="number" min="0.000001" step="any" className="h-9 w-28" value={row.original.accepted_qty} onChange={(event) => updateItem(row.index, { accepted_qty: Number(event.target.value) })} /> },
+    { accessorKey: "uom", header: "UOM", cell: ({ row }) => <SearchableSelect value={row.original.uom} options={uomOptions} onChange={(value) => updateItem(row.index, { uom: value })} placeholder="UOM" buttonClassName="h-9 text-xs" /> },
+    { accessorKey: "rate", header: `Rate (${invoice.currency})`, cell: ({ row }) => <Input type="number" min="0" step="any" className="h-9 w-36" value={row.original.rate} onChange={(event) => updateItem(row.index, { rate: Number(event.target.value) })} /> },
+    { id: "amount", header: `Amount (${invoice.currency})`, accessorFn: (row) => row.amount, cell: ({ row }) => money(row.original.amount, invoice.currency) },
+    { id: "actions", header: "", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <Button type="button" size="icon" variant="ghost" aria-label={`Hapus item baris ${row.index + 1}`} disabled={invoice.items.length === 1} onClick={() => setInvoice((current) => calculate({ ...current, items: current.items.filter((_, index) => index !== row.index) }))}><Trash2 className="size-4 text-red-500" /></Button> },
+  ];
+
+  const taxColumns: ColumnDef<PurchaseInvoiceTax>[] = [
+    { id: "no", header: "No.", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => row.index + 1 },
+    { accessorKey: "add_deduct", header: "Add / Deduct", cell: ({ row }) => <ERPSelect className="h-9 rounded-md border bg-transparent px-2" value={row.original.add_deduct} onChange={(event) => updateTax(row.index, { add_deduct: event.target.value as "add" | "deduct" })}><ERPSelectOption value="add">Add</ERPSelectOption><ERPSelectOption value="deduct">Deduct</ERPSelectOption></ERPSelect> },
+    { accessorKey: "charge_type", header: "Type", cell: ({ row }) => <ERPSelect className="h-9 rounded-md border bg-transparent px-2" value={row.original.charge_type} onChange={(event) => updateTax(row.index, { charge_type: event.target.value as PurchaseInvoiceTax["charge_type"] })}><ERPSelectOption value="actual">Actual</ERPSelectOption><ERPSelectOption value="on_net_total">On Net Total</ERPSelectOption><ERPSelectOption value="on_previous_row_total">On Previous Row Total</ERPSelectOption></ERPSelect> },
+    { accessorKey: "account_head", header: "Account Head", cell: ({ row }) => <Input value={row.original.account_head} onChange={(event) => updateTax(row.index, { account_head: event.target.value })} /> },
+    { accessorKey: "rate", header: "Tax Rate", cell: ({ row }) => <Input type="number" step="any" value={row.original.rate} onChange={(event) => updateTax(row.index, { rate: Number(event.target.value) })} /> },
+    { id: "net_amount", header: "Net Amount", accessorFn: (row) => row.net_amount, cell: ({ row }) => money(row.original.net_amount, invoice.currency) },
+    { id: "tax_amount", header: "Amount", accessorFn: (row) => row.tax_amount, cell: ({ row }) => <Input type="number" step="any" value={row.original.tax_amount} disabled={row.original.charge_type !== "actual"} onChange={(event) => updateTax(row.index, { tax_amount: Number(event.target.value) })} /> },
+    { id: "total", header: "Total", accessorFn: (row) => row.total, cell: ({ row }) => money(row.original.total, invoice.currency) },
+    { id: "actions", header: "", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <Button type="button" variant="ghost" size="icon" aria-label={`Hapus pajak baris ${row.index + 1}`} onClick={() => setInvoice((current) => calculate({ ...current, taxes: current.taxes.filter((_, index) => index !== row.index) }))}><Trash2 className="size-4 text-red-500" /></Button> },
+  ];
+
   const payload = () => ({
     ...calculate(invoice),
     posting_date: dateForApi(invoice.posting_date),
@@ -1039,7 +1063,9 @@ export default function PurchaseInvoiceFormPage() {
                     />
                   </div>
 
-                  <div className="overflow-x-auto rounded-xl border">
+                  <DataTable columns={itemColumns} data={invoice.items} getRowId={(_, index) => `invoice-item-${index}`} pagination={false} toolbar={false} tableClassName="min-w-[1020px]" emptyMessage="No rows" />
+                  {false && (
+                  <div className="hidden overflow-x-auto rounded-xl border">
                     <table className="min-w-[1020px] w-full text-sm">
                       <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-900">
                         <tr>
@@ -1047,7 +1073,7 @@ export default function PurchaseInvoiceFormPage() {
                           <th className="p-3 text-left min-w-[260px]">Item</th>
                           <th className="p-3 text-left min-w-[180px]">Warehouse</th>
                           <th className="p-3 text-left w-28">Accepted Qty</th>
-                          <th className="p-3 text-left w-28">UOM</th>
+                          <th className="p-3 text-left w-28">Unit</th>
                           <th className="p-3 text-left w-36">Rate ({invoice.currency})</th>
                           <th className="p-3 text-right w-36">Amount ({invoice.currency})</th>
                           <th className="w-12" />
@@ -1145,6 +1171,7 @@ export default function PurchaseInvoiceFormPage() {
                       </tbody>
                     </table>
                   </div>
+                  )}
 
                   <Button
                     type="button"
@@ -1215,7 +1242,9 @@ export default function PurchaseInvoiceFormPage() {
                     </Field>
                   </div>
 
-                  <div className="overflow-x-auto rounded-xl border">
+                  <DataTable columns={taxColumns} data={invoice.taxes} getRowId={(_, index) => `invoice-tax-${index}`} pagination={false} toolbar={false} tableClassName="min-w-[1000px]" emptyMessage="No rows" />
+                  {false && (
+                  <div className="hidden overflow-x-auto rounded-xl border">
                     <table className="min-w-[1000px] w-full text-sm">
                       <thead className="bg-slate-50 text-xs text-slate-500 dark:bg-slate-900">
                         <tr>
@@ -1333,6 +1362,7 @@ export default function PurchaseInvoiceFormPage() {
                       </tbody>
                     </table>
                   </div>
+                  )}
 
                   <Button
                     type="button"

@@ -2,12 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
-  Save,
   Plus,
   Trash2,
-  CheckCircle2,
   ScanBarcode,
-  RotateCcw,
   Search,
   ChevronDown,
   ExternalLink,
@@ -35,12 +32,14 @@ import {
   warehouseApi,
   type CompanyOption,
 } from "../warehouseApi";
+import { uomApi } from "../uomApi";
 import {
   SearchableSelect,
   SearchableWarehouseSelect,
   type SearchableSelectOption,
 } from "@/components/ui/searchable-select";
 import { toast } from "sonner";
+import { DocumentActionBar } from "@/components/doctype/document-action-bar";
 
 type Tab = "details" | "dimensions" | "other";
 
@@ -237,6 +236,7 @@ export default function StockEntryFormPage() {
   const [saving, setSaving] = useState(false);
   const [stockEntryTypes, setStockEntryTypes] = useState<StockEntryType[]>([]);
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [uomOptions, setUomOptions] = useState<SearchableSelectOption[]>([]);
   const [options, setOptions] = useState<StockEntryOptions>({
     stock_entry_types: [
       "Material Transfer",
@@ -254,14 +254,34 @@ export default function StockEntryFormPage() {
   const loadOptionsAndData = async () => {
     setLoading(true);
     try {
-      const [opts, typesRes, companyList] = await Promise.all([
+      const [opts, typesRes, companyList, uomList] = await Promise.all([
         stockEntryApi.options(),
         stockEntryTypeApi.list(),
         warehouseApi.listCompanies(),
+        uomApi.list().catch(() => []),
       ]);
 
       if (opts) {
         setOptions(opts);
+      }
+
+      if (uomList && Array.isArray(uomList) && uomList.length > 0) {
+        setUomOptions(
+          uomList.map((u) => ({
+            value: u.uom_name,
+            label: u.uom_name,
+            sublabel: u.symbol ? `Simbol: ${u.symbol}` : undefined,
+          }))
+        );
+      } else {
+        setUomOptions([
+          { value: "Nos", label: "Nos" },
+          { value: "Unit", label: "Unit" },
+          { value: "Box", label: "Box" },
+          { value: "Pcs", label: "Pcs" },
+          { value: "Kg", label: "Kg" },
+          { value: "Meter", label: "Meter" },
+        ]);
       }
 
       let compOptions: CompanyOption[] = [];
@@ -307,7 +327,7 @@ export default function StockEntryFormPage() {
               data.company_id = foundComp.id;
             }
           }
-          setRow(data);
+          setRow({ ...emptyEntry(), ...data });
         }
       } else {
         const initialCompany = compOptions.length > 0 ? compOptions[0] : null;
@@ -595,9 +615,14 @@ export default function StockEntryFormPage() {
       }
     }
 
+    const formattedPostingDate = row.posting_date
+      ? (row.posting_date.includes("T") ? row.posting_date : `${row.posting_date}T00:00:00Z`)
+      : new Date().toISOString();
+
     const payload: StockEntry = {
       ...row,
       purpose: currentPurpose,
+      posting_date: formattedPostingDate,
       from_warehouse: showSourceWarehouse ? (row.from_warehouse || "") : "",
       to_warehouse: showTargetWarehouse ? (row.to_warehouse || "") : "",
       items: cleanedItems,
@@ -615,7 +640,7 @@ export default function StockEntryFormPage() {
         setRow(updated);
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Gagal menyimpan Stock Entry");
+      toast.error(err?.response?.data?.error || err?.response?.data?.details || "Gagal menyimpan Stock Entry");
     } finally {
       setSaving(false);
     }
@@ -625,21 +650,48 @@ export default function StockEntryFormPage() {
     if (!confirm("Apakah Anda yakin ingin Submit Stock Entry ini? Stock ledger akan diperbarui.")) return;
     setSaving(true);
     try {
-      const res = await stockEntryApi.submit(id!);
+      let targetId = row.id || (!isNew ? id : "");
+      if (!targetId) {
+        // Save as draft first if not yet saved
+        const cleanedItems = row.items.map((it) => ({
+          ...it,
+          source_warehouse: showSourceWarehouse ? (it.source_warehouse || row.from_warehouse || "") : "",
+          target_warehouse: showTargetWarehouse ? (it.target_warehouse || row.to_warehouse || "") : "",
+        }));
+        const formattedPostingDate = row.posting_date
+          ? (row.posting_date.includes("T") ? row.posting_date : `${row.posting_date}T00:00:00Z`)
+          : new Date().toISOString();
+
+        const payload: StockEntry = {
+          ...row,
+          purpose: currentPurpose,
+          posting_date: formattedPostingDate,
+          from_warehouse: showSourceWarehouse ? (row.from_warehouse || "") : "",
+          to_warehouse: showTargetWarehouse ? (row.to_warehouse || "") : "",
+          items: cleanedItems,
+        };
+        const created = await stockEntryApi.create(payload);
+        targetId = created.id!;
+        setRow(created);
+      }
+      const res = await stockEntryApi.submit(targetId);
       toast.success("Stock Entry berhasil di-Submit dan pergerakan stok telah dicatat");
       setRow(res);
+      navigate(`/desk/stock-entry/${res.id}`);
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Gagal submit Stock Entry");
+      toast.error(err?.response?.data?.error || err?.response?.data?.details || "Gagal submit Stock Entry");
     } finally {
       setSaving(false);
     }
   };
 
   const handleCancelEntry = async () => {
+    const targetId = row.id || id;
+    if (!targetId) return;
     if (!confirm("Apakah Anda yakin ingin Membatalkan Stock Entry ini? Pergerakan stok akan dibalik.")) return;
     setSaving(true);
     try {
-      const res = await stockEntryApi.cancel(id!);
+      const res = await stockEntryApi.cancel(targetId);
       toast.success("Stock Entry berhasil dibatalkan dan stok telah disesuaikan kembali");
       setRow(res);
     } catch (err: any) {
@@ -684,67 +736,72 @@ export default function StockEntryFormPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="sm" asChild>
             <Link to="/desk/stock-entry">
-              <ArrowLeft className="mr-2 size-4" /> Kembali
+              <ArrowLeft className="mr-1.5 size-4" /> Kembali
             </Link>
           </Button>
 
           {!isReadonly && (
             <Button
-              className="bg-blue-600 hover:bg-blue-700"
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || loading}
             >
-              <Save className="mr-2 size-4" />
-              {saving ? "Menyimpan..." : "Save"}
+              {saving ? "Menyimpan..." : isNew ? "Simpan Draft" : "Update Draft"}
             </Button>
           )}
 
-          {!isNew && row.status === "Draft" && (
+          {!isReadonly && (
             <Button
+              size="sm"
               className="bg-emerald-600 hover:bg-emerald-700 text-white"
               onClick={handleSubmitEntry}
-              disabled={saving}
+              disabled={saving || loading}
             >
-              <CheckCircle2 className="mr-2 size-4" />
               Submit
             </Button>
           )}
 
           {!isNew && row.status === "Submitted" && (
             <Button
+              size="sm"
               variant="destructive"
               onClick={handleCancelEntry}
-              disabled={saving}
+              disabled={saving || loading}
             >
-              <RotateCcw className="mr-2 size-4" />
-              Cancel Entry
+              Cancel Dokumen
             </Button>
           )}
         </div>
       </header>
 
+      <DocumentActionBar
+        document={{
+          id: isNew ? (row.id || "") : id || "",
+          document_no: row.stock_entry_number || "",
+          doc_status: row.status === "Submitted" ? 1 : row.status === "Cancelled" ? 2 : 0,
+          version: 1,
+        }}
+        action={saving ? "save" : null}
+        onSave={handleSave}
+        onSubmit={handleSubmitEntry}
+        onCancel={handleCancelEntry}
+        onAmend={() => navigate("/desk/stock-entry/new")}
+      />
+
       {/* Tabs Layout */}
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="space-y-6">
-        <div className="border-b bg-white px-5 rounded-2xl shadow-sm dark:bg-slate-950">
-          <TabsList className="bg-transparent h-12 gap-6 p-0">
-            <TabsTrigger
-              value="details"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
-            >
+        <div className="rounded-xl border bg-white p-1.5 shadow-sm dark:bg-slate-950">
+          <TabsList className="h-auto w-full justify-start gap-1 bg-transparent p-0">
+            <TabsTrigger value="details" className="px-4 py-2.5 text-sm font-medium">
               Details
             </TabsTrigger>
-            <TabsTrigger
-              value="dimensions"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
-            >
+            <TabsTrigger value="dimensions" className="px-4 py-2.5 text-sm font-medium">
               Accounting Dimensions
             </TabsTrigger>
-            <TabsTrigger
-              value="other"
-              className="data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:text-blue-600 rounded-none bg-transparent px-2 text-sm font-medium"
-            >
+            <TabsTrigger value="other" className="px-4 py-2.5 text-sm font-medium">
               Other Info
             </TabsTrigger>
           </TabsList>
@@ -1086,7 +1143,7 @@ export default function StockEntryFormPage() {
                       <th className="px-2 py-3 min-w-[190px]">Target Warehouse</th>
                     )}
                     <th className="px-2 py-3 w-24 text-right">Qty</th>
-                    <th className="px-2 py-3 w-20">UOM</th>
+                    <th className="px-2 py-3 min-w-[130px]">Unit</th>
                     <th className="px-2 py-3 w-32 text-right">Basic Rate</th>
                     <th className="px-2 py-3 w-32 text-right">Amount</th>
                     {!isReadonly && <th className="py-3 pl-2 pr-3 w-10"></th>}
@@ -1151,13 +1208,30 @@ export default function StockEntryFormPage() {
                           />
                         </td>
 
-                        {/* UOM */}
-                        <td className="px-2 py-2">
-                          <Input
+                        {/* Unit */}
+                        <td className="px-2 py-2 min-w-[130px]">
+                          <SearchableSelect
                             value={item.uom || "Nos"}
+                            options={uomOptions}
                             disabled={isReadonly}
-                            onChange={(e) => updateItem(idx, "uom", e.target.value)}
-                            className="h-8 text-xs"
+                            onChange={(val) => updateItem(idx, "uom", val)}
+                            onSearch={async (q) => {
+                              try {
+                                const list = await uomApi.list({ q });
+                                return (list || []).map((u) => ({
+                                  value: u.uom_name,
+                                  label: u.uom_name,
+                                  sublabel: u.symbol ? `Simbol: ${u.symbol}` : undefined,
+                                }));
+                              } catch {
+                                return [];
+                              }
+                            }}
+                            placeholder="Pilih Unit..."
+                            searchPlaceholder="Cari Unit..."
+                            buttonClassName="h-8 text-xs"
+                            addNewLabel="+ Tambah Unit Baru"
+                            addNewHref="/desk/uom/new"
                           />
                         </td>
 

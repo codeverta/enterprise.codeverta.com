@@ -11,6 +11,7 @@ import ResetPasswordPage from "./pages/auth/reset-password";
 import Dashboard from "./pages/dashboard";
 import NotFound from "./pages/not-found";
 import DeskPage from "./pages/desk";
+import DocTypePage from "./pages/desk/doctype";
 import ErpWorkspacePage from "./pages/desk/workspace";
 import CRMPage from "./modules/crm";
 import BuyingModule from "./modules/buying";
@@ -84,6 +85,7 @@ const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: "desk", element: <DeskPage /> },
+          { path: "desk/doctype/*", element: <DocTypePage /> },
           { path: "desk/crm/*", element: <CRMPage /> },
           { path: "desk/purchase-order/*", element: <BuyingModule /> },
           { path: "desk/purchase-invoice/*", element: <BuyingModule /> },
@@ -141,6 +143,7 @@ const router = createBrowserRouter([
           { path: "desk/uom/*", element: <StockModule /> },
           { path: "desk/warehouse/*", element: <StockModule /> },
           { path: "desk/stock-entry/*", element: <StockModule /> },
+          { path: "desk/stock-reconciliation/*", element: <StockModule /> },
           { path: "desk/stock-entry-type/*", element: <StockModule /> },
           { path: "desk/purchase-receipt/*", element: <StockModule /> },
           { path: "desk/serial-no/*", element: <StockModule /> },

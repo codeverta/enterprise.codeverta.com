@@ -59,6 +59,8 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.PUT("/loyalty-programs/:id", loyaltyHandler.Update)
 		group.DELETE("/loyalty-programs/:id", loyaltyHandler.Delete)
 		group.GET("/loyalty-point-entries", loyaltyHandler.EntriesList)
+		group.POST("/loyalty-point-entries", loyaltyHandler.CreateEntry)
+		group.DELETE("/loyalty-point-entries/:id", loyaltyHandler.DeleteEntry)
 		group.GET("/pos/opening-entries", posHandler.OpeningEntries)
 		group.GET("/pos/opening-entries/current", posHandler.CurrentOpening)
 		group.GET("/pos/opening-entries/:id", posHandler.GetOpeningEntry)

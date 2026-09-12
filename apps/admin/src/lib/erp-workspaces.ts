@@ -605,7 +605,9 @@ const selling = workspace(
   [
     group("Point of Sale (Kasir)", sellingHome, documentLinks([
       ["Open POS", "/desk/point-of-sale"], "POS Profile", "POS Invoice", "POS Opening Entry", "POS Closing Entry",
-      "POS Invoice Merge Log", "POS Settings", "Loyalty Program", "Loyalty Point Entry",
+      // "POS Invoice Merge Log", 
+      // "POS Settings", 
+      "Loyalty Program", "Loyalty Point Entry",
     ]), Store),
     group("Item & Harga", sellingHome, documentLinks([
       ["Item", "/desk/item?workspace=selling"], "Item Group", "Price List", "Item Price", "Pricing Rule", "Promotional Scheme",

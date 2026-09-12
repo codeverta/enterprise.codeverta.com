@@ -261,7 +261,7 @@ export type Item = {
   has_variants: boolean;
   is_fixed_asset: boolean;
   opening_stock: number;
-  standard_rate: number;
+  standard_rate?: number;
   image_url: string;
   description: string;
   brand: string;

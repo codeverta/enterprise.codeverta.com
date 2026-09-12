@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import {
   ArrowLeft,
@@ -20,6 +20,12 @@ import { getStorageUrl } from "@/lib/utils";
 import { buyingApi, type Item, type MasterOptions } from "../api";
 import { Check, Combo, Field, Section } from "../components/MasterUI";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import {
+  SearchableSelect,
+  type SearchableSelectOption,
+} from "@/components/ui/searchable-select";
+import { uomApi, type UOM } from "@/modules/stock/uomApi";
+import { brandApi, type Brand } from "@/modules/stock/brandApi";
 type Tab =
   | "details"
   | "inventory"
@@ -41,7 +47,6 @@ const empty = (): Item => ({
   has_variants: false,
   is_fixed_asset: false,
   opening_stock: 0,
-  standard_rate: 0,
   image_url: "",
   description: "",
   brand: "",
@@ -137,26 +142,90 @@ export default function ItemFormPage(
   const [tab, setTab] = useState<Tab>("details");
   const [row, setRow] = useState<Item>(() => hydrateItem(fallbackItem));
   const [options, setOptions] = useState(initial);
+  const [uoms, setUoms] = useState<UOM[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(!isNew && !fallbackItem);
   const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+
   useEffect(() => {
-    buyingApi.masterOptions().then((v) => setOptions({ ...initial, ...v }))
-      .catch(() => {});
+    Promise.all([
+      buyingApi.masterOptions().catch(() => initial),
+      uomApi.list().catch(() => []),
+      brandApi.list().catch(() => []),
+    ]).then(([opts, uomList, brandList]) => {
+      setOptions({ ...initial, ...opts });
+      setUoms(uomList);
+      setBrands(brandList);
+    });
+
     if (!isNew && id) {
       setLoadError("");
-      buyingApi.itemGet(id).then((v) =>
-        setRow(hydrateItem({ ...fallbackItem, ...v }))
-      )
+      buyingApi
+        .itemGet(id)
+        .then((v) => setRow(hydrateItem({ ...fallbackItem, ...v })))
         .catch((e: any) => {
-          const message = e?.response?.data?.error ||
-            "Gagal mengambil detail Item dari API";
+          const message =
+            e?.response?.data?.error || "Gagal mengambil detail Item dari API";
           setLoadError(message);
           toast.error(message);
-        }).finally(() => setLoading(false));
+        })
+        .finally(() => setLoading(false));
     }
   }, [id, isNew]);
+
+  const uomOptions = useMemo<SearchableSelectOption[]>(() => {
+    const list: SearchableSelectOption[] = uoms.map((u) => ({
+      value: u.uom_name,
+      label: u.uom_name,
+      sublabel: [u.symbol, u.description].filter(Boolean).join(" • "),
+    }));
+    for (const name of options.uoms) {
+      if (!list.some((o) => o.value === name)) {
+        list.push({ value: name, label: name });
+      }
+    }
+    const currentUoms = [
+      row.stock_uom,
+      row.purchase_uom,
+      ...(row.uoms || []).map((x) => x.uom),
+      ...(row.barcodes || []).map((x) => x.uom),
+    ];
+    for (const u of currentUoms) {
+      if (u && !list.some((o) => o.value === u)) {
+        list.unshift({ value: u, label: u });
+      }
+    }
+    return list;
+  }, [uoms, options.uoms, row.stock_uom, row.purchase_uom, row.uoms, row.barcodes]);
+
+  const brandOptions = useMemo<SearchableSelectOption[]>(() => {
+    const list: SearchableSelectOption[] = brands.map((b) => ({
+      value: b.brand_name,
+      label: b.brand_name,
+      sublabel: b.description || undefined,
+    }));
+    if (row.brand && !list.some((o) => o.value === row.brand)) {
+      list.unshift({ value: row.brand, label: row.brand });
+    }
+    return list;
+  }, [brands, row.brand]);
+
+  const handleAddNewBrand = async () => {
+    const name = window.prompt("Masukkan nama Brand baru:");
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    try {
+      const created = await brandApi.create({ brand_name: trimmed });
+      setBrands((prev) => [...prev, created]);
+      update("brand", created.brand_name);
+      toast.success(`Brand "${created.brand_name}" berhasil ditambahkan`);
+    } catch {
+      update("brand", trimmed);
+    }
+  };
+
   const update = <K extends keyof Item>(key: K, value: Item[K]) =>
     setRow((v) => ({ ...v, [key]: value }));
   const uploadImage = async (file?: File) => {
@@ -186,7 +255,7 @@ export default function ItemFormPage(
       !row.item_group.trim() || !row.stock_uom.trim()
     ) {
       return toast.error(
-        "Item Code, Item Name, Item Group dan Stock UOM wajib diisi",
+        "Item Code, Item Name, Item Group dan Unit wajib diisi",
       );
     }
     setSaving(true);
@@ -378,14 +447,18 @@ export default function ItemFormPage(
                     />
                   </Field>
                   <Field
-                    label="Default Unit of Measure"
+                    label="Default Unit"
                     name="stock_uom"
                     required
                   >
-                    <Combo
+                    <SearchableSelect
                       value={row.stock_uom}
-                      values={options.uoms}
+                      options={uomOptions}
                       onChange={(v) => update("stock_uom", v)}
+                      placeholder="Pilih Unit..."
+                      searchPlaceholder="Cari Unit..."
+                      addNewLabel="Kelola Unit"
+                      addNewHref="/desk/uom"
                     />
                   </Field>
                   <Check
@@ -425,16 +498,15 @@ export default function ItemFormPage(
                       onChange={(v) => update("opening_stock", v)}
                     />
                   </Field>
-                  <Field label="Standard Selling Rate" name="standard_rate">
-                    <NumberInput
-                      value={row.standard_rate}
-                      onChange={(v) => update("standard_rate", v)}
-                    />
-                  </Field>
                   <Field label="Brand" name="brand">
-                    <Input
+                    <SearchableSelect
                       value={row.brand}
-                      onChange={(e) => update("brand", e.target.value)}
+                      options={brandOptions}
+                      onChange={(v) => update("brand", v)}
+                      placeholder="Pilih Brand..."
+                      searchPlaceholder="Cari brand..."
+                      addNewLabel="Tambah Brand Baru"
+                      onAddNewClick={handleAddNewBrand}
                     />
                   </Field>
                 </div>
@@ -455,7 +527,7 @@ export default function ItemFormPage(
                     <thead className="bg-slate-50 dark:bg-slate-900">
                       <tr>
                         <th className="p-3">No.</th>
-                        <th className="p-3 text-left">UOM</th>
+                        <th className="p-3 text-left">Unit</th>
                         <th className="p-3 text-left">Conversion Factor</th>
                         <th />
                       </tr>
@@ -475,10 +547,10 @@ export default function ItemFormPage(
                         : row.uoms.map((u, i) => (
                           <tr className="border-t" key={i}>
                             <td className="p-2 text-center">{i + 1}</td>
-                            <td className="p-2">
-                              <Combo
+                            <td className="p-2 min-w-[200px]">
+                              <SearchableSelect
                                 value={u.uom}
-                                values={options.uoms}
+                                options={uomOptions}
                                 onChange={(v) =>
                                   update(
                                     "uoms",
@@ -486,6 +558,11 @@ export default function ItemFormPage(
                                       j === i ? { ...x, uom: v } : x
                                     ),
                                   )}
+                                placeholder="Pilih Unit..."
+                                searchPlaceholder="Cari Unit..."
+                                buttonClassName="h-9 text-xs"
+                                addNewLabel="Kelola Unit"
+                                addNewHref="/desk/uom"
                               />
                             </td>
                             <td className="p-2">
@@ -602,11 +679,13 @@ export default function ItemFormPage(
                       onChange={(v) => update("weight_per_unit", v)}
                     />
                   </Field>
-                  <Field label="Weight UOM" name="weight_uom">
-                    <Combo
+                  <Field label="Weight Unit" name="weight_uom">
+                    <SearchableSelect
                       value={row.weight_uom}
-                      values={options.weight_uoms}
+                      options={uomOptions}
                       onChange={(v) => update("weight_uom", v)}
+                      placeholder="Pilih Weight Unit..."
+                      searchPlaceholder="Cari Unit..."
                     />
                   </Field>
                   <Check
@@ -618,7 +697,12 @@ export default function ItemFormPage(
                 </div>
               </Section>
               <Section title="Barcodes">
-                <SimpleBarcodes row={row} update={update} options={options} />
+                <SimpleBarcodes
+                  row={row}
+                  update={update}
+                  options={options}
+                  uomOptions={uomOptions}
+                />
               </Section>
               <Section
                 title="Auto re-order"
@@ -642,13 +726,17 @@ export default function ItemFormPage(
               <Section title="Purchasing">
                 <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
                   <Field
-                    label="Default Purchase Unit of Measure"
+                    label="Default Purchase Unit"
                     name="purchase_uom"
                   >
-                    <Combo
+                    <SearchableSelect
                       value={row.purchase_uom}
-                      values={options.uoms}
+                      options={uomOptions}
                       onChange={(v) => update("purchase_uom", v)}
+                      placeholder="Pilih Purchase Unit..."
+                      searchPlaceholder="Cari Unit..."
+                      addNewLabel="Kelola Unit"
+                      addNewHref="/desk/uom"
                     />
                   </Field>
                   <Field label="Minimum Order Qty" name="min_order_qty">
@@ -657,7 +745,7 @@ export default function ItemFormPage(
                       onChange={(v) => update("min_order_qty", v)}
                     />
                     <p className="text-xs text-slate-500">
-                      Minimum quantity should be as per Stock UOM
+                      Minimum quantity should be as per Unit
                     </p>
                   </Field>
                   <Field label="Safety Stock" name="safety_stock">
@@ -724,11 +812,15 @@ export default function ItemFormPage(
           {tab === "defaults" && (
             <Section title="Defaults">
               <div className="grid gap-5 md:grid-cols-2">
-                <Field label="Default UOM" name="stock_uom">
-                  <Combo
+                <Field label="Default Unit" name="stock_uom">
+                  <SearchableSelect
                     value={row.stock_uom}
-                    values={options.uoms}
+                    options={uomOptions}
                     onChange={(v) => update("stock_uom", v)}
+                    placeholder="Pilih Unit..."
+                    searchPlaceholder="Cari Unit..."
+                    addNewLabel="Kelola Unit"
+                    addNewHref="/desk/uom"
                   />
                 </Field>
                 <Field
@@ -765,12 +857,6 @@ export default function ItemFormPage(
           {tab === "sales" && (
             <Section title="Sales">
               <div className="grid gap-5 md:grid-cols-2">
-                <Field label="Standard Selling Rate" name="standard_rate">
-                  <NumberInput
-                    value={row.standard_rate}
-                    onChange={(v) => update("standard_rate", v)}
-                  />
-                </Field>
                 <Check
                   checked={!row.disabled}
                   onChange={(v) => update("disabled", !v)}
@@ -826,10 +912,11 @@ export default function ItemFormPage(
 
 type Updater = <K extends keyof Item>(key: K, value: Item[K]) => void;
 function SimpleBarcodes(
-  { row, update, options }: {
+  { row, update, options, uomOptions }: {
     row: Item;
     update: Updater;
     options: MasterOptions;
+    uomOptions?: SearchableSelectOption[];
   },
 ) {
   return (
@@ -841,7 +928,7 @@ function SimpleBarcodes(
               <th className="p-3">No.</th>
               <th>Barcode</th>
               <th>Barcode Type</th>
-              <th>UOM</th>
+              <th>Unit</th>
               <th />
             </tr>
           </thead>
@@ -881,10 +968,10 @@ function SimpleBarcodes(
                         )}
                     />
                   </td>
-                  <td className="p-2">
-                    <Combo
+                  <td className="p-2 min-w-[180px]">
+                    <SearchableSelect
                       value={b.uom}
-                      values={options.uoms}
+                      options={uomOptions || options.uoms}
                       onChange={(v) =>
                         update(
                           "barcodes",
@@ -892,6 +979,11 @@ function SimpleBarcodes(
                             j === i ? { ...x, uom: v } : x
                           ),
                         )}
+                      placeholder="Pilih Unit..."
+                      searchPlaceholder="Cari Unit..."
+                      buttonClassName="h-9 text-xs"
+                      addNewLabel="Kelola Unit"
+                      addNewHref="/desk/uom"
                     />
                   </td>
                   <td>

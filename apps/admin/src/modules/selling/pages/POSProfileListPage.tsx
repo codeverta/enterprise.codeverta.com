@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Plus, Search, RefreshCw, UserCheck, CheckCircle2, XCircle, Trash2, Edit3, ArrowRight } from "lucide-react";
+import { Plus, RefreshCw, UserCheck, CheckCircle2, XCircle, Trash2, Edit3, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { posProfileApi, type POSProfile } from "../posProfileApi";
 import { toast } from "sonner";
 
@@ -11,14 +11,12 @@ export default function POSProfileListPage() {
   const navigate = useNavigate();
   const [profiles, setProfiles] = useState<POSProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("All");
 
   const loadProfiles = async () => {
     setLoading(true);
     try {
       const data = await posProfileApi.list({
-        q: search || undefined,
         disabled: statusFilter === "Disabled" ? true : statusFilter === "Active" ? false : undefined,
       });
       setProfiles(data || []);
@@ -33,11 +31,6 @@ export default function POSProfileListPage() {
     loadProfiles();
   }, [statusFilter]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    loadProfiles();
-  };
-
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Hapus POS Profile ${name}?`)) return;
     try {
@@ -48,6 +41,16 @@ export default function POSProfileListPage() {
       toast.error(err?.response?.data?.error || "Gagal menghapus POS Profile");
     }
   };
+
+  const columns: ColumnDef<POSProfile>[] = [
+    { accessorKey: "name", header: "Name", cell: ({ row }) => <span className="font-semibold text-blue-600">{row.original.name}</span> },
+    { accessorKey: "company", header: "Company" },
+    { accessorKey: "warehouse", header: "Warehouse", cell: ({ row }) => row.original.warehouse || "—" },
+    { id: "users", header: "Cashiers / Users", accessorFn: (row) => row.applicable_for_users?.map((u) => u.user).join(", ") || "All Users", cell: ({ row }) => row.original.applicable_for_users?.map((u) => u.user).join(", ") || "All Users" },
+    { id: "payments", header: "Payment Methods", accessorFn: (row) => row.payments?.map((p) => p.mode_of_payment).join(", ") || "Cash", cell: ({ row }) => row.original.payments?.map((p) => p.mode_of_payment).join(", ") || "Cash" },
+    { accessorKey: "disabled", header: "Status", cell: ({ row }) => <Badge variant={row.original.disabled ? "destructive" : "default"}>{row.original.disabled ? <><XCircle className="mr-1 size-3 inline" /> Disabled</> : <><CheckCircle2 className="mr-1 size-3 inline" /> Active</>}</Badge> },
+    { id: "actions", header: "Actions", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => { const id = row.original.id || row.original.name; return <div className="flex justify-end gap-1"><Button aria-label={`Edit ${row.original.name}`} variant="ghost" size="icon" className="size-8" onClick={() => navigate(`/desk/pos-profile/${id}`)}><Edit3 className="size-4 text-slate-600" /></Button><Button aria-label={`Delete ${row.original.name}`} variant="ghost" size="icon" className="size-8 text-rose-600" onClick={() => handleDelete(id, row.original.name)}><Trash2 className="size-4" /></Button><Button aria-label={`Open ${row.original.name}`} variant="ghost" size="icon" className="size-8 text-blue-600" onClick={() => navigate(`/desk/pos-profile/${id}`)}><ArrowRight className="size-4" /></Button></div>; } },
+  ];
 
   return (
     <div className="mx-auto max-w-screen-2xl space-y-6 p-4 lg:p-7">
@@ -73,17 +76,6 @@ export default function POSProfileListPage() {
 
       {/* Filters */}
       <div className="flex flex-col gap-4 rounded-2xl border bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between dark:bg-slate-950">
-        <form onSubmit={handleSearchSubmit} className="flex flex-1 items-center gap-2 max-w-md">
-          <Input
-            placeholder="Cari Nama POS Profile, Company, Warehouse..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <Button type="submit" variant="secondary" size="icon">
-            <Search className="size-4" />
-          </Button>
-        </form>
-
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             {["All", "Active", "Disabled"].map((st) => (
@@ -105,8 +97,11 @@ export default function POSProfileListPage() {
       </div>
 
       {/* Table List */}
-      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-950">
-        <div className="overflow-x-auto">
+        <DataTable columns={columns} data={profiles} loading={loading} searchPlaceholder="Cari POS profile, company, warehouse..." emptyMessage="Belum ada POS Profile" getRowId={(row, index) => row.id || row.name || `pos-profile-${index}`} onRowClick={(row) => navigate(`/desk/pos-profile/${row.id || row.name}`)} />
+        {/*
+          The DataTable owns filtering, loading, empty state, pagination, and row rendering.
+        */}
+        {false && <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b bg-slate-50 text-slate-600 font-medium dark:bg-slate-900 dark:text-slate-400">
               <tr>
@@ -214,8 +209,7 @@ export default function POSProfileListPage() {
               )}
             </tbody>
           </table>
-        </div>
-      </div>
+        </div>}
     </div>
   );
 }

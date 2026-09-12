@@ -19,13 +19,18 @@ import StockEntryTypeListPage from "./pages/StockEntryTypeListPage";
 import StockEntryTypeFormPage from "./pages/StockEntryTypeFormPage";
 import PickListPage from "./pages/PickListPage";
 import PickListFormPage from "./pages/PickListFormPage";
+import StockReconciliationListPage from "./pages/StockReconciliationListPage";
+import StockReconciliationFormPage from "./pages/StockReconciliationFormPage";
 
 export default function StockModule() {
   const { pathname } = useLocation();
 
   let content: React.ReactNode;
 
-  if (pathname.startsWith("/desk/pick-list")) {
+  if (pathname.startsWith("/desk/stock-reconciliation")) {
+    const isForm = pathname === "/desk/stock-reconciliation/new" || /^\/desk\/stock-reconciliation\/[^/]+$/.test(pathname);
+    content = isForm ? <StockReconciliationFormPage /> : <StockReconciliationListPage />;
+  } else if (pathname.startsWith("/desk/pick-list")) {
     const isForm = pathname === "/desk/pick-list/new" || /^\/desk\/pick-list\/[^/]+$/.test(pathname);
     content = isForm ? <PickListFormPage /> : <PickListPage />;
   } else if (pathname.startsWith("/desk/stock-entry-type")) {

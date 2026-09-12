@@ -1133,7 +1133,7 @@ export default function PurchaseReceiptFormPage() {
                     <th className="px-2 py-3 min-w-[220px]">Item Code</th>
                     <th className="px-2 py-3 w-28 text-right">Accepted Quantity</th>
                     <th className="px-2 py-3 w-28 text-right">Rejected Quantity</th>
-                    <th className="px-2 py-3 w-20">UOM</th>
+                    <th className="px-2 py-3 w-20">Unit</th>
                     <th className="px-2 py-3 w-32 text-right">Rate (IDR)</th>
                     <th className="px-2 py-3 w-32 text-right">Amount (IDR)</th>
                     <th className="px-2 py-3 min-w-[190px]">Accepted Warehouse</th>

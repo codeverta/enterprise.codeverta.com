@@ -40,6 +40,8 @@ type posItemResponse struct {
 	Rate        float64   `json:"rate"`
 	Stock       float64   `json:"stock"`
 	Unit        string    `json:"unit"`
+	Image       string    `json:"image"`
+	ImageURL    string    `json:"image_url"`
 	IsStockItem bool      `json:"is_stock_item"`
 	Barcodes    []string  `json:"barcodes"`
 }
@@ -89,14 +91,12 @@ func (c *POSController) Items(ctx *gin.Context) {
 				barcodes = append(barcodes, value)
 			}
 		}
-		rate := item.StandardRate
-		if latestRate, exists := latestPrices[item.ItemCode]; exists {
-			rate = latestRate
-		}
+		rate := latestPrices[item.ItemCode]
 		result = append(result, posItemResponse{
 			ID: item.ID, ItemCode: item.ItemCode, ItemName: item.ItemName,
 			ItemGroup: item.ItemGroup, Rate: rate, Stock: item.OpeningStock,
-			Unit: item.StockUOM, IsStockItem: item.IsStockItem, Barcodes: barcodes,
+			Unit: item.StockUOM, Image: item.ImageURL, ImageURL: item.ImageURL,
+			IsStockItem: item.IsStockItem, Barcodes: barcodes,
 		})
 	}
 	ctx.JSON(http.StatusOK, gin.H{"data": result})
@@ -424,10 +424,16 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		ctx.JSON(http.StatusConflict, gin.H{"error": "POS shift belum dibuka atau sudah ditutup"})
 		return
 	}
+	var posProfile sellingmodel.POSProfile
+	profileQuery := posDB(ctx).Where("name = ?", opening.POSProfile)
+	if tenant != "" {
+		profileQuery = profileQuery.Where("tenant_id = ?", tenant)
+	}
+	_ = profileQuery.First(&posProfile).Error
 	itemCodes := make([]string, 0, len(input.Items))
 	for index := range input.Items {
 		input.Items[index].ItemCode = strings.TrimSpace(input.Items[index].ItemCode)
-		if input.Items[index].ItemCode == "" || input.Items[index].Quantity <= 0 || input.Items[index].Rate < 0 {
+		if input.Items[index].ItemCode == "" || input.Items[index].Quantity <= 0 || input.Items[index].Rate < 0 || input.Items[index].DiscountPercentage < 0 || input.Items[index].DiscountPercentage > 100 {
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Kode item dan quantity POS harus valid"})
 			return
 		}
@@ -490,31 +496,48 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		input.Items[i].ID = "posii-" + uuid.New().String()[:8]
 		input.Items[i].InvoiceID = input.ID
 		input.Items[i].ItemName = masterItem.ItemName
-		// POS may override the catalog rate for a negotiated or promotional price.
-		// Use the latest selling ItemPrice, falling back to master standard rate.
-		if input.Items[i].Rate == 0 {
-			if lp, exists := latestPrices[input.Items[i].ItemCode]; exists {
-				input.Items[i].Rate = lp
-			} else {
-				input.Items[i].Rate = masterItem.StandardRate
-			}
+		clientRate := input.Items[i].Rate
+		if !posProfile.AllowRateChange {
+			input.Items[i].Rate = 0
 		}
-		input.Items[i].Amount = input.Items[i].Quantity * input.Items[i].Rate
+		if !posProfile.AllowDiscountChange {
+			input.Items[i].DiscountPercentage = 0
+		}
+		// The backend resolves the catalog price. A client rate is accepted only
+		// when the active POS Profile explicitly allows rate changes.
+		if posProfile.AllowRateChange && clientRate > 0 {
+			input.Items[i].Rate = clientRate
+		} else if lp, exists := latestPrices[input.Items[i].ItemCode]; exists {
+			input.Items[i].Rate = lp
+		} else {
+			input.Items[i].Rate = clientRate
+		}
+		grossAmount := input.Items[i].Quantity * input.Items[i].Rate
+		input.Items[i].DiscountAmount = math.Round(grossAmount*input.Items[i].DiscountPercentage) / 100
+		input.Items[i].Amount = grossAmount - input.Items[i].DiscountAmount
 		input.NetTotal += input.Items[i].Amount
 		totalQty += input.Items[i].Quantity
 
 		salesInvoiceItems = append(salesInvoiceItems, sellingmodel.SalesInvoiceItem{
-			ID:             "sii-" + uuid.New().String()[:8],
-			SalesInvoiceID: salesInvoiceID,
-			ItemCode:       input.Items[i].ItemCode,
-			ItemName:       input.Items[i].ItemName,
-			Quantity:       input.Items[i].Quantity,
-			Rate:           input.Items[i].Rate,
-			Amount:         input.Items[i].Amount,
-			UOM:            "Nos",
+			ID:                 "sii-" + uuid.New().String()[:8],
+			SalesInvoiceID:     salesInvoiceID,
+			ItemCode:           input.Items[i].ItemCode,
+			ItemName:           input.Items[i].ItemName,
+			Quantity:           input.Items[i].Quantity,
+			Rate:               input.Items[i].Rate,
+			DiscountPercentage: input.Items[i].DiscountPercentage,
+			DiscountAmount:     input.Items[i].DiscountAmount,
+			Amount:             input.Items[i].Amount,
+			UOM:                "Nos",
 		})
 	}
-	input.GrandTotal = input.NetTotal + input.TaxTotal
+	if input.DiscountAmount < 0 {
+		input.DiscountAmount = 0
+	}
+	if input.DiscountAmount > input.NetTotal+input.TaxTotal {
+		input.DiscountAmount = input.NetTotal + input.TaxTotal
+	}
+	input.GrandTotal = input.NetTotal + input.TaxTotal - input.DiscountAmount
 	input.PaidAmount = input.GrandTotal
 	company := opening.Company
 	if company == "" {
@@ -543,6 +566,7 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		Currency:           "IDR",
 		TotalQty:           totalQty,
 		NetTotal:           input.NetTotal,
+		DiscountAmount:     input.DiscountAmount,
 		GrandTotal:         input.GrandTotal,
 		RoundedTotal:       math.Round(input.GrandTotal),
 		RoundingAdjustment: math.Round(input.GrandTotal) - input.GrandTotal,

@@ -132,7 +132,7 @@ export default function StockLedgerPage() {
       return rows.map((item) => ({
         value: item.item_code,
         label: `${item.item_code} - ${item.item_name || ""}`,
-        sublabel: item.stock_uom ? `UOM: ${item.stock_uom}` : undefined,
+        sublabel: item.stock_uom ? `Unit: ${item.stock_uom}` : undefined,
       }));
     } catch {
       return (options.items || [])
@@ -144,7 +144,7 @@ export default function StockLedgerPage() {
         .map((it) => ({
           value: it.item_code,
           label: `${it.item_code} - ${it.item_name}`,
-          sublabel: it.stock_uom ? `UOM: ${it.stock_uom}` : undefined,
+          sublabel: it.stock_uom ? `Unit: ${it.stock_uom}` : undefined,
         }));
     }
   };
@@ -262,7 +262,7 @@ export default function StockLedgerPage() {
       "Date",
       "Item Code",
       "Item Name",
-      "Stock UOM",
+      "Unit",
       "In Qty",
       "Out Qty",
       "Balance Qty",
@@ -445,7 +445,7 @@ export default function StockLedgerPage() {
               options={options.items.map((it) => ({
                 value: it.item_code,
                 label: `${it.item_code} - ${it.item_name}`,
-                sublabel: it.stock_uom ? `UOM: ${it.stock_uom}` : undefined,
+                sublabel: it.stock_uom ? `Unit: ${it.stock_uom}` : undefined,
               }))}
             />
           </div>
@@ -527,7 +527,7 @@ export default function StockLedgerPage() {
                 onChange={(e) => setFilters({ ...filters, include_uom: e.target.checked })}
                 className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
-              <span>Include UOM</span>
+              <span>Include Unit</span>
             </label>
 
             <label className="flex items-center gap-2 cursor-pointer">
@@ -588,7 +588,7 @@ export default function StockLedgerPage() {
                 <th className="p-3 min-w-[130px]">Date</th>
                 <th className="p-3 min-w-[120px]">Item</th>
                 <th className="p-3 min-w-[160px]">Item Name</th>
-                {filters.include_uom && <th className="p-3 min-w-[80px]">Stock UOM</th>}
+                {filters.include_uom && <th className="p-3 min-w-[80px]">Unit</th>}
                 <th className="p-3 text-right min-w-[80px]">In Qty</th>
                 <th className="p-3 text-right min-w-[80px]">Out Qty</th>
                 <th className="p-3 text-right min-w-[90px] font-semibold text-slate-900 dark:text-slate-100">Balance Qty</th>

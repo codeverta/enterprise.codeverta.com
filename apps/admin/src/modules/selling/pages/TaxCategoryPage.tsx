@@ -1,23 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { taxCategoryApi, type TaxCategory } from "../taxCategoryApi";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 
 export function TaxCategoryListPage() {
   const navigate = useNavigate();
   const [items, setItems] = useState<TaxCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await taxCategoryApi.list({ q });
+      const data = await taxCategoryApi.list();
       setItems(data);
     } catch (err: any) {
       toast.error(err?.message || "Gagal memuat Tax Category");
@@ -28,7 +28,7 @@ export function TaxCategoryListPage() {
 
   useEffect(() => {
     loadData();
-  }, [q]);
+  }, []);
 
   const handleDelete = async (item: TaxCategory) => {
     if (!confirm(`Hapus Tax Category "${item.title}"?`)) return;
@@ -40,6 +40,12 @@ export function TaxCategoryListPage() {
       toast.error(err?.message || "Gagal menghapus Tax Category");
     }
   };
+
+  const columns: ColumnDef<TaxCategory>[] = [
+    { accessorKey: "title", header: "Title", cell: ({ row }) => <button className="font-medium text-blue-600 hover:underline" onClick={() => navigate(`/desk/tax-category/${row.original.id}`)}>{row.original.title}</button> },
+    { id: "status", header: "Status", accessorFn: (row) => row.disabled ? "Disabled" : "Enabled", cell: ({ row }) => <Badge variant={row.original.disabled ? "secondary" : "default"}>{row.original.disabled ? "Disabled" : "Enabled"}</Badge> },
+    { id: "actions", header: "Aksi", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <div className="flex justify-end"><Button variant="ghost" size="icon" onClick={() => handleDelete(row.original)}><Trash2 className="size-4 text-rose-500" /></Button></div> },
+  ];
 
   return (
     <div className="mx-auto max-w-screen-xl p-4 lg:p-6 space-y-6">
@@ -61,63 +67,7 @@ export function TaxCategoryListPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-xs dark:bg-slate-900">
-        <Search className="size-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Cari Tax Category..."
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-        />
-      </div>
-
-      <div className="overflow-hidden rounded-xl border bg-white shadow-xs dark:bg-slate-900">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b bg-slate-50 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-            <tr>
-              <th className="p-4">Title</th>
-              <th className="p-4">Status</th>
-              <th className="p-4 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-slate-700 dark:text-slate-300">
-            {items.map((row) => (
-              <tr
-                key={row.id}
-                className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                onClick={() => navigate(`/desk/tax-category/${row.id}`)}
-              >
-                <td className="p-4 font-medium text-slate-900 dark:text-white">
-                  {row.title}
-                </td>
-                <td className="p-4">
-                  <Badge variant={row.disabled ? "secondary" : "default"}>
-                    {row.disabled ? "Disabled" : "Enabled"}
-                  </Badge>
-                </td>
-                <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-slate-400 hover:text-rose-600"
-                    onClick={() => handleDelete(row)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            {!loading && items.length === 0 && (
-              <tr>
-                <td colSpan={3} className="p-8 text-center text-slate-400">
-                  Belum ada Tax Category.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <DataTable columns={columns} data={items} getRowId={(row) => row.id} searchPlaceholder="Cari Tax Category..." emptyMessage={loading ? "Memuat Tax Category..." : "Belum ada Tax Category."} />
     </div>
   );
 }

@@ -41,7 +41,7 @@ const targetHref = (href: string) =>
 
 const introStep = {
   id: "welcome",
-  eyebrow: "Selamat datang",
+  eyebrow: "Selamat bekerja",
   title: "Mari kenali ruang kerja Anda",
   description:
     "Kami akan menyorot menu penting satu per satu. Area yang terang adalah lokasi yang sedang dijelaskan.",

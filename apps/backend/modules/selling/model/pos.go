@@ -39,6 +39,7 @@ type POSInvoice struct {
 	Company        string           `gorm:"size:255;index" json:"company"`
 	NetTotal       float64          `gorm:"type:decimal(16,2);default:0" json:"net_total"`
 	TaxTotal       float64          `gorm:"type:decimal(16,2);default:0" json:"tax_total"`
+	DiscountAmount float64          `gorm:"type:decimal(16,2);default:0" json:"discount_amount"`
 	GrandTotal     float64          `gorm:"type:decimal(16,2);default:0" json:"grand_total"`
 	ModeOfPayment  string           `gorm:"size:100;not null" json:"mode_of_payment"`
 	PaidAmount     float64          `gorm:"type:decimal(16,2);default:0" json:"paid_amount"`
@@ -48,13 +49,15 @@ type POSInvoice struct {
 }
 
 type POSInvoiceItem struct {
-	ID        string  `gorm:"primaryKey;size:64" json:"id"`
-	InvoiceID string  `gorm:"size:64;index;not null" json:"invoice_id"`
-	ItemCode  string  `gorm:"size:100;not null" json:"item_code"`
-	ItemName  string  `gorm:"size:255;not null" json:"item_name"`
-	Quantity  float64 `gorm:"type:decimal(12,3);default:1" json:"quantity"`
-	Rate      float64 `gorm:"type:decimal(16,2);default:0" json:"rate"`
-	Amount    float64 `gorm:"type:decimal(16,2);default:0" json:"amount"`
+	ID                 string  `gorm:"primaryKey;size:64" json:"id"`
+	InvoiceID          string  `gorm:"size:64;index;not null" json:"invoice_id"`
+	ItemCode           string  `gorm:"size:100;not null" json:"item_code"`
+	ItemName           string  `gorm:"size:255;not null" json:"item_name"`
+	Quantity           float64 `gorm:"type:decimal(12,3);default:1" json:"quantity"`
+	Rate               float64 `gorm:"type:decimal(16,2);default:0" json:"rate"`
+	DiscountPercentage float64 `gorm:"type:decimal(8,4);default:0" json:"discount_percentage"`
+	DiscountAmount     float64 `gorm:"type:decimal(16,2);default:0" json:"discount_amount"`
+	Amount             float64 `gorm:"type:decimal(16,2);default:0" json:"amount"`
 }
 
 type POSClosingEntry struct {

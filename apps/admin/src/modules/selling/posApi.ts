@@ -63,13 +63,17 @@ export type POSItem = {
   stock: number;
   unit: string;
   image?: string;
+  image_url?: string;
   is_stock_item: boolean;
   barcodes: string[];
   color: string;
   initials: string;
 };
 
-export type POSCartItem = POSItem & { quantity: number };
+export type POSCartItem = POSItem & {
+  quantity: number;
+  discount_percentage?: number;
+};
 
 export type POSInvoice = {
   id?: string;
@@ -79,6 +83,7 @@ export type POSInvoice = {
   company?: string;
   net_total?: number;
   tax_total: number;
+  discount_amount?: number;
   grand_total?: number;
   mode_of_payment: string;
   paid_amount?: number;
@@ -89,6 +94,8 @@ export type POSInvoice = {
     item_name: string;
     quantity: number;
     rate: number;
+    discount_percentage?: number;
+    discount_amount?: number;
     amount?: number;
   }>;
 };
@@ -119,8 +126,11 @@ function decoratePOSItem(item: POSItemPayload, index: number): POSItem {
       .map((part) => part[0])
       .join("")
       .toUpperCase() || item.item_code.slice(0, 2).toUpperCase();
+  const image = item.image || item.image_url || "";
   return {
     ...item,
+    image,
+    image_url: image,
     barcodes: item.barcodes || [],
     color: itemColors[index % itemColors.length],
     initials,
@@ -388,8 +398,18 @@ export const posApi = {
           .replaceAll(/[-:TZ.]/g, "")
           .slice(0, 14)}`,
         net_total: net,
-        grand_total: net + Number(input.tax_total || 0),
-        paid_amount: net + Number(input.tax_total || 0),
+        discount_amount: Math.min(
+          Math.max(0, Number(input.discount_amount || 0)),
+          net + Number(input.tax_total || 0),
+        ),
+        grand_total: Math.max(
+          0,
+          net + Number(input.tax_total || 0) - Number(input.discount_amount || 0),
+        ),
+        paid_amount: Math.max(
+          0,
+          net + Number(input.tax_total || 0) - Number(input.discount_amount || 0),
+        ),
         status: "Paid",
         created_at: new Date().toISOString(),
       };

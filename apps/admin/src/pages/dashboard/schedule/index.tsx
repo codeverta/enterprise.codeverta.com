@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import DashboardLayout from "@/layout/DashboardLayout";
 import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import ScheduleCalendar, { ScheduleView } from "@/components/schedule/ScheduleCalendar";
 import ScheduleItemForm from "@/components/schedule/ScheduleItemForm";
@@ -557,30 +558,18 @@ function SchedulePage() {
             {t("schedule.page.subtitle")}
           </p>
         </div>
-        <div className="flex rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+        <Tabs value={tab} onValueChange={(value) => updateParams({ tab: value })}>
+        <TabsList className="h-auto rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
           {canManageTemplates && (
-            <button
-              type="button"
-              onClick={() => updateParams({ tab: "templates" })}
-              className={cn(
-                "rounded-md px-4 py-2 text-sm font-semibold",
-                tab === "templates" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
-              )}
-            >
+            <TabsTrigger value="templates" className="rounded-md px-4 py-2 text-sm font-semibold">
               {t("schedule.page.admin_tab")}
-            </button>
+            </TabsTrigger>
           )}
-          <button
-            type="button"
-            onClick={() => updateParams({ tab: "personal" })}
-            className={cn(
-              "rounded-md px-4 py-2 text-sm font-semibold",
-              tab === "personal" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"
-            )}
-          >
+          <TabsTrigger value="personal" className="rounded-md px-4 py-2 text-sm font-semibold">
             {t("schedule.page.personal_tab")}
-          </button>
-        </div>
+          </TabsTrigger>
+        </TabsList>
+        </Tabs>
       </div>
 
       {tab === "templates" && canManageTemplates ? (

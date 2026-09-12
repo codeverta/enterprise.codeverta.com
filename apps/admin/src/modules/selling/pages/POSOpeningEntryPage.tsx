@@ -4,6 +4,7 @@ import { AlertTriangle, ArrowRight, Clock3, Plus, RefreshCw, Store, WalletCards 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 import { isOpeningOutdated, posApi, type POSOpeningEntry } from "../posApi";
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
@@ -101,19 +102,16 @@ export default function POSOpeningEntryPage() {
   };
 
   return (
-    <div className="min-h-full bg-slate-50/60 p-5 lg:p-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-slate-500">Selling · Point of Sale</p>
-            <h1 className="mt-1 text-2xl font-semibold text-slate-950">POS Opening Entry</h1>
-            <p className="mt-1 text-sm text-slate-500">Kelola kas awal dan sesi kasir sebelum transaksi dimulai.</p>
-          </div>
-          <div className="flex gap-2">
+    <ERPPage>
+        <ERPPageHeader
+          title="POS Opening Entry"
+          description="Kelola kas awal dan sesi kasir sebelum transaksi dimulai."
+          breadcrumbs={[{ label: "Selling", href: "/desk/selling" }, { label: "Point of Sale", href: "/desk/point-of-sale" }, { label: "POS Opening Entry" }]}
+          actions={<>
             <Button variant="outline" onClick={load} disabled={loading}><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Refresh</Button>
             <Button onClick={() => navigate("/desk/pos-opening-entry/new")} disabled={Boolean(current)}><Plus className="size-4" /> New Opening</Button>
-          </div>
-        </div>
+          </>}
+        />
 
         {current && outdated && (
           <div className="flex flex-col gap-4 rounded-xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -161,7 +159,6 @@ export default function POSOpeningEntryPage() {
             />
           </div>
         </div>
-      </div>
-    </div>
+    </ERPPage>
   );
 }

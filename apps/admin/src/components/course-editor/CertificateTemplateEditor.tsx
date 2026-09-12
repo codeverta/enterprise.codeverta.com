@@ -16,6 +16,7 @@ import {
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import CourseCertificate from "@/components/course/CourseCertificate";
 
@@ -436,33 +437,18 @@ export default function CertificateTemplateEditor({ courseId }: Props) {
         <div className="lg:sticky lg:top-4">
           <div className="overflow-hidden rounded-xl border bg-white">
             {/* Tab switcher */}
-            <div className="flex items-center gap-1 border-b bg-slate-50 p-1.5">
-              <button
-                onClick={() => setActiveTab("position")}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-                  activeTab === "position"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as PanelTab)}>
+              <TabsList className="flex h-auto items-center gap-1 rounded-none border-b bg-slate-50 p-1.5">
+              <TabsTrigger value="position" className="flex-1 gap-1.5 rounded-lg px-3 py-1.5 text-xs">
                 <LayoutTemplate className="h-3.5 w-3.5" />
                 Posisi
-              </button>
-              <button
-                onClick={() => setActiveTab("preview")}
-                disabled={!tpl.template_url}
-                className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-                  activeTab === "preview"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-700"
-                )}
-              >
+              </TabsTrigger>
+              <TabsTrigger value="preview" disabled={!tpl.template_url} className="flex-1 gap-1.5 rounded-lg px-3 py-1.5 text-xs">
                 <Eye className="h-3.5 w-3.5" />
                 Preview Sertifikat
-              </button>
-            </div>
+              </TabsTrigger>
+              </TabsList>
+            </Tabs>
 
             <div className="p-3">
               {activeTab === "position" ? (

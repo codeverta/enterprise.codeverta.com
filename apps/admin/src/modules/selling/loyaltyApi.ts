@@ -54,97 +54,23 @@ export type LoyaltyOptions = {
 const STORAGE_KEY = "erp_loyalty_programs";
 const ENTRIES_STORAGE_KEY = "erp_loyalty_point_entries";
 
-const initialPrograms: LoyaltyProgram[] = [
-  {
-    id: "lp-std-001",
-    loyalty_program_name: "Standard VIP Loyalty Program",
-    loyalty_program_type: "Single Tier Program",
-    from_date: "2026-01-01",
-    to_date: "2026-12-31",
-    customer_group: "All Customer Groups",
-    customer_territory: "All Territories",
-    auto_opt_in: true,
-    collection_rules: [
-      { id: "cr-1", tier_name: "Tier 1", min_spent: 0, collection_factor: 10 },
-    ],
-    conversion_factor: 1,
-    expiry_duration: 365,
-    expense_account: "5112 - Loyalty Program Expense",
-    company: "",
-    cost_center: "",
-    project: "Customer Retention Q3",
-    created_at: "2026-01-01T00:00:00Z",
-  },
-  {
-    id: "lp-multi-002",
-    loyalty_program_name: "Platinum Tiered Rewards",
-    loyalty_program_type: "Multiple Tier Program",
-    from_date: "2026-01-01",
-    to_date: "",
-    customer_group: "Commercial",
-    customer_territory: "Indonesia",
-    auto_opt_in: true,
-    collection_rules: [
-      { id: "cr-10", tier_name: "Silver", min_spent: 0, collection_factor: 20 },
-      { id: "cr-11", tier_name: "Gold", min_spent: 5000000, collection_factor: 10 },
-      { id: "cr-12", tier_name: "Platinum", min_spent: 20000000, collection_factor: 5 },
-    ],
-    conversion_factor: 5,
-    expiry_duration: 180,
-    expense_account: "5111 - Marketing & Promotional Expense",
-    company: "",
-    cost_center: "",
-    project: "General Marketing 2026",
-    created_at: "2026-02-15T00:00:00Z",
-  },
-];
-
-const initialPointEntries: LoyaltyPointEntry[] = [
-  {
-    id: "LPE-2026-0001",
-    loyalty_program: "Standard VIP Loyalty Program",
-    customer: "PT Sentosa Abadi",
-    sales_invoice: "ACC-SINV-2026-0012",
-    loyalty_points: 500,
-    purchase_amount: 5000000,
-    expiry_date: "2027-01-01",
-    posting_date: "2026-07-20",
-    type: "Earned",
-  },
-  {
-    id: "LPE-2026-0002",
-    loyalty_program: "Platinum Tiered Rewards",
-    customer: "CV Jaya Wijaya",
-    sales_invoice: "ACC-SINV-2026-0015",
-    loyalty_points: 1200,
-    purchase_amount: 6000000,
-    expiry_date: "2027-01-25",
-    posting_date: "2026-07-25",
-    type: "Earned",
-  },
-  {
-    id: "LPE-2026-0003",
-    loyalty_program: "Standard VIP Loyalty Program",
-    customer: "PT Sentosa Abadi",
-    sales_invoice: "ACC-SINV-2026-0018",
-    loyalty_points: -200,
-    purchase_amount: 0,
-    expiry_date: "",
-    posting_date: "2026-07-28",
-    type: "Redeemed",
-  },
-];
+function cleanLegacyDummyData() {
+  try {
+    const raw = localStorage.getItem(ENTRIES_STORAGE_KEY);
+    if (raw && (raw.includes("PT Sentosa Abadi") || raw.includes("LPE-2026-0001"))) {
+      localStorage.removeItem(ENTRIES_STORAGE_KEY);
+    }
+  } catch {}
+}
+cleanLegacyDummyData();
 
 function getStoredPrograms(): LoyaltyProgram[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialPrograms));
-      return initialPrograms;
-    }
+    if (!raw) return [];
     return JSON.parse(raw);
   } catch {
-    return initialPrograms;
+    return [];
   }
 }
 
@@ -155,14 +81,15 @@ function saveStoredPrograms(programs: LoyaltyProgram[]) {
 function getStoredEntries(): LoyaltyPointEntry[] {
   try {
     const raw = localStorage.getItem(ENTRIES_STORAGE_KEY);
-    if (!raw) {
-      localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(initialPointEntries));
-      return initialPointEntries;
-    }
+    if (!raw) return [];
     return JSON.parse(raw);
   } catch {
-    return initialPointEntries;
+    return [];
   }
+}
+
+function saveStoredEntries(entries: LoyaltyPointEntry[]) {
+  localStorage.setItem(ENTRIES_STORAGE_KEY, JSON.stringify(entries));
 }
 
 export const defaultOptions: LoyaltyOptions = {
@@ -207,8 +134,9 @@ export const loyaltyApi = {
 
   async get(id: string): Promise<LoyaltyProgram> {
     try {
-      const res = await api.get<LoyaltyProgram>(`/selling/loyalty-programs/${id}`);
-      if (res.data) return res.data;
+      const res = await api.get<{ data?: LoyaltyProgram } | LoyaltyProgram>(`/selling/loyalty-programs/${id}`);
+      const data = (res.data as any)?.data || res.data;
+      if (data) return data;
     } catch {
       // Fallback
     }
@@ -226,8 +154,9 @@ export const loyaltyApi = {
       updated_at: new Date().toISOString(),
     };
     try {
-      const res = await api.post<LoyaltyProgram>("/selling/loyalty-programs", newDoc);
-      if (res.data) return res.data;
+      const res = await api.post<{ data?: LoyaltyProgram } | LoyaltyProgram>("/selling/loyalty-programs", newDoc);
+      const data = (res.data as any)?.data || res.data;
+      if (data) return data;
     } catch {
       // Fallback
     }
@@ -244,8 +173,9 @@ export const loyaltyApi = {
       updated_at: new Date().toISOString(),
     };
     try {
-      const res = await api.put<LoyaltyProgram>(`/selling/loyalty-programs/${id}`, updatedDoc);
-      if (res.data) return res.data;
+      const res = await api.put<{ data?: LoyaltyProgram } | LoyaltyProgram>(`/selling/loyalty-programs/${id}`, updatedDoc);
+      const data = (res.data as any)?.data || res.data;
+      if (data) return data;
     } catch {
       // Fallback
     }
@@ -268,17 +198,84 @@ export const loyaltyApi = {
     saveStoredPrograms(list);
   },
 
-  async entriesList(): Promise<LoyaltyPointEntry[]> {
+  async entriesList(params?: {
+    q?: string;
+    program?: string;
+    customer?: string;
+    type?: string;
+  }): Promise<LoyaltyPointEntry[]> {
     try {
-      const res = await api.get<{ data: LoyaltyPointEntry[] }>("/selling/loyalty-point-entries");
+      const res = await api.get<{ data: LoyaltyPointEntry[] }>(
+        "/selling/loyalty-point-entries",
+        { params },
+      );
       if (res.data?.data) return res.data.data;
     } catch {
       // Fallback
     }
-    return getStoredEntries();
+    let list = getStoredEntries();
+    if (params?.q) {
+      const q = params.q.toLowerCase();
+      list = list.filter(
+        (e) =>
+          e.customer.toLowerCase().includes(q) ||
+          e.id.toLowerCase().includes(q) ||
+          e.loyalty_program.toLowerCase().includes(q) ||
+          e.sales_invoice?.toLowerCase().includes(q),
+      );
+    }
+    if (params?.program) {
+      list = list.filter((e) => e.loyalty_program === params.program);
+    }
+    if (params?.customer) {
+      list = list.filter((e) => e.customer === params.customer);
+    }
+    if (params?.type) {
+      list = list.filter((e) => e.type === params.type);
+    }
+    return list;
+  },
+
+  async createEntry(input: Partial<LoyaltyPointEntry>): Promise<LoyaltyPointEntry> {
+    try {
+      const res = await api.post<{ data: LoyaltyPointEntry }>("/selling/loyalty-point-entries", input);
+      if (res.data?.data) return res.data.data;
+    } catch {
+      // Fallback
+    }
+    const created: LoyaltyPointEntry = {
+      id: input.id || `LPE-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+      loyalty_program: input.loyalty_program || "",
+      customer: input.customer || "",
+      sales_invoice: input.sales_invoice || "",
+      reference_type: input.reference_type || "Manual Entry",
+      loyalty_points: Number(input.loyalty_points || 0),
+      purchase_amount: Number(input.purchase_amount || 0),
+      posting_date: input.posting_date || new Date().toISOString().slice(0, 10),
+      type: input.type || (Number(input.loyalty_points || 0) >= 0 ? "Earned" : "Redeemed"),
+      expiry_date: input.expiry_date,
+    };
+    const entries = getStoredEntries();
+    entries.unshift(created);
+    saveStoredEntries(entries);
+    return created;
+  },
+
+  async deleteEntry(id: string): Promise<void> {
+    try {
+      await api.delete(`/selling/loyalty-point-entries/${id}`);
+    } catch {
+      // Fallback
+    }
+    const entries = getStoredEntries().filter((e) => e.id !== id);
+    saveStoredEntries(entries);
   },
 
   async options(): Promise<LoyaltyOptions> {
+    try {
+      const res = await api.get<LoyaltyOptions>("/selling/loyalty-programs/options");
+      if (res.data) return res.data;
+    } catch {}
     return defaultOptions;
   },
 };

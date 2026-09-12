@@ -69,7 +69,6 @@ type Item struct {
 	HasVariants                bool               `json:"has_variants"`
 	IsFixedAsset               bool               `json:"is_fixed_asset"`
 	OpeningStock               float64            `json:"opening_stock" gorm:"type:decimal(18,6);default:0"`
-	StandardRate               float64            `json:"standard_rate" gorm:"type:decimal(18,2);default:0"`
 	ImageURL                   string             `json:"image_url" gorm:"type:text"`
 	Description                string             `json:"description" gorm:"type:text"`
 	Brand                      string             `json:"brand" gorm:"type:varchar(120)"`

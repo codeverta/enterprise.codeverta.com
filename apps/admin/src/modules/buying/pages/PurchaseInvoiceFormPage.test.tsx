@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PurchaseInvoiceFormPage from "./PurchaseInvoiceFormPage";
@@ -232,5 +232,46 @@ describe("PurchaseInvoiceFormPage API Integration", () => {
       const rateInput = screen.getByDisplayValue("72000");
       expect(rateInput).toBeInTheDocument();
     });
+  });
+
+  it("supports adding and removing item and tax rows in DataTable", async () => {
+    mockApis();
+
+    render(
+      <MemoryRouter initialEntries={["/desk/purchase-invoice/new"]}>
+        <Routes>
+          <Route path="/desk/purchase-invoice/new" element={<PurchaseInvoiceFormPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("New Purchase Invoice")).toBeInTheDocument();
+    });
+
+    expect(screen.getByRole("columnheader", { name: "Item" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Add / Deduct" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Pilih Item/i })).toHaveLength(1);
+
+    const addRowButtons = screen.getAllByRole("button", { name: /Add Row/i });
+    await act(async () => {
+      fireEvent.click(addRowButtons[0]);
+    });
+    expect(screen.getAllByRole("button", { name: /Pilih Item/i })).toHaveLength(2);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Hapus item baris 2" }));
+    });
+    expect(screen.getAllByRole("button", { name: /Pilih Item/i })).toHaveLength(1);
+
+    await act(async () => {
+      fireEvent.click(addRowButtons[1]);
+    });
+    expect(screen.getByRole("button", { name: "Hapus pajak baris 1" })).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Hapus pajak baris 1" }));
+    });
+    expect(screen.queryByRole("button", { name: "Hapus pajak baris 1" })).not.toBeInTheDocument();
+    expect(screen.getByText("No rows")).toBeInTheDocument();
   });
 });

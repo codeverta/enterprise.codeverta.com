@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -31,10 +32,14 @@ func TestPOSSuccessfulSaleCreatesLoyaltyPointEntry(t *testing.T) {
 	}
 	item := buyingmodel.Item{
 		Base: buyingmodel.Base{ID: uuid.New(), TenantID: uuid.New()}, ItemCode: "LOYALTY-ITEM",
-		ItemName: "Loyalty Item", ItemGroup: "Products", StandardRate: 50000,
+		ItemName: "Loyalty Item", ItemGroup: "Products",
 		StockUOM: "Nos", IsStockItem: true, Disabled: false,
 	}
-	for _, value := range []interface{}{&customer, &program, &opening, &item} {
+	itemPrice := sellingmodel.ItemPrice{
+		ID: "ip-loyalty-item", TenantID: tenant, ItemCode: "LOYALTY-ITEM", ItemName: "Loyalty Item",
+		PriceList: "Standard Selling", PriceListRate: 50000, Selling: true, IsActive: true,
+	}
+	for _, value := range []interface{}{&customer, &program, &opening, &item, &itemPrice} {
 		if err := db.Create(value).Error; err != nil {
 			t.Fatal(err)
 		}
@@ -110,4 +115,83 @@ func TestSubmittedSalesInvoiceCreatesLoyaltyPointEntryOnce(t *testing.T) {
 
 func decodeJSON(data []byte, target interface{}) error {
 	return json.Unmarshal(data, target)
+}
+
+func TestLoyaltyProgramControllerListAndEntriesCRUD(t *testing.T) {
+	router, db := setupSalesInvoiceTestRouter(t)
+	tenant := "tenant-invoice-test"
+	loyaltyCtrl := NewLoyaltyProgramController()
+
+	// Register loyalty routes on test router
+	router.GET("/selling/loyalty-programs", loyaltyCtrl.List)
+	router.POST("/selling/loyalty-point-entries", loyaltyCtrl.CreateEntry)
+	router.GET("/selling/loyalty-point-entries", loyaltyCtrl.EntriesList)
+	router.DELETE("/selling/loyalty-point-entries/:id", loyaltyCtrl.DeleteEntry)
+
+	// 1. List programs: should auto-seed default program if empty
+	resp := storeRequest(t, router, http.MethodGet, "/selling/loyalty-programs", nil)
+	if resp.Code != http.StatusOK {
+		t.Fatalf("list programs status=%d body=%s", resp.Code, resp.Body.String())
+	}
+	var progResp struct {
+		Data []sellingmodel.LoyaltyProgram `json:"data"`
+	}
+	if err := decodeJSON(resp.Body.Bytes(), &progResp); err != nil {
+		t.Fatal(err)
+	}
+	if len(progResp.Data) == 0 {
+		t.Fatal("expected at least one loyalty program")
+	}
+	programName := progResp.Data[0].LoyaltyProgramName
+
+	// 2. Create manual Loyalty Point Entry
+	entryPayload := map[string]interface{}{
+		"customer":        "Customer VIP Test",
+		"loyalty_program": programName,
+		"type":            "Earned",
+		"loyalty_points":  50,
+		"purchase_amount": 500000,
+		"sales_invoice":   "INV-MANUAL-001",
+	}
+	createResp := storeRequest(t, router, http.MethodPost, "/selling/loyalty-point-entries", entryPayload)
+	if createResp.Code != http.StatusCreated {
+		t.Fatalf("create entry status=%d body=%s", createResp.Code, createResp.Body.String())
+	}
+	var createdEntry struct {
+		Data sellingmodel.LoyaltyPointEntry `json:"data"`
+	}
+	if err := decodeJSON(createResp.Body.Bytes(), &createdEntry); err != nil {
+		t.Fatal(err)
+	}
+	if createdEntry.Data.LoyaltyPoints != 50 || createdEntry.Data.Customer != "Customer VIP Test" {
+		t.Fatalf("unexpected created entry: %+v", createdEntry.Data)
+	}
+
+	// 3. List entries and test filtering
+	listResp := storeRequest(t, router, http.MethodGet, "/selling/loyalty-point-entries?program="+url.QueryEscape(programName), nil)
+	if listResp.Code != http.StatusOK {
+		t.Fatalf("list entries status=%d body=%s", listResp.Code, listResp.Body.String())
+	}
+	var entriesListResp struct {
+		Data []sellingmodel.LoyaltyPointEntry `json:"data"`
+	}
+	if err := decodeJSON(listResp.Body.Bytes(), &entriesListResp); err != nil {
+		t.Fatal(err)
+	}
+	if len(entriesListResp.Data) != 1 || entriesListResp.Data[0].ID != createdEntry.Data.ID {
+		t.Fatalf("unexpected entries list: %+v", entriesListResp.Data)
+	}
+
+	// 4. Delete entry
+	delResp := storeRequest(t, router, http.MethodDelete, "/selling/loyalty-point-entries/"+createdEntry.Data.ID, nil)
+	if delResp.Code != http.StatusOK {
+		t.Fatalf("delete entry status=%d body=%s", delResp.Code, delResp.Body.String())
+	}
+
+	// Verify entry is gone
+	var count int64
+	db.Model(&sellingmodel.LoyaltyPointEntry{}).Where("tenant_id = ? AND id = ?", tenant, createdEntry.Data.ID).Count(&count)
+	if count != 0 {
+		t.Fatalf("expected 0 entries after delete, got %d", count)
+	}
 }

@@ -100,16 +100,18 @@ type SalesInvoice struct {
 func (SalesInvoice) TableName() string { return "selling_sales_invoices" }
 
 type SalesInvoiceItem struct {
-	ID             string  `gorm:"primaryKey;size:64" json:"id"`
-	SalesInvoiceID string  `gorm:"size:64;not null;index" json:"sales_invoice_id"`
-	AgainstItemID  string  `gorm:"size:64;index" json:"against_item_id"`
-	ItemCode       string  `gorm:"size:120;not null;index" json:"item_code"`
-	ItemName       string  `gorm:"size:255" json:"item_name"`
-	Warehouse      string  `gorm:"size:120" json:"warehouse"`
-	Quantity       float64 `gorm:"type:decimal(18,2);not null" json:"quantity"`
-	UOM            string  `gorm:"size:32;default:'Nos'" json:"uom"`
-	Rate           float64 `gorm:"type:decimal(18,2);not null;default:0" json:"rate"`
-	Amount         float64 `gorm:"type:decimal(18,2);not null;default:0" json:"amount"`
+	ID                 string  `gorm:"primaryKey;size:64" json:"id"`
+	SalesInvoiceID     string  `gorm:"size:64;not null;index" json:"sales_invoice_id"`
+	AgainstItemID      string  `gorm:"size:64;index" json:"against_item_id"`
+	ItemCode           string  `gorm:"size:120;not null;index" json:"item_code"`
+	ItemName           string  `gorm:"size:255" json:"item_name"`
+	Warehouse          string  `gorm:"size:120" json:"warehouse"`
+	Quantity           float64 `gorm:"type:decimal(18,2);not null" json:"quantity"`
+	UOM                string  `gorm:"size:32;default:'Nos'" json:"uom"`
+	Rate               float64 `gorm:"type:decimal(18,2);not null;default:0" json:"rate"`
+	DiscountPercentage float64 `gorm:"type:decimal(8,4);default:0" json:"discount_percentage"`
+	DiscountAmount     float64 `gorm:"type:decimal(18,2);default:0" json:"discount_amount"`
+	Amount             float64 `gorm:"type:decimal(18,2);not null;default:0" json:"amount"`
 }
 
 func (SalesInvoiceItem) TableName() string { return "selling_sales_invoice_items" }

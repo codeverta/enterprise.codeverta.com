@@ -817,7 +817,7 @@ export default function PickListFormPage() {
                 <th className="py-2.5 px-3 min-w-[200px]">Warehouse</th>
                 <th className="py-2.5 px-3 w-24 text-right">Qty</th>
                 <th className="py-2.5 px-3 w-28 text-right">Picked Qty</th>
-                <th className="py-2.5 px-3 w-20">UOM</th>
+                <th className="py-2.5 px-3 w-20">Unit</th>
                 <th className="py-2.5 px-3 min-w-[130px]">Batch No</th>
                 <th className="py-2.5 px-3 min-w-[130px]">Serial No</th>
                 <th className="py-2.5 px-3 min-w-[150px]">Reference</th>

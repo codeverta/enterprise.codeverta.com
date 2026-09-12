@@ -577,7 +577,7 @@ export default function DeliveryNoteFormPage() {
                     <th className="p-3">No.</th>
                     <th className="p-3">Item Code</th>
                     <th className="p-3">Quantity</th>
-                    <th className="p-3">UOM</th>
+                    <th className="p-3">Unit</th>
                     <th className="p-3 text-right">Rate (IDR)</th>
                     <th className="p-3 text-right">Amount (IDR)</th>
                     <th className="p-3">Warehouse</th>

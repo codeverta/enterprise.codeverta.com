@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -397,56 +398,26 @@ export default function PricingRulePage() {
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex border-b border-slate-200 mt-4 -mb-3 overflow-x-auto">
-            <button
-              type="button"
-              onClick={() => setActiveTab("details")}
-              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === "details"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
-            >
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="mt-4 -mb-3">
+            <TabsList className="h-auto w-full justify-start overflow-x-auto rounded-none border-b border-slate-200 bg-transparent p-0">
+            <TabsTrigger value="details" className="gap-1.5 rounded-none px-4 py-2 text-sm">
               <FileText className="h-4 w-4" />
               Details
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("dynamic")}
-              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === "dynamic"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
-            >
+            </TabsTrigger>
+            <TabsTrigger value="dynamic" className="gap-1.5 rounded-none px-4 py-2 text-sm">
               <Code2 className="h-4 w-4" />
               Dynamic Condition
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("advanced")}
-              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === "advanced"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
-            >
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="gap-1.5 rounded-none px-4 py-2 text-sm">
               <Settings2 className="h-4 w-4" />
               Advanced Settings
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("help")}
-              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === "help"
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-slate-600 hover:text-slate-900"
-              }`}
-            >
+            </TabsTrigger>
+            <TabsTrigger value="help" className="gap-1.5 rounded-none px-4 py-2 text-sm">
               <HelpCircle className="h-4 w-4" />
               Help Article
-            </button>
-          </div>
+            </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </header>
 
         {/* Tab Contents */}
@@ -612,7 +583,7 @@ export default function PricingRulePage() {
                             {formData.apply_on === "Brand" && (
                               <th className="px-3 py-2 min-w-[200px]">Brand</th>
                             )}
-                            <th className="px-3 py-2 min-w-[120px]">UOM</th>
+                            <th className="px-3 py-2 min-w-[120px]">Unit</th>
                             <th className="px-3 py-2 w-12 text-center">Action</th>
                           </tr>
                         </thead>
@@ -762,7 +733,7 @@ export default function PricingRulePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="min_qty" className="text-xs font-semibold text-slate-600">
-                      Min Qty (As Per Stock UOM)
+                      Min Qty (As Per Unit)
                     </Label>
                     <Input
                       id="min_qty"
@@ -775,7 +746,7 @@ export default function PricingRulePage() {
                   </div>
                   <div>
                     <Label htmlFor="max_qty" className="text-xs font-semibold text-slate-600">
-                      Max Qty (As Per Stock UOM)
+                      Max Qty (As Per Unit)
                     </Label>
                     <Input
                       id="max_qty"

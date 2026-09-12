@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -465,12 +466,14 @@ export default function OrganizationDeskPage() {
         </div>
       )}
 
-      <div className="mb-6 flex overflow-x-auto rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-xs">
-        <TabButton active={activeTab === "department"} icon={FolderTree} label={`Department (${departments.length})`} onClick={() => navigate("/desk/department")} />
-        <TabButton active={activeTab === "company"} icon={Building2} label={`Company (${companies.length})`} onClick={() => navigate("/desk/company")} />
-        <TabButton active={activeTab === "branch"} icon={GitFork} label={`Branch (${branches.length})`} onClick={() => navigate("/desk/branch")} />
-        <TabButton active={activeTab === "letter-head"} icon={FileText} label={`Letter Head (${letterHeads.length})`} onClick={() => navigate("/desk/letter-head")} />
-      </div>
+      <Tabs value={activeTab} onValueChange={(value) => navigate(`/desk/${value}`)} className="mb-6">
+        <TabsList className="flex h-auto w-full justify-start overflow-x-auto rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-xs">
+          <TabButton value="department" icon={FolderTree} label={`Department (${departments.length})`} />
+          <TabButton value="company" icon={Building2} label={`Company (${companies.length})`} />
+          <TabButton value="branch" icon={GitFork} label={`Branch (${branches.length})`} />
+          <TabButton value="letter-head" icon={FileText} label={`Letter Head (${letterHeads.length})`} />
+        </TabsList>
+      </Tabs>
 
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative w-full max-w-md">
@@ -787,18 +790,12 @@ export default function OrganizationDeskPage() {
   );
 }
 
-function TabButton({ active, icon: Icon, label, onClick }: { active: boolean; icon: typeof Building2; label: string; onClick: () => void }) {
+function TabButton({ value, icon: Icon, label }: { value: string; icon: typeof Building2; label: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
-        active ? "bg-blue-600 text-white shadow-xs" : "text-slate-600 hover:bg-slate-100"
-      }`}
-    >
+    <TabsTrigger value={value} className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold">
       <Icon className="size-4" />
       <span>{label}</span>
-    </button>
+    </TabsTrigger>
   );
 }
 

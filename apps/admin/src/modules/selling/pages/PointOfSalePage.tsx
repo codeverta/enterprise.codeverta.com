@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getStorageUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/searchable-select";
 import { customerApi, type Customer } from "../customerApi";
 import { itemGroupApi, type ItemGroup } from "../itemGroupApi";
+import { posProfileApi } from "../posProfileApi";
 import {
   posApi,
   type POSCartItem,
@@ -61,8 +62,13 @@ export default function PointOfSalePage() {
   const [itemsError, setItemsError] = useState("");
   const [group, setGroup] = useState("All Item Groups");
   const [itemGroups, setItemGroups] = useState<ItemGroup[]>([]);
-  const [customer, setCustomer] = useState("");
+  const [customer, setCustomer] = useState("Walk-in Customer");
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [posProfileSettings, setPosProfileSettings] = useState({
+    allow_rate_change: false,
+    allow_discount_change: false,
+  });
+  const [selectedItemCode, setSelectedItemCode] = useState<string | null>(null);
   const [cart, setCart] = useState<POSCartItem[]>([]);
   const [isCheckoutView, setIsCheckoutView] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState("Cash");
@@ -97,6 +103,17 @@ export default function PointOfSalePage() {
       .currentOpening()
       .then(({ data, is_outdated }) => {
         setOpening(data);
+        if (data?.pos_profile) {
+          posProfileApi
+            .get(data.pos_profile)
+            .then((profile) =>
+              setPosProfileSettings({
+                allow_rate_change: Boolean(profile.allow_rate_change),
+                allow_discount_change: Boolean(profile.allow_discount_change),
+              }),
+            )
+            .catch(() => undefined);
+        }
         const outdated = Boolean(is_outdated);
         setIsOutdated(outdated);
         if (data && outdated) {
@@ -157,10 +174,6 @@ export default function PointOfSalePage() {
       const data = await customerApi.list();
       const custList = data || [];
       setCustomers(custList);
-      const defaultCust = custList.find((c) => c.is_default_for_pos);
-      if (defaultCust) {
-        setCustomer(defaultCust.customer_name);
-      }
     } catch (err) {
       console.error("Failed to load customers:", err);
     }
@@ -197,7 +210,6 @@ export default function PointOfSalePage() {
   };
 
   const customerOptions = useMemo<SearchableSelectOption[]>(() => {
-    const defaultCust = customers.find((c) => c.is_default_for_pos);
     const opts: SearchableSelectOption[] = [
       {
         value: "Walk-in Customer",
@@ -253,10 +265,11 @@ export default function PointOfSalePage() {
       }),
     [group, items, query],
   );
-  const netTotal = cart.reduce(
-    (sum, item) => sum + item.rate * item.quantity,
-    0,
-  );
+  const itemAmount = (item: POSCartItem) => {
+    const gross = item.rate * item.quantity;
+    return gross - (gross * (item.discount_percentage || 0)) / 100;
+  };
+  const netTotal = cart.reduce((sum, item) => sum + itemAmount(item), 0);
   const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const addItem = (item: POSItem) => {
@@ -279,15 +292,24 @@ export default function PointOfSalePage() {
             row.item_code === code ? { ...row, quantity } : row,
         ),
     );
-  const changeRate = (code: string, rate: number) =>
+
+  const changeItemDiscount = (code: string, discountPercentage: number) =>
     setCart((current) =>
       current.map((row) =>
         row.item_code === code
-          ? { ...row, rate: Number.isFinite(rate) ? Math.max(0, rate) : 0 }
+          ? { ...row, discount_percentage: Math.min(100, Math.max(0, discountPercentage)) }
           : row,
       ),
     );
 
+  const changeItemRate = (code: string, rate: number) =>
+    setCart((current) =>
+      current.map((row) =>
+        row.item_code === code
+          ? { ...row, rate: Math.max(0, rate) }
+          : row,
+      ),
+    );
   const grandTotal = Math.max(0, netTotal - discount);
   const paidAmount = Object.values(paymentAmounts).reduce((a, b) => a + b, 0);
 
@@ -305,6 +327,7 @@ export default function PointOfSalePage() {
 
   const selectedCustomerObj = customers.find((c) => c.customer_name === customer);
   const customerEmailOrPhone = selectedCustomerObj?.email || selectedCustomerObj?.phone;
+  const selectedCartItem = cart.find((item) => item.item_code === selectedItemCode);
 
   const handleNumpadPress = (digit: string) => {
     setPaymentAmounts((prev) => {
@@ -343,8 +366,7 @@ export default function PointOfSalePage() {
     setCompletedOrder(null);
     setIsCheckoutView(false);
     setCart([]);
-    const defaultCust = customers.find((c) => c.is_default_for_pos);
-    setCustomer(defaultCust ? defaultCust.customer_name : "");
+    setCustomer("Walk-in Customer");
     setDiscount(0);
     setPaymentAmounts({});
   };
@@ -370,13 +392,15 @@ export default function PointOfSalePage() {
         opening_entry_id: opening.id,
         customer: customer || "Walk-in Customer",
         tax_total: 0,
+        discount_amount: discount,
         mode_of_payment: selectedMethod,
         paid_amount: paidAmount,
         items: cart.map((item) => ({
           item_code: item.item_code,
           item_name: item.item_name,
           quantity: item.quantity,
-          rate: item.rate,
+          rate: posProfileSettings.allow_rate_change ? item.rate : 0,
+          discount_percentage: item.discount_percentage || 0,
         })),
       });
       const invoiceNum =
@@ -385,12 +409,24 @@ export default function PointOfSalePage() {
 
       setCompletedOrder({
         invoice_number: invoiceNum,
-        customer: customer || "Rabih",
+        customer: customer || "Walk-in Customer",
         sold_by: opening.user || "Administrator",
-        items: [...cart],
-        net_total: netTotal,
-        discount,
-        grand_total: grandTotal,
+        items: cart.map((item) => {
+          const canonicalItem = invoice.items?.find(
+            (invoiceItem) => invoiceItem.item_code === item.item_code,
+          );
+          return canonicalItem
+            ? {
+                ...item,
+                item_name: canonicalItem.item_name,
+                quantity: canonicalItem.quantity,
+                rate: canonicalItem.rate,
+              }
+            : item;
+        }),
+        net_total: invoice.net_total ?? netTotal,
+        discount: invoice.discount_amount ?? discount,
+        grand_total: invoice.grand_total ?? grandTotal,
         payments:
           Object.keys(paymentAmounts).length > 0
             ? { ...paymentAmounts }
@@ -553,7 +589,7 @@ export default function PointOfSalePage() {
                         {item.quantity} {item.unit || "Nos"}
                       </span>
                       <span className="min-w-20 text-right font-semibold text-slate-900">
-                        {money(item.rate * item.quantity)}
+                        {money(itemAmount(item))}
                       </span>
                     </div>
                   </div>
@@ -688,9 +724,10 @@ export default function PointOfSalePage() {
                   >
                     {item.image ? (
                       <img
-                        src={item.image}
-                        alt=""
+                        src={getStorageUrl(item.image)}
+                        alt={item.item_name}
                         className="size-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <span className="text-3xl font-medium text-slate-500/80">
@@ -775,32 +812,31 @@ export default function PointOfSalePage() {
               {cart.map((item) => (
                 <div
                   key={item.item_code}
-                  className="rounded-lg border bg-white p-3 shadow-sm"
+                  className="cursor-pointer rounded-lg border bg-white p-3 shadow-sm transition hover:border-slate-400"
+                  onClick={() => setSelectedItemCode(item.item_code)}
                 >
                   <div className="flex gap-3">
                     <span
-                      className={`flex size-11 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-xs font-semibold text-slate-600 ${item.color}`}
+                      className={`flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br text-xs font-semibold text-slate-600 ${item.color}`}
                     >
-                      {item.initials}
+                      {item.image ? (
+                        <img
+                          src={getStorageUrl(item.image)}
+                          alt={item.item_name}
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        item.initials
+                      )}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
                         {item.item_name}
                       </p>
-                      <label className="mt-2 block text-xs font-medium text-slate-500">
+                      <p className="mt-2 text-xs font-medium text-slate-500">
                         Harga satuan ({item.unit})
-                        <Input
-                          type="number"
-                          min="0"
-                          step="1"
-                          value={item.rate}
-                          aria-label={`Harga satuan ${item.item_name}`}
-                          onChange={(event) =>
-                            changeRate(item.item_code, Number(event.target.value))
-                          }
-                          className="mt-1 h-8 bg-white px-2 text-sm font-semibold text-slate-900"
-                        />
-                      </label>
+                        <span className="ml-1 font-semibold text-slate-900">{money(item.rate)}</span>
+                      </p>
                     </div>
                     <button
                       type="button"
@@ -835,7 +871,7 @@ export default function PointOfSalePage() {
                       </button>
                     </div>
                     <p className="text-sm font-semibold">
-                      {money(item.rate * item.quantity)}
+                      {money(itemAmount(item))}
                     </p>
                   </div>
                 </div>
@@ -848,6 +884,17 @@ export default function PointOfSalePage() {
                 </div>
               )}
             </div>
+            <button
+              type="button"
+              onClick={() => {
+                setDiscountInput(discount ? String(discount) : "");
+                setDiscountDialogOpen(true);
+              }}
+              className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-50"
+            >
+              <Percent className="size-4 text-slate-400" />
+              <span>{discount > 0 ? `Discount: ${money(discount)}` : "Add Discount"}</span>
+            </button>
             <div className="space-y-3 pt-5 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">Total Quantity</span>
@@ -857,9 +904,15 @@ export default function PointOfSalePage() {
                 <span className="text-slate-500">Net Total</span>
                 <span>{money(netTotal)}</span>
               </div>
+              {discount > 0 && (
+                <div className="flex justify-between text-rose-600">
+                  <span>Discount</span>
+                  <span>-{money(discount)}</span>
+                </div>
+              )}
               <div className="flex justify-between border-t pt-4 text-lg font-semibold">
                 <span>Grand Total</span>
-                <span>{money(netTotal)}</span>
+                <span>{money(grandTotal)}</span>
               </div>
             </div>
             <Button
@@ -911,8 +964,8 @@ export default function PointOfSalePage() {
                         <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded bg-slate-100 text-[10px] font-semibold text-slate-500">
                           {item.image ? (
                             <img
-                              src={item.image}
-                              alt=""
+                              src={getStorageUrl(item.image)}
+                              alt={item.item_name}
                               className="size-full object-cover"
                             />
                           ) : (
@@ -932,7 +985,7 @@ export default function PointOfSalePage() {
                         {item.quantity} {item.unit || "Nos"}
                       </span>
                       <span className="text-right text-xs font-semibold text-slate-900">
-                        {money(item.rate * item.quantity)}
+                        {money(itemAmount(item))}
                       </span>
                     </div>
                   ))}
@@ -1094,6 +1147,86 @@ export default function PointOfSalePage() {
           </div>
         </div>
       )}
+
+      {/* Item Details Dialog */}
+      <Dialog
+        open={Boolean(selectedCartItem)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedItemCode(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl will-change-transform data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-150 data-[state=closed]:duration-100">
+          <DialogHeader>
+            <DialogTitle>Item Details</DialogTitle>
+            <DialogDescription>{selectedCartItem?.item_name}</DialogDescription>
+          </DialogHeader>
+          {selectedCartItem && (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
+                <div className={`flex size-14 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br text-xs font-semibold text-slate-600 ${selectedCartItem.color}`}>
+                  {selectedCartItem.image ? <img src={getStorageUrl(selectedCartItem.image)} alt={selectedCartItem.item_name} className="size-full object-cover" /> : selectedCartItem.initials}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold">{selectedCartItem.item_name}</p>
+                  <p className="truncate text-xs text-slate-500">{selectedCartItem.item_code}</p>
+                </div>
+              </div>
+              <label className="text-sm font-medium text-slate-600">
+                Quantity
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={selectedCartItem.quantity}
+                  onChange={(event) => changeQuantity(selectedCartItem.item_code, Number(event.target.value))}
+                  className="mt-1 h-10"
+                />
+                <span className="mt-1 block text-[11px] font-normal text-slate-400">Quantity dapat diubah untuk menyesuaikan jumlah pembelian.</span>
+              </label>
+              <label className="text-sm font-medium text-slate-600">
+                UOM
+                <Input value={selectedCartItem.unit || "Nos"} readOnly className="mt-1 h-10 bg-slate-50" />
+                <span className="mt-1 block text-[11px] font-normal text-slate-400">UOM mengikuti satuan item dan tidak dapat diedit di POS.</span>
+              </label>
+              <label className="text-sm font-medium text-slate-600">
+                Rate
+                <Input
+                  type="number"
+                  min="0"
+                  value={selectedCartItem.rate}
+                  readOnly={!posProfileSettings.allow_rate_change}
+                  onClick={() => {
+                    if (!posProfileSettings.allow_rate_change) toast.error("Editing Rate is not allowed as per POS Profile settings");
+                  }}
+                  onChange={(event) => changeItemRate(selectedCartItem.item_code, Number(event.target.value))}
+                  className="mt-1 h-10 bg-slate-50"
+                />
+                {!posProfileSettings.allow_rate_change && <span className="mt-1 block text-[11px] font-normal text-amber-600">Rate dikunci karena Allow User to Edit Rate tidak aktif di POS Profile.</span>}
+              </label>
+              <label className="text-sm font-medium text-slate-600">
+                Discount (%)
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={selectedCartItem.discount_percentage || 0}
+                  readOnly={!posProfileSettings.allow_discount_change}
+                  onClick={() => {
+                    if (!posProfileSettings.allow_discount_change) toast.error("Editing Discount is not allowed as per POS Profile settings");
+                  }}
+                  onChange={(event) => changeItemDiscount(selectedCartItem.item_code, Number(event.target.value))}
+                  className="mt-1 h-10 bg-slate-50"
+                />
+                {!posProfileSettings.allow_discount_change && <span className="mt-1 block text-[11px] font-normal text-amber-600">Discount dikunci karena Allow User to Edit Discount tidak aktif di POS Profile.</span>}
+              </label>
+              <div className="sm:col-span-2 flex items-center justify-between border-t pt-4 text-sm">
+                <span className="text-slate-500">Amount</span>
+                <span className="text-lg font-semibold">{money(itemAmount(selectedCartItem))}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Discount Dialog */}
       <Dialog open={discountDialogOpen} onOpenChange={setDiscountDialogOpen}>

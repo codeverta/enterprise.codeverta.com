@@ -1207,7 +1207,7 @@ export default function SalesInvoiceFormPage() {
                     <th className="py-2.5 px-3 min-w-[200px]">Item Code & Name</th>
                     <th className="py-2.5 px-3 min-w-[180px]">Warehouse</th>
                     <th className="py-2.5 px-3 w-24 text-right">Quantity</th>
-                    <th className="py-2.5 px-3 w-20">UOM</th>
+                    <th className="py-2.5 px-3 w-20">Unit</th>
                     <th className="py-2.5 px-3 w-32 text-right">Rate (IDR)</th>
                     <th className="py-2.5 px-3 w-32 text-right">Amount (IDR)</th>
                     {!isReadonly && <th className="py-2.5 px-3 w-12 text-center">Aksi</th>}
