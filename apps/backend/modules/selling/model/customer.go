@@ -21,6 +21,7 @@ type Customer struct {
 	CreditLimit      float64   `gorm:"default:0" json:"credit_limit"`
 	Notes            string    `gorm:"type:text" json:"notes"`
 	Disabled         bool      `gorm:"index" json:"disabled"`
+	IsDefaultForPOS  bool      `gorm:"default:false;index" json:"is_default_for_pos"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }

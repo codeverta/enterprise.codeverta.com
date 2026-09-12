@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { ArrowRight, CheckCircle2, RefreshCw, Plus, LogOut, Trash2, Edit3, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { posApi, type POSClosingEntry, type POSOpeningEntry } from "../posApi";
 
 const money = (value: number) =>
@@ -51,6 +52,18 @@ export default function POSClosingEntryPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const closingColumns = useMemo<ColumnDef<POSClosingEntry>[]>(() => [
+    { accessorKey: "id", header: "No. Closing Entry", meta: { label: "No. Closing Entry", cellClassName: "font-semibold text-blue-600" } },
+    { accessorKey: "pos_opening_entry", header: "POS Opening Entry", meta: { label: "POS Opening Entry", cellClassName: "font-mono text-xs text-slate-600" } },
+    { accessorKey: "pos_profile", header: "POS Profile", meta: { label: "POS Profile", cellClassName: "text-xs font-medium" } },
+    { accessorKey: "user", header: "Cashier", meta: { label: "Cashier", cellClassName: "text-xs" } },
+    { accessorKey: "period_end_date", header: "Period End Date", cell: ({ row }) => dateTime(row.original.period_end_date), meta: { label: "Period End Date", cellClassName: "text-xs text-slate-600" } },
+    { accessorKey: "grand_total", header: "Grand Total", cell: ({ row }) => money(row.original.grand_total), meta: { label: "Grand Total", cellClassName: "text-right font-bold" } },
+    { id: "difference", header: "Difference", accessorFn: (entry) => (entry.payment_reconciliation || []).reduce((sum, row) => sum + row.difference, 0), cell: ({ row }) => { const difference = row.getValue<number>("difference"); return <span className={difference === 0 ? "font-bold text-emerald-600" : "font-bold text-rose-600"}>{money(difference)}</span>; }, meta: { label: "Difference", cellClassName: "text-right" } },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant="default"><CheckCircle2 className="mr-1 inline size-3" />{row.original.status || "Submitted"}</Badge>, meta: { label: "Status", cellClassName: "text-center" } },
+    { id: "actions", header: "Actions", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <Button aria-label={`Buka ${row.original.id}`} variant="ghost" size="icon" className="size-8 text-blue-600" onClick={(event) => { event.stopPropagation(); navigate(`/desk/pos-closing-entry/${row.original.id}`); }}><ArrowRight className="size-4" /></Button>, meta: { headerClassName: "text-right", cellClassName: "text-right" } },
+  ], [navigate]);
 
   return (
     <div className="mx-auto max-w-screen-2xl space-y-6 p-4 lg:p-7">
@@ -106,105 +119,22 @@ export default function POSClosingEntryPage() {
       )}
 
       {/* Closing History Table */}
-      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-950">
+      <div className="rounded-2xl border bg-white shadow-sm dark:bg-slate-950">
         <div className="border-b px-5 py-4">
           <h2 className="font-bold text-base text-slate-800 dark:text-slate-200">
             Daftar POS Closing Entry
           </h2>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b bg-slate-50 text-slate-600 font-semibold dark:bg-slate-900">
-              <tr>
-                <th className="py-3.5 px-4">No. Closing Entry</th>
-                <th className="py-3.5 px-4">POS Opening Entry</th>
-                <th className="py-3.5 px-4">POS Profile</th>
-                <th className="py-3.5 px-4">Cashier</th>
-                <th className="py-3.5 px-4">Period End Date</th>
-                <th className="py-3.5 px-4 text-right">Grand Total</th>
-                <th className="py-3.5 px-4 text-right">Difference</th>
-                <th className="py-3.5 px-4 text-center">Status</th>
-                <th className="py-3.5 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {loading ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-500">
-                    <RefreshCw className="mx-auto size-6 animate-spin mb-2" />
-                    Memuat daftar Closing Entry...
-                  </td>
-                </tr>
-              ) : closings.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-500">
-                    <LogOut className="mx-auto size-12 text-slate-300 mb-3" />
-                    <p className="font-semibold text-slate-700 dark:text-slate-300">Belum ada POS Closing Entry</p>
-                    <p className="text-xs text-slate-400 mt-1">Tutup shift kasir untuk membuat rekonsiliasi pembayaran.</p>
-                  </td>
-                </tr>
-              ) : (
-                closings.map((entry) => {
-                  const difference = (entry.payment_reconciliation || []).reduce(
-                    (sum, row) => sum + row.difference,
-                    0
-                  );
-                  return (
-                    <tr
-                      key={entry.id}
-                      className="hover:bg-slate-50/80 cursor-pointer transition-colors dark:hover:bg-slate-900/50"
-                      onClick={() => navigate(`/desk/pos-closing-entry/${entry.id}`)}
-                    >
-                      <td className="py-3.5 px-4 font-semibold text-blue-600 hover:underline">
-                        {entry.id}
-                      </td>
-                      <td className="py-3.5 px-4 font-mono text-xs text-slate-600 dark:text-slate-400">
-                        {entry.pos_opening_entry}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs font-medium">
-                        {entry.pos_profile || "—"}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs">
-                        {entry.user}
-                      </td>
-                      <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-400">
-                        {dateTime(entry.period_end_date)}
-                      </td>
-                      <td className="py-3.5 px-4 text-right font-bold text-slate-900 dark:text-slate-100">
-                        {money(entry.grand_total)}
-                      </td>
-                      <td
-                        className={`py-3.5 px-4 text-right font-bold ${
-                          difference === 0 ? "text-emerald-600" : "text-rose-600"
-                        }`}
-                      >
-                        {money(difference)}
-                      </td>
-                      <td className="py-3.5 px-4 text-center">
-                        <Badge variant="default">
-                          <CheckCircle2 className="mr-1 size-3 inline" />
-                          {entry.status || "Submitted"}
-                        </Badge>
-                      </td>
-                      <td className="py-3.5 px-4 text-right" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 text-blue-600"
-                            onClick={() => navigate(`/desk/pos-closing-entry/${entry.id}`)}
-                          >
-                            <ArrowRight className="size-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+        <div className="p-5">
+          <DataTable
+            columns={closingColumns}
+            data={closings}
+            getRowId={(entry) => entry.id}
+            onRowClick={(entry) => navigate(`/desk/pos-closing-entry/${entry.id}`)}
+            searchPlaceholder="Cari closing entry..."
+            emptyMessage={loading ? "Memuat daftar Closing Entry..." : "Belum ada POS Closing Entry."}
+          />
         </div>
       </div>
     </div>

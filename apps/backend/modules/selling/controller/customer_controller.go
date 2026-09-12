@@ -58,7 +58,13 @@ func (c *CustomerController) Create(ctx *gin.Context) {
 	if in.DefaultPriceList == "" {
 		in.DefaultPriceList = "Standard Selling"
 	}
-	if err := model.GetDB(ctx).WithContext(ctx.Request.Context()).Create(&in).Error; err != nil {
+	db := model.GetDB(ctx).WithContext(ctx.Request.Context())
+	if in.IsDefaultForPOS {
+		_ = db.Model(&sellingmodel.Customer{}).
+			Where("tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL", in.TenantID).
+			Update("is_default_for_pos", false).Error
+	}
+	if err := db.Create(&in).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membuat customer"})
 		return
 	}
@@ -81,6 +87,11 @@ func (c *CustomerController) Update(ctx *gin.Context) {
 	in.TenantID = row.TenantID
 	in.CreatedAt = row.CreatedAt
 	in.UpdatedAt = time.Now()
+	if in.IsDefaultForPOS {
+		_ = db.Model(&sellingmodel.Customer{}).
+			Where("(tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL) AND id != ?", tenant, row.ID).
+			Update("is_default_for_pos", false).Error
+	}
 	if err := db.Save(&in).Error; err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate customer"})
 		return

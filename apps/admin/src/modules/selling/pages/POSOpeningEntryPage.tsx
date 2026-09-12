@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { AlertTriangle, ArrowRight, Clock3, Plus, RefreshCw, Store, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { isOpeningOutdated, posApi, type POSOpeningEntry } from "../posApi";
 
 const money = (value: number) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(value || 0);
@@ -25,6 +26,67 @@ export default function POSOpeningEntryPage() {
 
   const current = entries.find((entry) => entry.status === "Open");
   const outdated = isOpeningOutdated(current);
+
+  const entryColumns = useMemo<ColumnDef<POSOpeningEntry>[]>(() => [
+    {
+      accessorKey: "id",
+      header: "Entry",
+      meta: { label: "Entry", cellClassName: "font-mono text-xs font-semibold text-blue-600" },
+    },
+    {
+      accessorKey: "pos_profile",
+      header: "POS Profile",
+      meta: { label: "POS Profile", cellClassName: "font-medium" },
+    },
+    {
+      accessorKey: "user",
+      header: "Cashier",
+      meta: { label: "Cashier", cellClassName: "text-xs" },
+    },
+    {
+      accessorKey: "period_start_date",
+      header: "Mulai",
+      cell: ({ row }) => dateTime(row.original.period_start_date),
+      meta: { label: "Mulai", cellClassName: "text-xs text-slate-600" },
+    },
+    {
+      accessorKey: "opening_balance_total",
+      header: "Opening Balance",
+      cell: ({ row }) => money(row.original.opening_balance_total),
+      meta: { label: "Opening Balance", cellClassName: "font-semibold text-slate-900 dark:text-slate-100" },
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${row.original.status === "Open" ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+          {row.original.status}
+        </span>
+      ),
+      meta: { label: "Status" },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      enableColumnFilter: false,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Button
+          aria-label={`Buka ${row.original.id}`}
+          variant="ghost"
+          size="icon"
+          className="size-8 text-blue-600"
+          onClick={(event) => {
+            event.stopPropagation();
+            navigate(`/desk/pos-opening-entry/${row.original.id}`);
+          }}
+        >
+          <ArrowRight className="size-4" />
+        </Button>
+      ),
+      meta: { headerClassName: "text-right", cellClassName: "text-right" },
+    },
+  ], [navigate]);
 
   const closeAndCreate = async () => {
     if (!current) return navigate("/desk/pos-opening-entry/new");
@@ -86,71 +148,17 @@ export default function POSOpeningEntryPage() {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <div className="rounded-xl border bg-white shadow-sm">
           <div className="border-b px-5 py-4"><h2 className="font-semibold">Riwayat Opening Entry</h2></div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-5 py-3">Entry</th>
-                  <th className="px-5 py-3">POS Profile</th>
-                  <th className="px-5 py-3">Cashier</th>
-                  <th className="px-5 py-3">Mulai</th>
-                  <th className="px-5 py-3">Opening Balance</th>
-                  <th className="px-5 py-3">Status</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {entries.map((entry) => (
-                  <tr
-                    key={entry.id}
-                    className="hover:bg-slate-50/70 cursor-pointer"
-                    onClick={() => navigate(`/desk/pos-opening-entry/${entry.id}`)}
-                  >
-                    <td className="px-5 py-4 font-mono text-xs font-semibold text-blue-600 hover:underline">
-                      {entry.id}
-                    </td>
-                    <td className="px-5 py-4 font-medium">{entry.pos_profile}</td>
-                    <td className="px-5 py-4 text-xs">{entry.user}</td>
-                    <td className="px-5 py-4 text-slate-600 text-xs">
-                      {dateTime(entry.period_start_date)}
-                    </td>
-                    <td className="px-5 py-4 font-semibold text-slate-900 dark:text-slate-100">
-                      {money(entry.opening_balance_total)}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                          entry.status === "Open"
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-600"
-                        }`}
-                      >
-                        {entry.status}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8 text-blue-600"
-                        onClick={() => navigate(`/desk/pos-opening-entry/${entry.id}`)}
-                      >
-                        <ArrowRight className="size-4" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-                {!loading && entries.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-5 py-12 text-center text-slate-500">
-                      Belum ada POS Opening Entry.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="p-5">
+            <DataTable
+              columns={entryColumns}
+              data={entries}
+              getRowId={(entry) => entry.id}
+              onRowClick={(entry) => navigate(`/desk/pos-opening-entry/${entry.id}`)}
+              searchPlaceholder="Cari opening entry..."
+              emptyMessage={loading ? "Memuat opening entry..." : "Belum ada POS Opening Entry."}
+            />
           </div>
         </div>
       </div>

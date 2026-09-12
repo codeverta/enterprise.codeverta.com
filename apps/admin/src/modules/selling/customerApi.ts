@@ -18,6 +18,7 @@ export type Customer = {
   credit_limit: number;
   notes: string;
   disabled: boolean;
+  is_default_for_pos?: boolean;
 };
 
 export type CustomerGroupItem = {

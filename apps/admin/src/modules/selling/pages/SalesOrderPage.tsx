@@ -378,7 +378,50 @@ export default function SalesOrderFormPage() { const params = useParams(); const
       return calculate(updated);
     });
   };
- const save = async () => { if (!order.company.trim() || !order.customer.trim()) return toast.error("Company dan Customer wajib diisi"); if (order.items.some(i => !i.item_code.trim() || i.quantity <= 0)) return toast.error("Lengkapi Item Code dan Quantity"); setSaving(true); const payload = calculate(order); try { const res = isNew ? await api.post<Order>("/crm/sales-orders", { order_number: `${order.naming_series.replace(".YYYY.", new Date().getFullYear().toString())}${Date.now().toString().slice(-5)}`, total_amount: payload.grand_total, status: "processing" }) : await api.patch<Order>(`/crm/sales-orders/${id}`, { total_amount: payload.grand_total, status: payload.status }); const savedId = id || res.data.id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: res.data.order_number || payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order berhasil disimpan"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } catch (e: any) { const savedId = id || crypto.randomUUID(); const full = { ...payload, id: savedId, order_number: payload.order_number || `SAL-ORD-${savedId.slice(0, 8)}` }; saveCache(savedId, full); setOrder(full); toast.success("Sales Order disimpan di browser"); nav(`/desk/sales-order/${savedId}`, { replace: true }); } finally { setSaving(false); } };
+ const save = async () => {
+   if (!order.company.trim() || !order.customer.trim()) return toast.error("Company dan Customer wajib diisi");
+   if (order.items.some(i => !i.item_code.trim() || i.quantity <= 0)) return toast.error("Lengkapi Item Code dan Quantity");
+   setSaving(true);
+   const payload = calculate(order);
+   const orderNumber = order.order_number || `${order.naming_series.replace(".YYYY.", new Date().getFullYear().toString())}${Date.now().toString().slice(-5)}`;
+   try {
+     const request = {
+       order_number: orderNumber,
+       company: payload.company,
+       customer: payload.customer,
+       customer_email: payload.customer_email,
+       shipping_address: payload.shipping_address,
+       transaction_date: payload.transaction_date,
+       currency: payload.currency,
+       subtotal: payload.total,
+       shipping_amount: payload.shipping_amount || 0,
+       total_amount: payload.grand_total,
+       payment_status: payload.payment_status,
+       status: isNew ? "processing" : payload.status,
+       items: payload.items.map(item => ({
+         item_code: item.item_code,
+         item_name: item.item_name || item.item_code,
+         quantity: item.quantity,
+         rate: item.rate,
+         amount: item.amount,
+       })),
+     };
+     const { items: _items, ...updateRequest } = request;
+     const res = isNew
+       ? await api.post<Order>("/crm/sales-orders", request)
+       : await api.patch<Order>(`/crm/sales-orders/${id}`, updateRequest);
+     const savedId = id || res.data.id || crypto.randomUUID();
+     const full = mergeServerOrder({ ...payload, ...res.data, id: savedId, order_number: res.data.order_number || orderNumber });
+     saveCache(savedId, full);
+     setOrder(full);
+     toast.success("Sales Order berhasil disimpan dan loyalty points diproses");
+     nav(`/desk/sales-order/${savedId}`, { replace: true });
+   } catch (e: any) {
+     toast.error(e?.response?.data?.error || "Gagal menyimpan Sales Order");
+   } finally {
+     setSaving(false);
+   }
+ };
  const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (loading) return <div className="p-12 text-center text-slate-500">Memuat detail Sales Order...</div>; if (loadError) return <div className="mx-auto max-w-xl p-12 text-center"><p className="font-semibold text-red-600">{loadError}</p><div className="mt-4 flex justify-center gap-2"><Button variant="outline" onClick={() => nav("/desk/sales-order")}>Kembali ke daftar</Button><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div></div>;
  return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
 <header className="mb-5 flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">

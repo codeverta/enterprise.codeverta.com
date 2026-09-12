@@ -155,7 +155,12 @@ export default function PointOfSalePage() {
   const loadCustomers = async () => {
     try {
       const data = await customerApi.list();
-      setCustomers(data || []);
+      const custList = data || [];
+      setCustomers(custList);
+      const defaultCust = custList.find((c) => c.is_default_for_pos);
+      if (defaultCust) {
+        setCustomer(defaultCust.customer_name);
+      }
     } catch (err) {
       console.error("Failed to load customers:", err);
     }
@@ -174,7 +179,9 @@ export default function PointOfSalePage() {
         value: c.customer_name,
         label: c.customer_name,
         sublabel: c.email || c.phone || c.customer_group || undefined,
-        badge: c.territory || undefined,
+        badge: c.is_default_for_pos
+          ? "Default POS"
+          : c.territory || undefined,
       }));
       if (!q || "walk-in customer".includes(q.toLowerCase())) {
         opts.unshift({
@@ -190,6 +197,7 @@ export default function PointOfSalePage() {
   };
 
   const customerOptions = useMemo<SearchableSelectOption[]>(() => {
+    const defaultCust = customers.find((c) => c.is_default_for_pos);
     const opts: SearchableSelectOption[] = [
       {
         value: "Walk-in Customer",
@@ -200,7 +208,9 @@ export default function PointOfSalePage() {
         value: c.customer_name,
         label: c.customer_name,
         sublabel: c.email || c.phone || c.customer_group || undefined,
-        badge: c.territory || undefined,
+        badge: c.is_default_for_pos
+          ? "Default POS"
+          : c.territory || undefined,
       })),
     ];
     if (customer && !opts.some((o) => o.value === customer)) {
@@ -333,7 +343,8 @@ export default function PointOfSalePage() {
     setCompletedOrder(null);
     setIsCheckoutView(false);
     setCart([]);
-    setCustomer("");
+    const defaultCust = customers.find((c) => c.is_default_for_pos);
+    setCustomer(defaultCust ? defaultCust.customer_name : "");
     setDiscount(0);
     setPaymentAmounts({});
   };

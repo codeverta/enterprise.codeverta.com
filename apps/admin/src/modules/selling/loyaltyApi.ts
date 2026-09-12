@@ -34,6 +34,7 @@ export type LoyaltyPointEntry = {
   loyalty_program: string;
   customer: string;
   sales_invoice?: string;
+  reference_type?: "POS Invoice" | "Sales Invoice" | "Sales Order";
   loyalty_points: number;
   purchase_amount: number;
   expiry_date?: string;

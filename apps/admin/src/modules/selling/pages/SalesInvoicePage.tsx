@@ -23,11 +23,13 @@ import {
   Info,
   ChevronDown,
   ExternalLink,
+  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { CompanySelect } from "@/components/CompanySelect";
 import { Button } from "@/components/ui/button";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -142,7 +144,7 @@ const emptyInvoice = (): SalesInvoice => ({
 const calculateTotals = (invoice: SalesInvoice): SalesInvoice => {
   const sign = invoice.is_return ? -1 : 1;
   let totalQty = 0;
-  const items = invoice.items.map((item) => {
+  const items = (invoice?.items || []).map((item) => {
     const quantity = sign * Math.abs(Number(item.quantity) || 0);
     const amount = quantity * Math.abs(Number(item.rate) || 0);
     totalQty += Math.abs(quantity);
@@ -192,19 +194,30 @@ const calculateTotals = (invoice: SalesInvoice): SalesInvoice => {
    ========================================================================= */
 export function SalesInvoiceListPage() {
   const [rows, setRows] = useState<SalesInvoice[]>([]);
-  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   const load = () => {
     setLoading(true);
     salesInvoiceApi
-      .list({ q: query })
+      .list()
       .then(setRows)
       .catch(() => toast.error("Gagal memuat Sales Invoice"))
       .finally(() => setLoading(false));
   };
 
   useEffect(load, []);
+
+  const invoiceColumns = useMemo<ColumnDef<SalesInvoice>[]>(() => [
+    { accessorKey: "number", header: "Document", cell: ({ row }) => <div className="flex items-center gap-2"><Link className="font-semibold text-blue-600 hover:underline" to={`/desk/sales-invoice/${row.original.id}`}>{row.original.number}</Link>{row.original.is_pos && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">POS</span>}</div>, meta: { label: "Document" } },
+    { accessorKey: "customer", header: "Customer", meta: { label: "Customer", cellClassName: "font-medium" } },
+    { accessorKey: "posting_date", header: "Posting Date", cell: ({ row }) => row.original.posting_date?.slice(0, 10) || "-", meta: { label: "Posting Date", cellClassName: "text-xs text-slate-600" } },
+    { id: "items", header: "Items", accessorFn: (row) => (row.items || []).length, cell: ({ row }) => <div><span className="font-medium">{(row.original.items || []).length} item</span>{(row.original.items || []).length > 0 && <span className="block max-w-[160px] truncate text-[11px] text-slate-500">{(row.original.items || []).map((i) => i.item_name || i.item_code).slice(0, 2).join(", ")}{(row.original.items || []).length > 2 ? "..." : ""}</span>}</div>, meta: { label: "Items" } },
+    { accessorKey: "grand_total", header: "Grand Total", cell: ({ row }) => money(row.original.grand_total), meta: { label: "Grand Total", cellClassName: "text-right font-bold" } },
+    { accessorKey: "outstanding_amount", header: "Outstanding", cell: ({ row }) => money(row.original.outstanding_amount), meta: { label: "Outstanding", cellClassName: "text-right font-semibold" } },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant={row.original.status === "Submitted" ? "default" : "secondary"}>{row.original.status}</Badge>, meta: { label: "Status", cellClassName: "text-center" } },
+    { id: "settlement", header: "Settlement", accessorFn: (row) => row.is_return ? row.refund_status : row.is_paid ? "Paid" : "Outstanding", cell: ({ row }) => row.original.is_return ? <span className="font-medium text-amber-600">{row.original.refund_status}</span> : row.original.is_paid ? <span className="font-medium text-emerald-600">Paid</span> : <span className="text-slate-500">Outstanding</span>, meta: { label: "Settlement", cellClassName: "text-xs" } },
+    { id: "actions", header: "Aksi", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <Button asChild size="sm" variant="outline" className="h-7 gap-1 px-2.5 text-xs" onClick={(event) => event.stopPropagation()}><Link to={`/desk/sales-invoice/${row.original.id}`}><Eye className="size-3.5 text-blue-600" /><span>Detail</span></Link></Button>, meta: { label: "Aksi", cellClassName: "text-center" } },
+  ], []);
 
   return (
     <div className="mx-auto max-w-screen-2xl p-4 lg:p-7 space-y-5">
@@ -227,43 +240,35 @@ export function SalesInvoiceListPage() {
         </Button>
       </header>
 
-      <div className="flex gap-2 rounded-2xl border bg-white p-4 shadow-sm dark:bg-slate-950">
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => event.key === "Enter" && load()}
-          placeholder="Cari nomor invoice, customer..."
-          className="max-w-md"
-        />
-        <Button variant="secondary" onClick={load}>
-          <Search className="mr-2 size-4" /> Cari
-        </Button>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl border bg-white shadow-sm dark:bg-slate-950">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+      <div className="rounded-2xl border bg-white p-4 shadow-sm dark:bg-slate-950">
+        <DataTable columns={invoiceColumns} data={rows} getRowId={(row) => row.id || row.number} onRowClick={(row) => row.id && navigate(`/desk/sales-invoice/${row.id}`)} searchPlaceholder="Cari invoice, customer, item..." emptyMessage={loading ? "Memuat data Sales Invoice..." : "Belum ada Sales Invoice."} />
+        {/* The editable item grid below remains intentionally form-specific. */}
+        {/*
+        <div className="hidden">
+          <table>
             <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-900">
               <tr>
                 <th className="p-4">Document</th>
                 <th className="p-4">Customer</th>
                 <th className="p-4">Posting Date</th>
+                <th className="p-4">Items</th>
                 <th className="p-4 text-right">Grand Total</th>
                 <th className="p-4 text-right">Outstanding</th>
                 <th className="p-4 text-center">Status</th>
                 <th className="p-4">Settlement</th>
+                <th className="p-4 text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                  <td colSpan={9} className="p-12 text-center text-slate-500">
                     Memuat data Sales Invoice...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                  <td colSpan={9} className="p-12 text-center text-slate-500">
                     Belum ada Sales Invoice.
                   </td>
                 </tr>
@@ -294,6 +299,22 @@ export function SalesInvoiceListPage() {
                     <td className="p-4 text-xs text-slate-600 dark:text-slate-400">
                       {row.posting_date?.slice(0, 10)}
                     </td>
+                    <td className="p-4">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-slate-900 dark:text-slate-100">
+                          {(row.items || []).length} item
+                        </span>
+                        {(row.items || []).length > 0 && (
+                          <span
+                            className="text-[11px] text-slate-500 truncate max-w-[160px]"
+                            title={(row.items || []).map((i) => `${i.item_code} (${i.quantity} ${i.uom || "Nos"})`).join(", ")}
+                          >
+                            {(row.items || []).map((i) => i.item_name || i.item_code).slice(0, 2).join(", ")}
+                            {(row.items || []).length > 2 ? "..." : ""}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td
                       className={`p-4 text-right font-bold ${
                         row.is_return ? "text-red-600" : "text-slate-900 dark:text-slate-100"
@@ -318,12 +339,21 @@ export function SalesInvoiceListPage() {
                         <span className="text-slate-500">Outstanding</span>
                       )}
                     </td>
+                    <td className="p-4 text-center">
+                      <Button asChild size="sm" variant="outline" className="h-7 px-2.5 text-xs gap-1">
+                        <Link to={`/desk/sales-invoice/${row.id}`}>
+                          <Eye className="size-3.5 text-blue-600" />
+                          <span>Detail</span>
+                        </Link>
+                      </Button>
+                    </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
         </div>
+        */}
       </div>
     </div>
   );
@@ -1162,93 +1192,132 @@ export default function SalesInvoiceFormPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {row.items.map((it, idx) => (
-                    <tr key={idx}>
-                      <td className="py-2.5 px-3 text-center text-slate-400">{idx + 1}</td>
-                      <td className="py-2.5 px-3">
-                        <div className="space-y-1">
-                          <SearchableItemSelect
-                            value={it.item_code}
-                            itemOptions={options.items || []}
-                            disabled={isReadonly}
-                            onChange={(opt) => {
-                              const qty = Math.abs(it.quantity) || 1;
-                              updateItem(idx, {
-                                item_code: opt.item_code,
-                                item_name: opt.item_name,
-                                uom: opt.uom || it.uom || "Nos",
-                                rate: opt.rate,
-                                amount: qty * opt.rate,
-                              });
-                            }}
-                          />
-                          <Input
-                            value={it.item_name || ""}
-                            disabled={isReadonly}
-                            onChange={(e) => updateItem(idx, { item_name: e.target.value })}
-                            placeholder="Deskripsi/nama item..."
-                            className="h-7 text-[11px] text-slate-500"
-                          />
-                        </div>
+                  {row.items.length === 0 ? (
+                    <tr>
+                      <td colSpan={isReadonly ? 7 : 8} className="py-8 text-center text-slate-400">
+                        Tidak ada detail item yang tercatat pada Sales Invoice ini.
                       </td>
-                      <td className="py-2.5 px-3">
-                        <SearchableWarehouseSelect
-                          value={it.warehouse || ""}
-                          warehouses={warehouses}
-                          disabled={isReadonly}
-                          onChange={(wh) => updateItem(idx, { warehouse: wh })}
-                        />
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <Input
-                          type="number"
-                          step="any"
-                          value={Math.abs(it.quantity)}
-                          disabled={isReadonly}
-                          onChange={(e) =>
-                            updateItem(idx, { quantity: parseFloat(e.target.value) || 0 })
-                          }
-                          className="h-8 text-xs text-right font-medium"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <Input
-                          value={it.uom}
-                          disabled={isReadonly}
-                          onChange={(e) => updateItem(idx, { uom: e.target.value })}
-                          className="h-8 text-xs"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3">
-                        <Input
-                          type="number"
-                          step="any"
-                          value={it.rate}
-                          disabled={isReadonly}
-                          onChange={(e) =>
-                            updateItem(idx, { rate: parseFloat(e.target.value) || 0 })
-                          }
-                          className="h-8 text-xs text-right font-medium"
-                        />
-                      </td>
-                      <td className="py-2.5 px-3 text-right font-semibold">
-                        {money(it.amount)}
-                      </td>
-                      {!isReadonly && (
-                        <td className="py-2.5 px-3 text-center">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-7 text-rose-500 hover:bg-rose-50"
-                            disabled={row.items.length === 1}
-                            onClick={() => removeItem(idx)}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </td>
-                      )}
                     </tr>
-                  ))}
+                  ) : (
+                    row.items.map((it, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50">
+                        <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{idx + 1}</td>
+                        <td className="py-2.5 px-3">
+                          {isReadonly ? (
+                            <div className="space-y-0.5">
+                              <div className="font-semibold text-slate-900 dark:text-slate-100">{it.item_code}</div>
+                              {it.item_name && (
+                                <div className="text-[11px] text-slate-500 truncate max-w-[280px]">
+                                  {it.item_name}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <SearchableItemSelect
+                                value={it.item_code}
+                                itemOptions={options.items || []}
+                                disabled={isReadonly}
+                                onChange={(opt) => {
+                                  const qty = Math.abs(it.quantity) || 1;
+                                  updateItem(idx, {
+                                    item_code: opt.item_code,
+                                    item_name: opt.item_name,
+                                    uom: opt.uom || it.uom || "Nos",
+                                    rate: opt.rate,
+                                    amount: qty * opt.rate,
+                                  });
+                                }}
+                              />
+                              <Input
+                                value={it.item_name || ""}
+                                disabled={isReadonly}
+                                onChange={(e) => updateItem(idx, { item_name: e.target.value })}
+                                placeholder="Deskripsi/nama item..."
+                                className="h-7 text-[11px] text-slate-500"
+                              />
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {isReadonly ? (
+                            <span className="text-slate-700 dark:text-slate-300">{it.warehouse || "-"}</span>
+                          ) : (
+                            <SearchableWarehouseSelect
+                              value={it.warehouse || ""}
+                              warehouses={warehouses}
+                              disabled={isReadonly}
+                              onChange={(wh) => updateItem(idx, { warehouse: wh })}
+                            />
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {isReadonly ? (
+                            <div className="text-right font-semibold text-slate-900 dark:text-slate-100 font-mono">
+                              {Math.abs(it.quantity)}
+                            </div>
+                          ) : (
+                            <Input
+                              type="number"
+                              step="any"
+                              value={Math.abs(it.quantity)}
+                              disabled={isReadonly}
+                              onChange={(e) =>
+                                updateItem(idx, { quantity: parseFloat(e.target.value) || 0 })
+                              }
+                              className="h-8 text-xs text-right font-medium"
+                            />
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {isReadonly ? (
+                            <span className="text-slate-600 dark:text-slate-400">{it.uom || "Nos"}</span>
+                          ) : (
+                            <Input
+                              value={it.uom}
+                              disabled={isReadonly}
+                              onChange={(e) => updateItem(idx, { uom: e.target.value })}
+                              className="h-8 text-xs"
+                            />
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {isReadonly ? (
+                            <div className="text-right text-slate-700 dark:text-slate-300 font-mono">
+                              {money(it.rate)}
+                            </div>
+                          ) : (
+                            <Input
+                              type="number"
+                              step="any"
+                              value={it.rate}
+                              disabled={isReadonly}
+                              onChange={(e) =>
+                                updateItem(idx, { rate: parseFloat(e.target.value) || 0 })
+                              }
+                              className="h-8 text-xs text-right font-medium"
+                            />
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-bold text-slate-900 dark:text-slate-100 font-mono">
+                          {money(it.amount)}
+                        </td>
+                        {!isReadonly && (
+                          <td className="py-2.5 px-3 text-center">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 text-rose-500 hover:bg-rose-50"
+                              disabled={row.items.length === 1}
+                              onClick={() => removeItem(idx)}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
                 </tbody>
                 <tfoot>
                   <tr className="border-t bg-slate-50 font-semibold dark:bg-slate-900/50">

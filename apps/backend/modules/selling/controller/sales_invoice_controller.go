@@ -37,7 +37,29 @@ type refundInput struct {
 func loadSalesInvoice(db *gorm.DB, tenant, id string) (sellingmodel.SalesInvoice, error) {
 	var invoice sellingmodel.SalesInvoice
 	err := db.Preload("Items").Where("tenant_id = ? AND (id = ? OR number = ?)", tenant, id, id).First(&invoice).Error
-	return invoice, err
+	if err != nil {
+		return invoice, err
+	}
+	if len(invoice.Items) == 0 {
+		var posInv sellingmodel.POSInvoice
+		if db.Preload("Items").Where("(tenant_id = ? OR tenant_id = '' OR tenant_id IS NULL) AND invoice_number = ?", tenant, invoice.Number).First(&posInv).Error == nil && len(posInv.Items) > 0 {
+			for _, itm := range posInv.Items {
+				item := sellingmodel.SalesInvoiceItem{
+					ID:             "sii-" + uuid.New().String()[:8],
+					SalesInvoiceID: invoice.ID,
+					ItemCode:       itm.ItemCode,
+					ItemName:       itm.ItemName,
+					Quantity:       itm.Quantity,
+					Rate:           itm.Rate,
+					Amount:         itm.Amount,
+					UOM:            "Nos",
+				}
+				_ = db.Create(&item).Error
+				invoice.Items = append(invoice.Items, item)
+			}
+		}
+	}
+	return invoice, nil
 }
 
 func calculateSalesInvoice(invoice *sellingmodel.SalesInvoice) {
@@ -235,9 +257,9 @@ func syncPOSInvoicesToSalesInvoices(db *gorm.DB, tenant string) {
 	_ = db.Preload("Items").Where("tenant_id = ?", tenant).Find(&posInvoices).Error
 
 	for _, posInv := range posInvoices {
-		var count int64
-		_ = db.Model(&sellingmodel.SalesInvoice{}).Where("tenant_id = ? AND number = ?", tenant, posInv.InvoiceNumber).Count(&count).Error
-		if count == 0 {
+		var existing sellingmodel.SalesInvoice
+		err := db.Preload("Items").Where("tenant_id = ? AND number = ?", tenant, posInv.InvoiceNumber).First(&existing).Error
+		if err != nil {
 			now := posInv.CreatedAt
 			if now.IsZero() {
 				now = time.Now()
@@ -293,6 +315,23 @@ func syncPOSInvoicesToSalesInvoices(db *gorm.DB, tenant string) {
 				UpdatedAt:          now,
 			}
 			_ = db.Create(&sinv).Error
+			for i := range items {
+				_ = db.Create(&items[i]).Error
+			}
+		} else if len(existing.Items) == 0 && len(posInv.Items) > 0 {
+			for _, itm := range posInv.Items {
+				item := sellingmodel.SalesInvoiceItem{
+					ID:             "sii-" + uuid.New().String()[:8],
+					SalesInvoiceID: existing.ID,
+					ItemCode:       itm.ItemCode,
+					ItemName:       itm.ItemName,
+					Quantity:       itm.Quantity,
+					Rate:           itm.Rate,
+					Amount:         itm.Amount,
+					UOM:            "Nos",
+				}
+				_ = db.Create(&item).Error
+			}
 		}
 	}
 }
@@ -551,6 +590,23 @@ func createSalesLedger(tx *gorm.DB, invoice *sellingmodel.SalesInvoice, entryTyp
 	}).Error
 }
 
+func awardSalesInvoiceLoyalty(tx *gorm.DB, invoice *sellingmodel.SalesInvoice, referenceType string) error {
+	if invoice.IsReturn {
+		return nil
+	}
+	_, err := AwardLoyaltyPoints(tx, LoyaltyAwardInput{
+		TenantID:       invoice.TenantID,
+		Customer:       invoice.Customer,
+		Company:        invoice.Company,
+		Reference:      invoice.Number,
+		ReferenceType:  referenceType,
+		PurchaseAmount: math.Abs(invoice.GrandTotal),
+		PostingDate:    invoice.PostingDate,
+		Program:        invoice.LoyaltyProgram,
+	})
+	return err
+}
+
 func (ctrl *SalesInvoiceController) Submit(ctx *gin.Context) {
 	db, tenant := posDB(ctx), tenantString(ctx)
 	invoice, err := loadSalesInvoice(db, tenant, ctx.Param("id"))
@@ -559,6 +615,10 @@ func (ctrl *SalesInvoiceController) Submit(ctx *gin.Context) {
 		return
 	}
 	if invoice.Status == sellingmodel.SalesInvoiceStatusSubmitted {
+		if err := awardSalesInvoiceLoyalty(db, &invoice, "Sales Invoice"); err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mencatat loyalty points"})
+			return
+		}
 		ctx.JSON(http.StatusOK, invoice)
 		return
 	}
@@ -599,9 +659,11 @@ func (ctrl *SalesInvoiceController) Submit(ctx *gin.Context) {
 			return err
 		}
 		if taxAmount > 0 {
-			return createSalesLedger(tx, &invoice, "Sales Invoice", "Output Tax Payable", 0, taxAmount)
+			if err := createSalesLedger(tx, &invoice, "Sales Invoice", "Output Tax Payable", 0, taxAmount); err != nil {
+				return err
+			}
 		}
-		return nil
+		return awardSalesInvoiceLoyalty(tx, &invoice, "Sales Invoice")
 	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal submit Sales Invoice"})

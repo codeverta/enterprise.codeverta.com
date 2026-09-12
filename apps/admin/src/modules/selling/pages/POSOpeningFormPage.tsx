@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { CompanySelect } from "@/components/CompanySelect";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { posProfileApi, type POSProfile } from "../posProfileApi";
 import { posApi, type PaymentBalance, type POSOpeningEntry } from "../posApi";
@@ -17,6 +18,8 @@ const localDateTime = () => {
     .toISOString()
     .slice(0, 16);
 };
+
+type OpeningBalanceRow = PaymentBalance & { sourceIndex: number };
 
 export default function POSOpeningFormPage() {
   const params = useParams();
@@ -139,6 +142,70 @@ export default function POSOpeningFormPage() {
   );
 
   const isReadonly = !isNew && existing?.status === "Closed";
+
+  const balanceColumns = useMemo<ColumnDef<OpeningBalanceRow>[]>(() => [
+    {
+      id: "row_number",
+      header: "No.",
+      cell: ({ row }) => <span className="text-slate-400">{row.index + 1}</span>,
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { headerClassName: "w-12 text-center", cellClassName: "text-center" },
+    },
+    {
+      accessorKey: "mode_of_payment",
+      header: "Mode of Payment",
+      meta: { label: "Mode of Payment", headerClassName: "min-w-[200px]" },
+      cell: ({ row }) => (
+        <select
+          aria-label={`Mode of Payment ${row.index + 1}`}
+          value={row.original.mode_of_payment}
+          disabled={isReadonly}
+          onChange={(event) => setBalances((current) => current.map((item, index) => index === row.original.sourceIndex ? { ...item, mode_of_payment: event.target.value } : item))}
+          className="w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
+        >
+          <option value="Cash">Cash</option>
+          <option value="Bank Transfer">Bank Transfer</option>
+          <option value="QRIS">QRIS</option>
+          <option value="Credit Card">Credit Card</option>
+        </select>
+      ),
+      footer: () => <div className="text-right font-semibold">Total Opening Balance</div>,
+    },
+    {
+      accessorKey: "opening_amount",
+      header: "Opening Amount",
+      meta: { label: "Opening Amount", headerClassName: "min-w-[220px]" },
+      cell: ({ row }) => (
+        <div className="flex h-8 items-center rounded-md border bg-white px-2.5 dark:bg-slate-900">
+          <span className="mr-1.5 font-medium text-slate-400">Rp</span>
+          <input
+            aria-label={`Opening Amount ${row.index + 1}`}
+            type="number"
+            min={0}
+            step="any"
+            value={row.original.opening_amount}
+            disabled={isReadonly}
+            onChange={(event) => setBalances((current) => current.map((item, index) => index === row.original.sourceIndex ? { ...item, opening_amount: Number(event.target.value) } : item))}
+            className="w-full bg-transparent text-xs font-semibold outline-none"
+          />
+        </div>
+      ),
+      footer: () => <span className="text-sm font-bold text-blue-600">{new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(total)}</span>,
+    },
+    ...(!isReadonly ? [{
+      id: "actions",
+      header: "Aksi",
+      enableSorting: false,
+      enableColumnFilter: false,
+      meta: { headerClassName: "w-12 text-center", cellClassName: "text-center" },
+      cell: ({ row }: any) => (
+        <Button aria-label={`Hapus baris ${row.index + 1}`} variant="ghost" size="icon" className="size-7 text-rose-500 hover:bg-rose-50" disabled={balances.length === 1} onClick={() => setBalances((current) => current.filter((_, index) => index !== row.original.sourceIndex))}>
+          <Trash2 className="size-3.5" />
+        </Button>
+      ),
+    } as ColumnDef<OpeningBalanceRow>] : []),
+  ], [balances.length, isReadonly, total]);
 
   const submit = async () => {
     if (!form.company || !form.pos_profile || !form.user) {
@@ -328,92 +395,14 @@ export default function POSOpeningFormPage() {
           )}
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b bg-slate-50 text-slate-600 font-semibold dark:bg-slate-900">
-              <tr>
-                <th className="py-2.5 px-3 w-12 text-center">No.</th>
-                <th className="py-2.5 px-3 min-w-[200px]">Mode of Payment</th>
-                <th className="py-2.5 px-3 min-w-[220px]">Opening Amount</th>
-                {!isReadonly && <th className="py-2.5 px-3 w-12 text-center">Aksi</th>}
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {balances.map((row, index) => (
-                <tr key={index}>
-                  <td className="py-2.5 px-3 text-center text-slate-400">{index + 1}</td>
-                  <td className="py-2.5 px-3">
-                    <select
-                      value={row.mode_of_payment}
-                      disabled={isReadonly}
-                      onChange={(e) =>
-                        setBalances(
-                          balances.map((item, i) =>
-                            i === index ? { ...item, mode_of_payment: e.target.value } : item
-                          )
-                        )
-                      }
-                      className="w-full rounded-md border bg-white p-2 text-xs dark:bg-slate-900"
-                    >
-                      <option value="Cash">Cash</option>
-                      <option value="Bank Transfer">Bank Transfer</option>
-                      <option value="QRIS">QRIS</option>
-                      <option value="Credit Card">Credit Card</option>
-                    </select>
-                  </td>
-                  <td className="py-2.5 px-3">
-                    <div className="flex h-8 items-center rounded-md border px-2.5 bg-white dark:bg-slate-900">
-                      <span className="mr-1.5 text-slate-400 font-medium">Rp</span>
-                      <input
-                        type="number"
-                        min={0}
-                        step="any"
-                        value={row.opening_amount}
-                        disabled={isReadonly}
-                        onChange={(e) =>
-                          setBalances(
-                            balances.map((item, i) =>
-                              i === index ? { ...item, opening_amount: Number(e.target.value) } : item
-                            )
-                          )
-                        }
-                        className="w-full text-xs font-semibold outline-none bg-transparent"
-                      />
-                    </div>
-                  </td>
-                  {!isReadonly && (
-                    <td className="py-2.5 px-3 text-center">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 text-rose-500 hover:bg-rose-50"
-                        disabled={balances.length === 1}
-                        onClick={() => setBalances(balances.filter((_, i) => i !== index))}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t bg-slate-50 font-semibold dark:bg-slate-900/50">
-                <td colSpan={2} className="py-3 px-3 text-right">
-                  Total Opening Balance
-                </td>
-                <td className="py-3 px-3 text-sm font-bold text-blue-600">
-                  {new Intl.NumberFormat("id-ID", {
-                    style: "currency",
-                    currency: "IDR",
-                    maximumFractionDigits: 0,
-                  }).format(total)}
-                </td>
-                {!isReadonly && <td />}
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+        <DataTable
+          columns={balanceColumns}
+          data={balances.map((balance, sourceIndex) => ({ ...balance, sourceIndex }))}
+          getRowId={(row) => String(row.sourceIndex)}
+          searchPlaceholder="Cari mode pembayaran..."
+          emptyMessage="Belum ada opening balance."
+          pagination={false}
+        />
       </section>
     </div>
   );

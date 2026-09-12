@@ -522,10 +522,6 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		company = model.ResolveActiveCompanyName(posDB(ctx), userID)
 	}
 	input.Company = company
-	if err := posDB(ctx).Create(&input).Error; err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan transaksi POS"})
-		return
-	}
 
 	customerName := input.Customer
 	if customerName == "" {
@@ -556,7 +552,24 @@ func (c *POSController) CreateInvoice(ctx *gin.Context) {
 		CreatedAt:          now,
 		UpdatedAt:          now,
 	}
-	_ = posDB(ctx).Create(&salesInvoice).Error
+	err := posDB(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&input).Error; err != nil {
+			return err
+		}
+		if err := tx.Omit("Items").Create(&salesInvoice).Error; err != nil {
+			return err
+		}
+		for i := range salesInvoiceItems {
+			if err := tx.Create(&salesInvoiceItems[i]).Error; err != nil {
+				return err
+			}
+		}
+		return awardSalesInvoiceLoyalty(tx, &salesInvoice, "POS Invoice")
+	})
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menyimpan transaksi POS dan loyalty points"})
+		return
+	}
 
 	ctx.JSON(http.StatusCreated, input)
 }

@@ -238,5 +238,45 @@ describe("PointOfSalePage", () => {
 
     printSpy.mockRestore();
   });
+
+  it("auto-selects customer marked as is_default_for_pos", async () => {
+    mockApi();
+    apiGet.mockImplementation((url: string) => {
+      if (url === "/selling/pos/opening-entries/current") {
+        return Promise.resolve({
+          data: {
+            data: {
+              id: "opening-123",
+              pos_profile: "Usaha Jualan Lilin",
+              company: "Test Corp",
+              balance_details: [{ mode_of_payment: "Cash", opening_amount: 0 }],
+            },
+            is_outdated: false,
+          },
+        });
+      }
+      if (url === "/selling/customers") {
+        return Promise.resolve({
+          data: {
+            data: [
+              { id: "c-1", customer_name: "Regular Customer", is_default_for_pos: false },
+              { id: "c-2", customer_name: "Default POS Customer", is_default_for_pos: true },
+            ],
+          },
+        });
+      }
+      return Promise.resolve({ data: { data: [] } });
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/desk/point-of-sale"]}>
+        <Routes>
+          <Route path="/desk/point-of-sale" element={<PointOfSalePage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText("Default POS Customer")).toBeInTheDocument();
+  });
 });
 

@@ -48,6 +48,7 @@ const emptyCustomer: Customer = {
   credit_limit: 0,
   notes: "",
   disabled: false,
+  is_default_for_pos: false,
 };
 
 function Field({
@@ -187,6 +188,7 @@ export default function CustomerFormPage() {
               credit_limit: data.credit_limit ?? 0,
               notes: data.notes ?? "",
               disabled: Boolean(data.disabled),
+              is_default_for_pos: Boolean(data.is_default_for_pos),
             });
           }
         })
@@ -304,11 +306,21 @@ export default function CustomerFormPage() {
         const created = await customerApi.create(customer);
         toast.success("Customer berhasil dibuat");
         navigate(`/desk/customer/${created.id || ""}`, { replace: true });
-        setCustomer(created);
+        setCustomer((prev) => ({
+          ...prev,
+          ...created,
+          disabled: Boolean(created.disabled),
+          is_default_for_pos: Boolean(created.is_default_for_pos),
+        }));
       } else if (id) {
         const updated = await customerApi.update(id, customer);
         toast.success("Customer berhasil diperbarui");
-        setCustomer(updated);
+        setCustomer((prev) => ({
+          ...prev,
+          ...updated,
+          disabled: Boolean(updated.disabled),
+          is_default_for_pos: Boolean(updated.is_default_for_pos),
+        }));
       }
     } catch (err: any) {
       toast.error(err?.response?.data?.error || err?.message || "Gagal menyimpan customer");
@@ -723,6 +735,31 @@ export default function CustomerFormPage() {
                       onChange={(e) => update("notes", e.target.value)}
                     />
                   </Field>
+                </div>
+
+                <div className="md:col-span-2 rounded-xl border p-4 bg-blue-50/50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-900/40">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      id="customer-pos-default-toggle"
+                      checked={customer.is_default_for_pos || false}
+                      onChange={(e) => update("is_default_for_pos", e.target.checked)}
+                      className="mt-1 size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-white">
+                          Is Default for POS Selling (Pelanggan Default Kasir POS)
+                        </span>
+                        {customer.is_default_for_pos && (
+                          <Badge className="bg-blue-600 text-white text-[10px]">Default Aktif</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">
+                        Jika diaktifkan, customer ini akan otomatis terpilih secara default saat membuka kasir Point of Sale (POS) di halaman <code>/desk/point-of-sale</code>. Hanya boleh ada <strong>1 customer</strong> yang bernilai aktif; menetapkan pelanggan ini sebagai default akan otomatis mencabut status default dari pelanggan lain.
+                      </p>
+                    </div>
+                  </label>
                 </div>
 
                 <div className="md:col-span-2 rounded-xl border p-4 bg-slate-50/50 dark:bg-slate-800/30">

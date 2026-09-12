@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
-import { ArrowLeft, Info, Plus, Search, Trash2 } from "lucide-react";
+import { ArrowLeft, Info, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ import { quotationApi, type Quotation, type QuotationItem } from "../quotationAp
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 
 type Tax = { charge_type: string; account_head: string; rate: number; net_amount: number; amount: number };
+type QuotationItemRow = QuotationItem & { sourceIndex: number };
 type Tab = "details" | "address" | "terms" | "more";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -129,12 +131,11 @@ export function QuotationListPage() {
   const navigate = useNavigate();
   const [rows, setRows] = useState<Quotation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await quotationApi.list({ q });
+      const data = await quotationApi.list();
       setRows(data);
     } catch (err: any) {
       toast.error(err?.message || "Gagal memuat daftar Quotation");
@@ -143,9 +144,17 @@ export function QuotationListPage() {
     }
   };
 
-  useEffect(() => {
-    loadData();
-  }, [q]);
+  useEffect(() => { loadData(); }, []);
+
+  const quotationColumns = useMemo<ColumnDef<Quotation>[]>(() => [
+    { accessorKey: "quotation_number", header: "Quotation Number", cell: ({ row }) => row.original.quotation_number || row.original.id || "-", meta: { label: "Quotation Number", cellClassName: "font-semibold text-blue-600" } },
+    { id: "customer", header: "Customer / Party Name", accessorFn: (row) => row.party_name || row.customer_name || "-", meta: { label: "Customer / Party Name", cellClassName: "font-medium" } },
+    { accessorKey: "transaction_date", header: "Date", meta: { label: "Date" } },
+    { accessorKey: "valid_till", header: "Valid Till", meta: { label: "Valid Till" } },
+    { accessorKey: "grand_total", header: "Grand Total", cell: ({ row }) => money(row.original.grand_total), meta: { label: "Grand Total", cellClassName: "font-semibold" } },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant={row.original.status === "Ordered" ? "default" : row.original.status === "Open" ? "secondary" : "outline"}>{row.original.status || "Draft"}</Badge>, meta: { label: "Status" } },
+    { id: "actions", header: "Aksi", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <Button aria-label={`Hapus ${row.original.quotation_number || row.original.id}`} variant="ghost" size="icon" className="text-slate-400 hover:text-rose-600" onClick={(event) => { event.stopPropagation(); void handleDelete(row.original); }}><Trash2 className="size-4" /></Button>, meta: { headerClassName: "text-right", cellClassName: "text-right" } },
+  ], []);
 
   const handleDelete = async (row: Quotation) => {
     if (!row.id || !confirm(`Hapus Quotation "${row.quotation_number || row.id}"?`)) return;
@@ -178,80 +187,8 @@ export function QuotationListPage() {
         </div>
       </div>
 
-      <div className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-xs dark:bg-slate-900">
-        <Search className="size-4 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Cari Quotation (nomor, customer)..."
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-        />
-      </div>
-
-      <div className="overflow-hidden rounded-xl border bg-white shadow-xs dark:bg-slate-900">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b bg-slate-50 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-            <tr>
-              <th className="p-4">Quotation Number</th>
-              <th className="p-4">Customer / Party Name</th>
-              <th className="p-4">Date</th>
-              <th className="p-4">Valid Till</th>
-              <th className="p-4">Grand Total</th>
-              <th className="p-4">Status</th>
-              <th className="p-4 text-right">Aksi</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-slate-700 dark:text-slate-300">
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                onClick={() => navigate(`/desk/quotation/${row.id}`)}
-              >
-                <td className="p-4 font-semibold text-blue-600 hover:underline">
-                  {row.quotation_number || row.id}
-                </td>
-                <td className="p-4 font-medium text-slate-900 dark:text-white">
-                  {row.party_name || row.customer_name || "-"}
-                </td>
-                <td className="p-4">{row.transaction_date || "-"}</td>
-                <td className="p-4">{row.valid_till || "-"}</td>
-                <td className="p-4 font-semibold">{money(row.grand_total)}</td>
-                <td className="p-4">
-                  <Badge
-                    variant={
-                      row.status === "Ordered"
-                        ? "default"
-                        : row.status === "Open"
-                        ? "secondary"
-                        : "outline"
-                    }
-                  >
-                    {row.status || "Draft"}
-                  </Badge>
-                </td>
-                <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-slate-400 hover:text-rose-600"
-                    onClick={() => handleDelete(row)}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
-            {!loading && rows.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-8 text-center text-slate-400">
-                  Belum ada Quotation yang tersimpan. Klik "Add Quotation" untuk membuat baru.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+      <div className="rounded-xl border bg-white p-4 shadow-xs dark:bg-slate-900">
+        <DataTable columns={quotationColumns} data={rows} getRowId={(row) => row.id || row.quotation_number || "quotation"} onRowClick={(row) => navigate(`/desk/quotation/${row.id}`)} searchPlaceholder="Cari quotation, nomor, customer..." emptyMessage={loading ? "Memuat quotation..." : "Belum ada quotation yang tersimpan."} />
       </div>
     </div>
   );
@@ -384,6 +321,15 @@ export function QuotationFormPage() {
       return calculateQuotation({ ...prev, items: nextItems.length ? nextItems : [blankItem()] });
     });
   };
+
+  const quotationItemColumns = useMemo<ColumnDef<QuotationItemRow>[]>(() => [
+    { id: "row_number", header: "No.", cell: ({ row }) => row.index + 1, enableSorting: false, enableColumnFilter: false, meta: { headerClassName: "w-12 text-center", cellClassName: "text-center text-slate-400" } },
+    { accessorKey: "item_code", header: "Item Code", cell: ({ row }) => <div><SearchableSelect value={row.original.item_code} options={itemOptions} onChange={(value) => handleItemCodeChange(row.original.sourceIndex, value)} placeholder="Pilih item code..." searchPlaceholder="Cari item code..." addNewLabel="Tambah Item Baru" addNewHref="/desk/item/new" />{row.original.item_name && <p className="mt-1 truncate text-[11px] text-slate-500">{row.original.item_name}</p>}</div>, meta: { label: "Item Code", headerClassName: "min-w-[280px]" } },
+    { accessorKey: "qty", header: "Quantity", cell: ({ row }) => <Input type="number" min="1" step="1" value={row.original.qty} onChange={(event) => handleItemQtyChange(row.original.sourceIndex, parseFloat(event.target.value) || 0)} className="h-8 text-center text-xs" />, meta: { label: "Quantity", headerClassName: "w-32 text-center" } },
+    { accessorKey: "rate", header: "Rate (IDR)", cell: ({ row }) => <Input type="number" min="0" step="1" value={row.original.rate} onChange={(event) => handleItemRateChange(row.original.sourceIndex, parseFloat(event.target.value) || 0)} className="h-8 text-right text-xs" />, meta: { label: "Rate (IDR)", headerClassName: "w-40 text-right" } },
+    { accessorKey: "amount", header: "Amount (IDR)", cell: ({ row }) => money(row.original.amount), meta: { label: "Amount (IDR)", cellClassName: "text-right font-semibold" } },
+    { id: "actions", header: "", enableSorting: false, enableColumnFilter: false, cell: ({ row }) => <Button aria-label={`Hapus item ${row.index + 1}`} variant="ghost" size="icon" className="size-7 text-slate-400 hover:text-rose-600" onClick={() => handleRemoveItemRow(row.original.sourceIndex)}><Trash2 className="size-3.5" /></Button>, meta: { cellClassName: "text-center" } },
+  ], [itemOptions]);
 
   const handleSave = async () => {
     if (!quotation.party_name.trim()) {
@@ -602,6 +548,11 @@ export function QuotationFormPage() {
               </Button>
             </div>
 
+            <div className="rounded-xl border p-2">
+              <DataTable columns={quotationItemColumns} data={quotation.items.map((item, sourceIndex) => ({ ...item, sourceIndex }))} getRowId={(item) => String(item.sourceIndex)} toolbar={false} pagination={false} />
+            </div>
+            {/* legacy table retained below only as a reference during migration */}
+            {/*
             <div className="overflow-x-auto rounded-xl border">
               <table className="w-full text-left text-xs">
                 <thead className="border-b bg-slate-50 font-semibold text-slate-600 dark:bg-slate-800">
@@ -670,6 +621,7 @@ export function QuotationFormPage() {
                 </tbody>
               </table>
             </div>
+            */}
 
             {/* Total Items Summary */}
             <div className="flex flex-col sm:flex-row justify-between gap-3 pt-3 text-xs border-t">

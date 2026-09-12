@@ -45,6 +45,7 @@ type SalesOrder struct {
 	QuotationID      *uuid.UUID       `json:"quotation_id" gorm:"type:char(36);index"`
 	StoreOrderID     *string          `json:"store_order_id,omitempty" gorm:"type:varchar(64);index"`
 	OrderNumber      string           `json:"order_number" gorm:"type:varchar(50);not null;index" binding:"required,max=50"`
+	Company          string           `json:"company" gorm:"type:varchar(255);index"`
 	Customer         string           `json:"customer" gorm:"type:varchar(255);index"`
 	CustomerEmail    string           `json:"customer_email" gorm:"type:varchar(255);index"`
 	ShippingAddress  string           `json:"shipping_address" gorm:"type:text"`

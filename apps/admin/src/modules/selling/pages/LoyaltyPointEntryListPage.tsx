@@ -52,7 +52,7 @@ export default function LoyaltyPointEntryListPage() {
               Loyalty Point Entries
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              Riwayat perolehan, penukaran, dan kadaluarsa poin pelanggan dari transaksi Sales Invoice.
+              Riwayat perolehan, penukaran, dan kadaluarsa poin pelanggan dari transaksi POS, Sales Invoice, dan Sales Order.
             </p>
           </div>
         </div>
@@ -84,7 +84,7 @@ export default function LoyaltyPointEntryListPage() {
                 <th className="p-4">Entry ID</th>
                 <th className="p-4">Customer</th>
                 <th className="p-4">Loyalty Program</th>
-                <th className="p-4">Sales Invoice</th>
+                <th className="p-4">Referensi Penjualan</th>
                 <th className="p-4 text-right">Purchase Amount</th>
                 <th className="p-4 text-right">Loyalty Points</th>
                 <th className="p-4 text-center">Posting Date</th>
@@ -117,7 +117,10 @@ export default function LoyaltyPointEntryListPage() {
                       {item.loyalty_program}
                     </td>
                     <td className="p-4 text-blue-600 font-mono text-xs">
-                      {item.sales_invoice || "-"}
+                      <div>{item.sales_invoice || "-"}</div>
+                      {item.reference_type && (
+                        <div className="mt-1 font-sans text-[10px] text-slate-400">{item.reference_type}</div>
+                      )}
                     </td>
                     <td className="p-4 text-right text-slate-700 dark:text-slate-300">
                       Rp {item.purchase_amount?.toLocaleString("id-ID") || 0}

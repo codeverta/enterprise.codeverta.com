@@ -137,8 +137,32 @@ func (h *Controller) Create(c *gin.Context) {
 			return
 		}
 	}
-	if err := db.Create(record).Error; err != nil {
-		writeDBError(c, err)
+	createErr := error(nil)
+	if salesOrder, ok := record.(*crmmodel.SalesOrder); ok {
+		createErr = db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(salesOrder).Error; err != nil {
+				return err
+			}
+			postingDate := salesOrder.TransactionDate
+			if postingDate.IsZero() {
+				postingDate = time.Now()
+			}
+			_, err := sellingcontroller.AwardLoyaltyPoints(tx, sellingcontroller.LoyaltyAwardInput{
+				TenantID:       salesOrder.TenantID.String(),
+				Customer:       salesOrder.Customer,
+				Company:        salesOrder.Company,
+				Reference:      salesOrder.OrderNumber,
+				ReferenceType:  "Sales Order",
+				PurchaseAmount: salesOrder.TotalAmount,
+				PostingDate:    postingDate,
+			})
+			return err
+		})
+	} else {
+		createErr = db.Create(record).Error
+	}
+	if createErr != nil {
+		writeDBError(c, createErr)
 		return
 	}
 	if lead, ok := record.(*crmmodel.Lead); ok {
@@ -289,6 +313,24 @@ func (h *Controller) Update(c *gin.Context) {
 	if err := db.First(record, "id = ?", id).Error; err != nil {
 		writeDBError(c, err)
 		return
+	}
+	if salesOrder, ok := record.(*crmmodel.SalesOrder); ok {
+		postingDate := salesOrder.TransactionDate
+		if postingDate.IsZero() {
+			postingDate = time.Now()
+		}
+		if _, err := sellingcontroller.AwardLoyaltyPoints(db, sellingcontroller.LoyaltyAwardInput{
+			TenantID:       salesOrder.TenantID.String(),
+			Customer:       salesOrder.Customer,
+			Company:        salesOrder.Company,
+			Reference:      salesOrder.OrderNumber,
+			ReferenceType:  "Sales Order",
+			PurchaseAmount: salesOrder.TotalAmount,
+			PostingDate:    postingDate,
+		}); err != nil {
+			writeDBError(c, err)
+			return
+		}
 	}
 	c.JSON(http.StatusOK, record)
 }

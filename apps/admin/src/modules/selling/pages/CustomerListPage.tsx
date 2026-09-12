@@ -129,6 +129,11 @@ export default function CustomerListPage() {
                           <User className="size-4 text-slate-400" />
                         )}
                         <span className="text-blue-600 hover:underline">{r.customer_name}</span>
+                        {r.is_default_for_pos && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                            POS Default
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-5 py-4 text-slate-600 dark:text-slate-300">

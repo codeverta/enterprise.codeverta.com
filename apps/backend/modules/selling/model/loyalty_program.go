@@ -34,15 +34,16 @@ type CollectionRule struct {
 }
 
 type LoyaltyPointEntry struct {
-	ID             string    `gorm:"primaryKey;size:64" json:"id"`
-	TenantID       string    `gorm:"size:64;index" json:"tenant_id"`
-	LoyaltyProgram string    `gorm:"size:255" json:"loyalty_program"`
-	Customer       string    `gorm:"size:255" json:"customer"`
-	SalesInvoice   string    `gorm:"size:255" json:"sales_invoice"`
-	LoyaltyPoints  float64   `gorm:"default:0" json:"loyalty_points"`
-	PurchaseAmount float64   `gorm:"default:0" json:"purchase_amount"`
+	ID             string     `gorm:"primaryKey;size:64" json:"id"`
+	TenantID       string     `gorm:"size:64;index" json:"tenant_id"`
+	LoyaltyProgram string     `gorm:"size:255" json:"loyalty_program"`
+	Customer       string     `gorm:"size:255" json:"customer"`
+	SalesInvoice   string     `gorm:"size:255" json:"sales_invoice"`
+	ReferenceType  string     `gorm:"size:32;default:'Sales Invoice'" json:"reference_type"`
+	LoyaltyPoints  float64    `gorm:"default:0" json:"loyalty_points"`
+	PurchaseAmount float64    `gorm:"default:0" json:"purchase_amount"`
 	ExpiryDate     *time.Time `json:"expiry_date,omitempty"`
-	PostingDate    time.Time `json:"posting_date"`
-	Type           string    `gorm:"size:32;default:'Earned'" json:"type"`
-	CreatedAt      time.Time `json:"created_at"`
+	PostingDate    time.Time  `json:"posting_date"`
+	Type           string     `gorm:"size:32;default:'Earned'" json:"type"`
+	CreatedAt      time.Time  `json:"created_at"`
 }

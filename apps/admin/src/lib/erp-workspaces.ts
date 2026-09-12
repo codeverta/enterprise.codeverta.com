@@ -514,7 +514,8 @@ const fallbackReportIcons: LucideIcon[] = [
   TrendingUp,
 ];
 
-const simpleHash = (str: string): number => {
+const simpleHash = (rawStr: unknown): number => {
+  const str = typeof rawStr === "string" ? rawStr : String(rawStr ?? "");
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = (hash << 5) - hash + str.charCodeAt(i);
