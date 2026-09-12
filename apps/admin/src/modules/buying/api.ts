@@ -69,6 +69,10 @@ export type PurchaseOrder = {
   items: PurchaseOrderItem[];
   taxes: PurchaseOrderTax[];
   created_at?: string;
+  submitted_at?: string;
+  cancelled_at?: string;
+  amended_from?: string;
+  amendment_no?: number;
 };
 
 export type BuyingOptions = {
@@ -173,6 +177,11 @@ export type PurchaseInvoice = {
 export type PurchaseInvoiceOptions = BuyingOptions & {
   modes_of_payment: string[];
   accounts: string[];
+  tax_categories?: string[];
+  shipping_rules?: string[];
+  taxes_and_charges?: string[];
+  incoterms?: string[];
+  payment_terms_templates?: string[];
 };
 
 export type SupplierCustomerNumber = {
@@ -333,6 +342,9 @@ export const buyingApi = {
   },
   async submit(id: string) {
     return (await api.post(`/buying/purchase-orders/${id}/submit`)).data;
+  },
+  async cancel(id: string) {
+    return (await api.post<PurchaseOrder>(`/buying/purchase-orders/${id}/cancel`)).data;
   },
   async remove(id: string) {
     await api.delete(`/buying/purchase-orders/${id}`);

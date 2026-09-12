@@ -41,11 +41,38 @@ func setupSalesInvoiceTestRouter(t *testing.T) (*gin.Engine, *gorm.DB) {
 	router.GET("/selling/sales-invoices/:id", controller.Get)
 	router.PUT("/selling/sales-invoices/:id", controller.Update)
 	router.POST("/selling/sales-invoices/:id/submit", controller.Submit)
+	router.POST("/selling/sales-invoices/:id/cancel", controller.Cancel)
 	router.POST("/selling/sales-invoices/:id/mark-paid", controller.MarkPaid)
 	router.POST("/selling/sales-invoices/:id/return", controller.CreateReturn)
 	router.POST("/selling/sales-invoices/:id/refund", controller.Refund)
 	router.DELETE("/selling/sales-invoices/:id", controller.Delete)
 	return router, db
+}
+
+func TestSalesInvoiceSubmittedCanBeCancelled(t *testing.T) {
+	router, _ := setupSalesInvoiceTestRouter(t)
+	createdResponse := storeRequest(t, router, http.MethodPost, "/selling/sales-invoices", map[string]interface{}{
+		"customer": "Lifecycle Customer", "company": "Lifecycle Company",
+		"items": []map[string]interface{}{{"item_code": "ITEM-1", "quantity": 1, "uom": "Nos", "rate": 1000}},
+	})
+	var invoice sellingmodel.SalesInvoice
+	if err := json.Unmarshal(createdResponse.Body.Bytes(), &invoice); err != nil {
+		t.Fatalf("decode invoice: %v", err)
+	}
+	if response := storeRequest(t, router, http.MethodPost, "/selling/sales-invoices/"+invoice.ID+"/submit", nil); response.Code != http.StatusOK {
+		t.Fatalf("submit status = %d", response.Code)
+	}
+	cancelled := storeRequest(t, router, http.MethodPost, "/selling/sales-invoices/"+invoice.ID+"/cancel", nil)
+	if cancelled.Code != http.StatusOK {
+		t.Fatalf("cancel status = %d, body = %s", cancelled.Code, cancelled.Body.String())
+	}
+	var result sellingmodel.SalesInvoice
+	if err := json.Unmarshal(cancelled.Body.Bytes(), &result); err != nil {
+		t.Fatalf("decode cancel: %v", err)
+	}
+	if result.Status != sellingmodel.SalesInvoiceStatusCancelled || result.CancelledAt == nil {
+		t.Fatalf("unexpected cancelled invoice: %+v", result)
+	}
 }
 
 func TestSalesInvoiceOptions(t *testing.T) {

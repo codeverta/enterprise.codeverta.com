@@ -186,15 +186,77 @@ func (h *PurchaseInvoiceController) Options(c *gin.Context) {
 		return out
 	}
 	companies := merge(distinct(&buyingmodel.PurchaseInvoice{}, "company"), distinct(&buyingmodel.PurchaseOrder{}, "company"))
+
+	var currencyRows []string
+	if db.Migrator().HasTable("currencies") {
+		_ = db.Table("currencies").Where("enabled = ?", true).Order("id ASC").Pluck("id", &currencyRows)
+	}
+	if len(currencyRows) == 0 {
+		currencyRows = []string{"IDR", "USD", "SGD", "EUR"}
+	}
+
+	var priceListRows []string
+	if db.Migrator().HasTable("selling_price_lists") {
+		_ = db.Table("selling_price_lists").Where("enabled = ? AND (buying = ? OR buying IS NULL)", true, true).Order("price_list_name ASC").Pluck("price_list_name", &priceListRows)
+	}
+	if len(priceListRows) == 0 {
+		priceListRows = []string{"Standard Buying"}
+	}
+
+	var taxCategories []string
+	if db.Migrator().HasTable("selling_tax_categories") {
+		_ = db.Table("selling_tax_categories").Where("disabled = ?", false).Order("title ASC").Pluck("title", &taxCategories)
+	}
+	taxCategories = merge(taxCategories, distinct(&buyingmodel.PurchaseInvoice{}, "tax_category"), []string{"Default Tax", "PPN 11%", "PPN 12%", "Tax Exempt", "Zero Rated"})
+
+	shippingRules := merge(
+		distinct(&buyingmodel.PurchaseInvoice{}, "shipping_rule"),
+		distinct(&buyingmodel.PurchaseOrder{}, "shipping_rule"),
+		[]string{"Standard Delivery", "Express Delivery", "Vendor Trucking", "Self Pickup"},
+	)
+
+	taxesAndCharges := merge(
+		distinct(&buyingmodel.PurchaseInvoice{}, "taxes_and_charges"),
+		distinct(&buyingmodel.PurchaseOrder{}, "taxes_and_charges"),
+		[]string{"PPN 11%", "PPN 12%", "PPN 11% + PPh 23", "Tanpa Pajak"},
+	)
+
+	paymentTerms := merge(
+		distinct(&buyingmodel.PurchaseInvoice{}, "payment_terms_template"),
+		[]string{"Net 30", "Net 14", "Net 60", "Cash on Delivery", "Due on Receipt"},
+	)
+
+	incoterms := []string{
+		"EXW - Ex Works", "FOB - Free on Board", "CIF - Cost, Insurance and Freight",
+		"DDP - Delivered Duty Paid", "DAP - Delivered at Place", "FCA - Free Carrier",
+	}
+
+	var warehouseList []string
+	if db.Migrator().HasTable("stock_warehouses") {
+		_ = db.Table("stock_warehouses").Where("disabled = ? OR disabled IS NULL", false).Order("warehouse_name ASC").Pluck("warehouse_name", &warehouseList)
+	}
+	warehouses := merge(
+		warehouseList,
+		distinct(&buyingmodel.PurchaseInvoiceItem{}, "warehouse"),
+		distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse"),
+	)
+
 	c.JSON(http.StatusOK, gin.H{
-		"companies":    companies,
-		"suppliers":    merge(distinct(&buyingmodel.Supplier{}, "supplier_name"), distinct(&buyingmodel.PurchaseInvoice{}, "supplier"), distinct(&buyingmodel.PurchaseOrder{}, "supplier")),
-		"warehouses":   merge(distinct(&buyingmodel.PurchaseInvoiceItem{}, "warehouse"), distinct(&buyingmodel.PurchaseOrderItem{}, "target_warehouse")),
-		"items":        merge(distinct(&buyingmodel.Item{}, "item_code"), distinct(&buyingmodel.PurchaseInvoiceItem{}, "item_code"), distinct(&buyingmodel.PurchaseOrderItem{}, "item_code")),
-		"cost_centers": merge(distinct(&buyingmodel.PurchaseInvoice{}, "cost_center"), distinct(&buyingmodel.PurchaseOrder{}, "cost_center")),
-		"projects":     merge(distinct(&buyingmodel.PurchaseInvoice{}, "project"), distinct(&buyingmodel.PurchaseOrder{}, "project")),
-		"currencies":   []string{"IDR", "USD", "SGD", "EUR"}, "price_lists": []string{"Standard Buying"},
-		"uoms": []string{"Unit", "Pcs", "Box", "Kg", "Meter", "Set"}, "modes_of_payment": []string{"Cash", "Bank Transfer", "Credit Card", "Cheque"},
+		"companies":               companies,
+		"suppliers":               merge(distinct(&buyingmodel.Supplier{}, "supplier_name"), distinct(&buyingmodel.PurchaseInvoice{}, "supplier"), distinct(&buyingmodel.PurchaseOrder{}, "supplier")),
+		"warehouses":              warehouses,
+		"items":                   merge(distinct(&buyingmodel.Item{}, "item_code"), distinct(&buyingmodel.PurchaseInvoiceItem{}, "item_code"), distinct(&buyingmodel.PurchaseOrderItem{}, "item_code")),
+		"cost_centers":            merge(distinct(&buyingmodel.PurchaseInvoice{}, "cost_center"), distinct(&buyingmodel.PurchaseOrder{}, "cost_center")),
+		"projects":                merge(distinct(&buyingmodel.PurchaseInvoice{}, "project"), distinct(&buyingmodel.PurchaseOrder{}, "project")),
+		"currencies":              currencyRows,
+		"price_lists":             priceListRows,
+		"uoms":                    merge(distinct(&buyingmodel.ItemUOM{}, "uom"), []string{"Unit", "Pcs", "Box", "Kg", "Meter", "Set"}),
+		"modes_of_payment":        []string{"Cash", "Bank Transfer", "Credit Card", "Cheque"},
+		"tax_categories":          taxCategories,
+		"shipping_rules":          shippingRules,
+		"taxes_and_charges":       taxesAndCharges,
+		"payment_terms_templates": paymentTerms,
+		"incoterms":               incoterms,
 		"accounts": merge(
 			distinct(&buyingmodel.PurchaseInvoice{}, "cash_bank_account"),
 			distinct(&buyingmodel.PurchaseInvoiceTax{}, "account_head"),

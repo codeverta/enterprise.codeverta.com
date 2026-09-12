@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Barcode, Plus, Save, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CompanySelect } from "@/components/CompanySelect";
 import { ERPSelect, ERPSelectOption } from "@/components/ui/erp-select";
+import { SearchableSelect, type SearchableSelectOption } from "@/components/ui/searchable-select";
 import {
   buyingApi,
   dateForApi,
@@ -19,7 +20,14 @@ import {
   type PurchaseOrder,
   type PurchaseOrderItem,
   type PurchaseOrderTax,
+  type Item,
+  type Supplier,
 } from "../api";
+import { itemPriceApi, type PriceList } from "@/modules/selling/itemPriceApi";
+import { warehouseApi, type Warehouse } from "@/modules/stock/warehouseApi";
+import { currencyApi, type Currency } from "@/modules/accounting/currencyApi";
+import { DocumentActionBar } from "@/components/doctype/document-action-bar";
+import { docStatusFromLegacy } from "@/lib/doctype";
 
 type Tab = "details" | "address" | "terms" | "more";
 
@@ -91,8 +99,8 @@ const money = (value: number, currency: string) => new Intl.NumberFormat("id-ID"
   style: "currency", currency: currency || "IDR", maximumFractionDigits: currency === "IDR" ? 0 : 2,
 }).format(value || 0);
 
-function Field({ label, name, children, required = false }: { label: string; name?: string; children: React.ReactNode; required?: boolean }) {
-  return <div className="space-y-1.5"><Label>{label}{required && <span className="text-red-500"> *</span>}</Label>{children}{name && <p className="text-[11px] text-slate-400">{name}</p>}</div>;
+function Field({ label, children, required = false }: { label: string; name?: string; children: React.ReactNode; required?: boolean }) {
+  return <div className="space-y-1.5"><Label>{label}{required && <span className="text-red-500"> *</span>}</Label>{children}</div>;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -105,51 +113,332 @@ function Combo({ value, onChange, values, placeholder = "Begin typing for result
 }
 
 export default function PurchaseOrderFormPage() {
-  const { id } = useParams();
+  const params = useParams<{ id?: string; "*"?: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
-  const isNew = !id || id === "new";
+
+  const routeId =
+    params.id ||
+    params["*"]?.split("/").filter(Boolean)[0] ||
+    location.pathname.split("/").filter(Boolean).pop();
+  const id =
+    routeId && routeId !== "new" && routeId !== "purchase-order"
+      ? routeId
+      : undefined;
+  const isNew = !id;
+
   const [tab, setTab] = useState<Tab>("details");
   const [order, setOrder] = useState<PurchaseOrder>(emptyOrder);
   const [options, setOptions] = useState<BuyingOptions>(initialOptions);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [priceLists, setPriceLists] = useState<PriceList[]>([]);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [scanBarcode, setScanBarcode] = useState("");
 
   useEffect(() => {
-    buyingApi.options().then((data) => setOptions({ ...initialOptions, ...data })).catch(() => undefined);
+    Promise.all([
+      buyingApi.options().catch(() => initialOptions),
+      buyingApi.supplierList().catch(() => []),
+      buyingApi.itemList().catch(() => []),
+      itemPriceApi.listPriceLists().catch(() => []),
+      warehouseApi.list().catch(() => []),
+      currencyApi.list({ enabled: true }).catch(() => []),
+    ]).then(
+      ([
+        optsData,
+        suppliersData,
+        itemsData,
+        priceListsData,
+        warehousesData,
+        currenciesData,
+      ]) => {
+        setOptions({ ...initialOptions, ...optsData });
+        setSuppliers(suppliersData);
+        setItems(itemsData);
+        setPriceLists(priceListsData);
+        setWarehouses(warehousesData);
+        setCurrencies(currenciesData);
+
+        if (isNew) {
+          setOrder((current) => {
+            const updated = { ...current };
+            if (!updated.buying_price_list && priceListsData.length > 0) {
+              const buyingPl =
+                priceListsData.find(
+                  (p) => p.buying && p.price_list_name === "Standard Buying"
+                ) ||
+                priceListsData.find((p) => p.buying) ||
+                priceListsData[0];
+              if (buyingPl) updated.buying_price_list = buyingPl.price_list_name;
+            }
+            if (!updated.currency && currenciesData.length > 0) {
+              const defaultCurr =
+                currenciesData.find((c) => c.id === "IDR") || currenciesData[0];
+              if (defaultCurr) updated.currency = defaultCurr.id;
+            }
+            return updated;
+          });
+        }
+      }
+    );
+
     if (!isNew && id) {
       setLoading(true);
-      buyingApi.get(id).then((data) => setOrder(calculate({
-        ...emptyOrder(), ...data,
-        transaction_date: dateForInput(data.transaction_date), schedule_date: dateForInput(data.schedule_date),
-        items: (data.items || []).map((item) => ({ ...item, schedule_date: dateForInput(item.schedule_date) })),
-        taxes: data.taxes || [],
-      }))).catch((error: any) => {
-        toast.error(error?.response?.data?.error || "Purchase Order tidak ditemukan");
-        navigate("/desk/purchase-order");
-      }).finally(() => setLoading(false));
+      buyingApi
+        .get(id)
+        .then((data) =>
+          setOrder(
+            calculate({
+              ...emptyOrder(),
+              ...data,
+              transaction_date: dateForInput(data.transaction_date),
+              schedule_date: dateForInput(data.schedule_date),
+              items: (data.items || []).map((item) => ({
+                ...item,
+                schedule_date: dateForInput(item.schedule_date),
+              })),
+              taxes: data.taxes || [],
+            })
+          )
+        )
+        .catch((error: any) => {
+          toast.error(error?.response?.data?.error || "Purchase Order tidak ditemukan");
+          navigate("/desk/purchase-order");
+        })
+        .finally(() => setLoading(false));
     }
   }, [id, isNew, navigate]);
 
   const update = <K extends keyof PurchaseOrder>(key: K, value: PurchaseOrder[K]) =>
     setOrder((current) => calculate({ ...current, [key]: value }));
-  const updateItem = (index: number, patch: Partial<PurchaseOrderItem>) => setOrder((current) => calculate({
-    ...current, items: current.items.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item),
-  }));
-  const updateTax = (index: number, patch: Partial<PurchaseOrderTax>) => setOrder((current) => calculate({
-    ...current, taxes: current.taxes.map((tax, taxIndex) => taxIndex === index ? { ...tax, ...patch } : tax),
-  }));
+  const updateItem = (index: number, patch: Partial<PurchaseOrderItem>) =>
+    setOrder((current) =>
+      calculate({
+        ...current,
+        items: current.items.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, ...patch } : item
+        ),
+      })
+    );
+  const updateTax = (index: number, patch: Partial<PurchaseOrderTax>) =>
+    setOrder((current) =>
+      calculate({
+        ...current,
+        taxes: current.taxes.map((tax, taxIndex) =>
+          taxIndex === index ? { ...tax, ...patch } : tax
+        ),
+      })
+    );
+
+  const itemOptions = useMemo<SearchableSelectOption[]>(() => {
+    const list: SearchableSelectOption[] = items.map((it) => ({
+      value: it.item_code,
+      label: `${it.item_code} - ${it.item_name}`,
+      sublabel: [
+        it.item_group,
+        it.stock_uom ? `UOM: ${it.stock_uom}` : "",
+        it.standard_rate ? money(it.standard_rate, order.currency) : "",
+      ]
+        .filter(Boolean)
+        .join(" • "),
+    }));
+    for (const it of order.items) {
+      if (it.item_code && !list.some((opt) => opt.value === it.item_code)) {
+        list.unshift({
+          value: it.item_code,
+          label: it.item_name ? `${it.item_code} - ${it.item_name}` : it.item_code,
+          sublabel: it.uom ? `UOM: ${it.uom}` : undefined,
+        });
+      }
+    }
+    return list;
+  }, [items, order.currency, order.items]);
+
+  const supplierOptions = useMemo<SearchableSelectOption[]>(() => {
+    const list: SearchableSelectOption[] = suppliers.map((s) => ({
+      value: s.supplier_name,
+      label: s.supplier_name,
+      sublabel: s.supplier_group ? `Group: ${s.supplier_group}` : undefined,
+    }));
+    for (const s of options.suppliers) {
+      if (!list.some((o) => o.value === s)) {
+        list.push({ value: s, label: s });
+      }
+    }
+    return list;
+  }, [suppliers, options.suppliers]);
+
+  const warehouseOptions = useMemo<SearchableSelectOption[]>(() => {
+    const list: SearchableSelectOption[] = warehouses.map((w) => ({
+      value: w.warehouse_name,
+      label: w.warehouse_name,
+      sublabel: w.company ? `Company: ${w.company}` : undefined,
+    }));
+    for (const name of options.warehouses) {
+      if (!list.some((o) => o.value === name)) {
+        list.push({ value: name, label: name });
+      }
+    }
+    return list;
+  }, [warehouses, options.warehouses]);
+
+  const priceListOptions = useMemo<SearchableSelectOption[]>(() => {
+    const list: SearchableSelectOption[] = priceLists
+      .filter((p) => p.buying)
+      .map((p) => ({
+        value: p.price_list_name,
+        label: p.price_list_name,
+        sublabel: p.currency ? `Currency: ${p.currency}` : undefined,
+      }));
+    for (const pl of options.price_lists) {
+      if (!list.some((o) => o.value === pl)) {
+        list.push({ value: pl, label: pl });
+      }
+    }
+    return list;
+  }, [priceLists, options.price_lists]);
+
+  const currencyOptions = useMemo<SearchableSelectOption[]>(() => {
+    const list: SearchableSelectOption[] = currencies.map((c) => ({
+      value: c.id,
+      label: `${c.id} - ${c.currency_name || c.id}`,
+      sublabel: c.symbol || undefined,
+    }));
+    for (const curr of options.currencies) {
+      if (!list.some((c) => c.value === curr)) {
+        list.push({ value: curr, label: curr });
+      }
+    }
+    return list;
+  }, [currencies, options.currencies]);
+
+  const handleSelectItem = async (index: number, code: string) => {
+    const found = items.find((it) => it.item_code === code);
+    if (!found) {
+      updateItem(index, { item_code: code });
+      return;
+    }
+
+    const initialRate = found.standard_rate || 0;
+    const uom = found.purchase_uom || found.stock_uom || "Unit";
+    const desc = found.description || found.item_name;
+    const warehouse =
+      order.items[index]?.target_warehouse ||
+      order.set_warehouse ||
+      (warehouses[0]?.warehouse_name || "");
+
+    updateItem(index, {
+      item_code: found.item_code,
+      item_name: found.item_name,
+      description: desc,
+      uom,
+      rate: initialRate,
+      target_warehouse: warehouse,
+    });
+
+    if (order.buying_price_list) {
+      try {
+        const prices = await itemPriceApi.list({
+          price_list: order.buying_price_list,
+          q: found.item_code,
+        });
+        const match = prices.find(
+          (p) =>
+            p.item_code === found.item_code &&
+            p.price_list === order.buying_price_list
+        );
+        if (
+          match &&
+          typeof match.price_list_rate === "number" &&
+          match.price_list_rate > 0
+        ) {
+          updateItem(index, { rate: match.price_list_rate });
+        }
+      } catch {
+        // keep initial rate
+      }
+    }
+  };
+
+  const handleSelectPriceList = async (newPriceList: string) => {
+    update("buying_price_list", newPriceList);
+    try {
+      const prices = await itemPriceApi.list({ price_list: newPriceList });
+      setOrder((current) => {
+        const updatedItems = current.items.map((item) => {
+          if (!item.item_code) return item;
+          const match = prices.find(
+            (p) =>
+              p.item_code === item.item_code && p.price_list === newPriceList
+          );
+          if (
+            match &&
+            typeof match.price_list_rate === "number" &&
+            match.price_list_rate > 0
+          ) {
+            return { ...item, rate: match.price_list_rate };
+          }
+          const found = items.find((it) => it.item_code === item.item_code);
+          return { ...item, rate: found?.standard_rate || item.rate };
+        });
+        return calculate({
+          ...current,
+          buying_price_list: newPriceList,
+          items: updatedItems,
+        });
+      });
+    } catch {
+      // keep current rates
+    }
+  };
+
+  const handleSelectSupplier = (supplierName: string) => {
+    const sup = suppliers.find((s) => s.supplier_name === supplierName);
+    if (!sup) {
+      update("supplier", supplierName);
+      return;
+    }
+    setOrder((current) =>
+      calculate({
+        ...current,
+        supplier: sup.supplier_name,
+        currency: sup.default_currency || current.currency || "IDR",
+        buying_price_list:
+          sup.default_price_list || current.buying_price_list || "Standard Buying",
+        supplier_address: sup.supplier_address || current.supplier_address,
+        contact_person: sup.contact_person || current.contact_person,
+        contact_email: sup.contact_email || current.contact_email,
+        contact_phone: sup.contact_phone || current.contact_phone,
+      })
+    );
+  };
 
   const payload = (): PurchaseOrder => ({
-    ...calculate(order), transaction_date: dateForApi(order.transaction_date), schedule_date: dateForApi(order.schedule_date),
-    items: order.items.map((item) => ({ ...item, schedule_date: dateForApi(item.schedule_date || order.schedule_date) })),
+    ...calculate(order),
+    transaction_date: dateForApi(order.transaction_date),
+    schedule_date: dateForApi(order.schedule_date),
+    items: order.items.map((item) => ({
+      ...item,
+      schedule_date: dateForApi(item.schedule_date || order.schedule_date),
+    })),
   });
 
   const validate = () => {
     if (!order.supplier.trim()) return "Supplier wajib diisi";
     if (!order.company.trim()) return "Company wajib diisi";
-    if (!order.items.length || order.items.some((item) => !item.item_code.trim() || item.quantity <= 0 || !item.uom)) return "Lengkapi Item Code, Quantity, dan UOM pada semua baris";
-    if (order.taxes.some((tax) => !tax.account_head.trim())) return "Account Head pajak wajib diisi";
+    if (
+      !order.items.length ||
+      order.items.some(
+        (item) => !item.item_code.trim() || item.quantity <= 0 || !item.uom
+      )
+    )
+      return "Lengkapi Item Code, Quantity, dan UOM pada semua baris";
+    if (order.taxes.some((tax) => !tax.account_head.trim()))
+      return "Account Head pajak wajib diisi";
     return "";
   };
 
@@ -158,32 +447,154 @@ export default function PurchaseOrderFormPage() {
     if (problem) return toast.error(problem);
     setSaving(true);
     try {
-      const saved = isNew ? await buyingApi.create(payload()) : await buyingApi.update(id!, payload());
-      toast.success(isNew ? "Purchase Order berhasil dibuat" : "Purchase Order berhasil disimpan");
+      const saved = isNew
+        ? await buyingApi.create(payload())
+        : await buyingApi.update(id!, payload());
+      toast.success(
+        isNew
+          ? "Purchase Order berhasil dibuat"
+          : "Purchase Order berhasil disimpan"
+      );
       navigate(`/desk/purchase-order/${saved.id}`, { replace: true });
-      setOrder(calculate({ ...saved, transaction_date: dateForInput(saved.transaction_date), schedule_date: dateForInput(saved.schedule_date), items: saved.items.map((item) => ({ ...item, schedule_date: dateForInput(item.schedule_date) })) }));
+      setOrder(
+        calculate({
+          ...saved,
+          transaction_date: dateForInput(saved.transaction_date),
+          schedule_date: dateForInput(saved.schedule_date),
+          items: saved.items.map((item) => ({
+            ...item,
+            schedule_date: dateForInput(item.schedule_date),
+          })),
+        })
+      );
     } catch (error: any) {
-      toast.error(error?.response?.data?.error || "Gagal menyimpan Purchase Order");
-    } finally { setSaving(false); }
+      toast.error(
+        error?.response?.data?.error || "Gagal menyimpan Purchase Order"
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   const submit = async () => {
-    if (!id || !window.confirm("Submit Purchase Order ini? Dokumen tidak dapat diedit setelah submit.")) return;
+    if (
+      !id ||
+      !window.confirm(
+        "Submit Purchase Order ini? Dokumen tidak dapat diedit setelah submit."
+      )
+    )
+      return;
     setSaving(true);
-    try { await buyingApi.submit(id); update("status", "submitted"); toast.success("Purchase Order berhasil disubmit"); }
-    catch (error: any) { toast.error(error?.response?.data?.error || "Gagal submit Purchase Order"); }
+    try {
+      await buyingApi.submit(id);
+      update("status", "submitted");
+      toast.success("Purchase Order berhasil disubmit");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || "Gagal submit Purchase Order");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const cancel = async () => {
+    if (!id || !window.confirm("Cancel Purchase Order ini?")) return;
+    setSaving(true);
+    try { setOrder(calculate(await buyingApi.cancel(id))); toast.success("Purchase Order berhasil dibatalkan"); }
+    catch (error: any) { toast.error(error?.response?.data?.error || "Gagal cancel Purchase Order"); }
     finally { setSaving(false); }
   };
 
-  const addScannedItem = () => {
-    if (!scanBarcode.trim()) return;
-    setOrder((current) => calculate({ ...current, items: [...current.items, { ...blankItem(current.schedule_date, current.set_warehouse), item_code: scanBarcode.trim() }] }));
+  const amend = async () => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      const amended = await buyingApi.create({ ...payload(), status: "draft", amended_from: id, amendment_no: (order.amendment_no || 0) + 1 });
+      toast.success("Amendment Purchase Order dibuat sebagai Draft");
+      navigate(`/desk/purchase-order/${amended.id}`, { replace: true });
+      setOrder(calculate({ ...amended, transaction_date: dateForInput(amended.transaction_date), schedule_date: dateForInput(amended.schedule_date), items: amended.items.map((item) => ({ ...item, schedule_date: dateForInput(item.schedule_date) })) }));
+    } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal membuat amendment"); }
+    finally { setSaving(false); }
+  };
+
+  const addScannedItem = async () => {
+    const code = scanBarcode.trim();
+    if (!code) return;
+    const found = items.find(
+      (it) => it.item_code.toLowerCase() === code.toLowerCase()
+    );
+    if (found) {
+      const uom = found.purchase_uom || found.stock_uom || "Unit";
+      let rate = found.standard_rate || 0;
+      if (order.buying_price_list) {
+        try {
+          const prices = await itemPriceApi.list({
+            price_list: order.buying_price_list,
+            q: found.item_code,
+          });
+          const match = prices.find(
+            (p) =>
+              p.item_code === found.item_code &&
+              p.price_list === order.buying_price_list
+          );
+          if (
+            match &&
+            typeof match.price_list_rate === "number" &&
+            match.price_list_rate > 0
+          ) {
+            rate = match.price_list_rate;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      setOrder((current) =>
+        calculate({
+          ...current,
+          items: [
+            ...current.items,
+            {
+              ...blankItem(current.schedule_date, current.set_warehouse),
+              item_code: found.item_code,
+              item_name: found.item_name,
+              description: found.description || found.item_name,
+              uom,
+              rate,
+              target_warehouse:
+                current.set_warehouse || (warehouses[0]?.warehouse_name || ""),
+            },
+          ],
+        })
+      );
+    } else {
+      setOrder((current) =>
+        calculate({
+          ...current,
+          items: [
+            ...current.items,
+            {
+              ...blankItem(current.schedule_date, current.set_warehouse),
+              item_code: code,
+            },
+          ],
+        })
+      );
+    }
     setScanBarcode("");
   };
 
-  if (loading) return <div className="p-12 text-center text-sm text-slate-500">Memuat Purchase Order...</div>;
+  if (loading)
+    return (
+      <div className="p-12 text-center text-sm text-slate-500">
+        Memuat Purchase Order...
+      </div>
+    );
   const editable = isNew || order.status === "draft";
-  const tabs: Array<[Tab, string]> = [["details", "Details"], ["address", "Address & Contact"], ["terms", "Terms"], ["more", "More Info"]];
+  const tabs: Array<[Tab, string]> = [
+    ["details", "Details"],
+    ["address", "Address & Contact"],
+    ["terms", "Terms"],
+    ["more", "More Info"],
+  ];
 
   return (
     <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
@@ -216,12 +627,12 @@ export default function PurchaseOrderFormPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          {!isNew && order.status === "draft" && (
+          {false && !isNew && order.status === "draft" && (
             <Button variant="outline" onClick={submit} disabled={saving}>
               <Send className="size-4" /> Submit
             </Button>
           )}
-          {editable && (
+          {false && editable && (
             <Button
               onClick={save}
               disabled={saving}
@@ -232,6 +643,8 @@ export default function PurchaseOrderFormPage() {
           )}
         </div>
       </header>
+
+      <DocumentActionBar document={{ id: id || "", document_no: order.number || "", doc_status: docStatusFromLegacy(order.status), version: (order.amendment_no || 0) + 1 }} dirty={editable} action={saving ? "save" : null} onSave={save} onSubmit={submit} onCancel={cancel} onAmend={amend} />
 
       <div className="rounded-2xl border bg-white shadow-sm dark:bg-slate-950">
         <Tabs value={tab} onValueChange={setTab}>
@@ -252,21 +665,26 @@ export default function PurchaseOrderFormPage() {
             <fieldset disabled={!editable} className="space-y-8">
               <Section title="Series">
                 <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  <Field label="Series" name="naming_series" required>
+                  <Field label="Series" required>
                     <Input
                       value={order.naming_series}
                       onChange={(e) => update("naming_series", e.target.value)}
                       disabled={!editable}
                     />
                   </Field>
-                  <Field label="Supplier" name="supplier" required>
-                    <Combo
+                  <Field label="Supplier" required>
+                    <SearchableSelect
                       value={order.supplier}
-                      onChange={(value) => update("supplier", value)}
-                      values={options.suppliers}
+                      options={supplierOptions}
+                      onChange={handleSelectSupplier}
+                      placeholder="Pilih Supplier..."
+                      searchPlaceholder="Cari supplier..."
+                      addNewLabel="Tambah Supplier Baru"
+                      addNewHref="/desk/supplier/new"
+                      disabled={!editable}
                     />
                   </Field>
-                  <Field label="Date" name="transaction_date" required>
+                  <Field label="Date" required>
                     <Input
                       type="date"
                       value={order.transaction_date}
@@ -276,7 +694,7 @@ export default function PurchaseOrderFormPage() {
                       disabled={!editable}
                     />
                   </Field>
-                  <Field label="Required By" name="schedule_date" required>
+                  <Field label="Required By" required>
                     <Input
                       type="date"
                       value={order.schedule_date}
@@ -300,7 +718,7 @@ export default function PurchaseOrderFormPage() {
                       disabled={!editable}
                     />
                   </Field>
-                  <Field label="Company" name="company" required>
+                  <Field label="Company" required>
                     <CompanySelect
                       value={order.company}
                       onChange={(value) => update("company", value)}
@@ -314,24 +732,21 @@ export default function PurchaseOrderFormPage() {
                       }
                       disabled={!editable}
                     />{" "}
-                    Is Subcontracted{" "}
-                    <span className="text-xs text-slate-400">
-                      is_subcontracted
-                    </span>
+                    Is Subcontracted
                   </label>
                 </div>
               </Section>
 
               <Section title="Accounting Dimensions">
                 <div className="grid gap-5 md:grid-cols-2">
-                  <Field label="Cost Center" name="cost_center">
+                  <Field label="Cost Center">
                     <Combo
                       value={order.cost_center}
                       onChange={(value) => update("cost_center", value)}
                       values={options.cost_centers}
                     />
                   </Field>
-                  <Field label="Project" name="project">
+                  <Field label="Project">
                     <Combo
                       value={order.project}
                       onChange={(value) => update("project", value)}
@@ -343,18 +758,26 @@ export default function PurchaseOrderFormPage() {
 
               <Section title="Currency and Price List">
                 <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  <Field label="Currency" name="currency">
-                    <Combo
+                  <Field label="Currency">
+                    <SearchableSelect
                       value={order.currency}
+                      options={currencyOptions}
                       onChange={(value) => update("currency", value)}
-                      values={options.currencies}
+                      placeholder="Pilih Currency..."
+                      searchPlaceholder="Cari currency..."
+                      disabled={!editable}
                     />
                   </Field>
-                  <Field label="Price List" name="buying_price_list">
-                    <Combo
+                  <Field label="Price List">
+                    <SearchableSelect
                       value={order.buying_price_list}
-                      onChange={(value) => update("buying_price_list", value)}
-                      values={options.price_lists}
+                      options={priceListOptions}
+                      onChange={handleSelectPriceList}
+                      placeholder="Pilih Price List..."
+                      searchPlaceholder="Cari price list..."
+                      addNewLabel="Tambah Price List"
+                      addNewHref="/desk/price-list"
+                      disabled={!editable}
                     />
                   </Field>
                   <label className="flex items-center gap-2 self-center pt-5 text-sm">
@@ -367,7 +790,7 @@ export default function PurchaseOrderFormPage() {
                     />{" "}
                     Ignore Pricing Rule
                   </label>
-                  <Field label="Scan Barcode" name="scan_barcode">
+                  <Field label="Scan Barcode">
                     <div className="flex gap-2">
                       <Input
                         value={scanBarcode}
@@ -390,9 +813,10 @@ export default function PurchaseOrderFormPage() {
                       </Button>
                     </div>
                   </Field>
-                  <Field label="Set Target Warehouse" name="set_warehouse">
-                    <Combo
+                  <Field label="Set Target Warehouse">
+                    <SearchableSelect
                       value={order.set_warehouse}
+                      options={warehouseOptions}
                       onChange={(value) => {
                         setOrder((current) =>
                           calculate({
@@ -405,7 +829,11 @@ export default function PurchaseOrderFormPage() {
                           })
                         );
                       }}
-                      values={options.warehouses}
+                      placeholder="Pilih Gudang..."
+                      searchPlaceholder="Cari gudang..."
+                      addNewLabel="Tambah Gudang"
+                      addNewHref="/desk/warehouse"
+                      disabled={!editable}
                     />
                   </Field>
                 </div>
@@ -435,19 +863,28 @@ export default function PurchaseOrderFormPage() {
                       {order.items.map((item, index) => (
                         <tr key={item.id || index} className="align-top">
                           <td className="p-3 text-slate-500">{index + 1}</td>
-                          <td className="p-2">
-                            <Combo
+                          <td className="p-2 w-72">
+                            <SearchableSelect
                               value={item.item_code}
-                              onChange={(value) =>
-                                updateItem(index, { item_code: value })
-                              }
-                              values={options.items}
-                              placeholder="Item Code"
+                              options={itemOptions}
+                              onChange={(val) => handleSelectItem(index, val)}
+                              placeholder="Pilih Item..."
+                              searchPlaceholder="Cari item kode/nama..."
+                              buttonClassName="h-9 text-xs"
+                              addNewLabel="Tambah Item Baru"
+                              addNewHref="/desk/item/new-item"
+                              disabled={!editable}
                             />
+                            {item.item_name && item.item_name !== item.item_code && (
+                              <p className="mt-0.5 max-w-[260px] truncate text-[11px] text-slate-500">
+                                {item.item_name}
+                              </p>
+                            )}
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 w-36">
                             <Input
                               type="date"
+                              className="h-9"
                               value={item.schedule_date}
                               onChange={(e) =>
                                 updateItem(index, {
@@ -457,11 +894,12 @@ export default function PurchaseOrderFormPage() {
                               disabled={!editable}
                             />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 w-28">
                             <Input
                               type="number"
                               min="0.000001"
                               step="any"
+                              className="h-9"
                               value={item.quantity}
                               onChange={(e) =>
                                 updateItem(index, {
@@ -471,7 +909,7 @@ export default function PurchaseOrderFormPage() {
                               disabled={!editable}
                             />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 w-28">
                             <Combo
                               value={item.uom}
                               onChange={(value) =>
@@ -480,11 +918,12 @@ export default function PurchaseOrderFormPage() {
                               values={options.uoms}
                             />
                           </td>
-                          <td className="p-2">
+                          <td className="p-2 w-36">
                             <Input
                               type="number"
                               min="0"
                               step="any"
+                              className="h-9"
                               value={item.rate}
                               onChange={(e) =>
                                 updateItem(index, {
@@ -497,13 +936,19 @@ export default function PurchaseOrderFormPage() {
                           <td className="p-3 text-right font-medium">
                             {money(item.amount, order.currency)}
                           </td>
-                          <td className="p-2">
-                            <Combo
+                          <td className="p-2 w-52">
+                            <SearchableSelect
                               value={item.target_warehouse}
+                              options={warehouseOptions}
                               onChange={(value) =>
                                 updateItem(index, { target_warehouse: value })
                               }
-                              values={options.warehouses}
+                              placeholder="Pilih Gudang..."
+                              searchPlaceholder="Cari gudang..."
+                              buttonClassName="h-9 text-xs"
+                              addNewLabel="Tambah Gudang"
+                              addNewHref="/desk/warehouse"
+                              disabled={!editable}
                             />
                           </td>
                           <td className="p-2">

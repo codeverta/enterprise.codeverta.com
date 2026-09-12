@@ -124,6 +124,7 @@ func prepareSalesInvoice(invoice *sellingmodel.SalesInvoice, tenant, defaultComp
 	invoice.ID = "sinv-" + uuid.NewString()[:8]
 	invoice.TenantID = tenant
 	invoice.Status = sellingmodel.SalesInvoiceStatusDraft
+	invoice.CancelledAt = nil
 	if invoice.PostingDate.IsZero() {
 		invoice.PostingDate = now
 	}
@@ -667,6 +668,26 @@ func (ctrl *SalesInvoiceController) Submit(ctx *gin.Context) {
 	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal submit Sales Invoice"})
+		return
+	}
+	ctx.JSON(http.StatusOK, invoice)
+}
+
+func (ctrl *SalesInvoiceController) Cancel(ctx *gin.Context) {
+	db, tenant := posDB(ctx), tenantString(ctx)
+	invoice, err := loadSalesInvoice(db, tenant, ctx.Param("id"))
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "Sales Invoice tidak ditemukan"})
+		return
+	}
+	if invoice.Status != sellingmodel.SalesInvoiceStatusSubmitted {
+		ctx.JSON(http.StatusConflict, gin.H{"error": "Hanya Sales Invoice Submitted yang dapat dibatalkan"})
+		return
+	}
+	now := time.Now()
+	invoice.Status, invoice.CancelledAt, invoice.UpdatedAt = sellingmodel.SalesInvoiceStatusCancelled, &now, now
+	if err := db.Omit("Items").Save(&invoice).Error; err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal membatalkan Sales Invoice"})
 		return
 	}
 	ctx.JSON(http.StatusOK, invoice)

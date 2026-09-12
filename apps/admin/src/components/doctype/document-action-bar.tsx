@@ -44,11 +44,11 @@ export function DocumentActionBar({
       <div className="flex items-center gap-2">
         {status === 0 && (
           <>
-            <Button variant="outline" disabled={disabled || busy || (!dirty && Boolean(document.id))} onClick={onSave}>
+            <Button variant="outline" disabled={disabled || busy} onClick={onSave}>
               {icon('save', <Save />)} Simpan
             </Button>
             {document.id && (
-              <Button disabled={disabled || busy || dirty} onClick={onSubmit}>
+              <Button disabled={disabled || busy} onClick={onSubmit}>
                 {icon('submit', <Send />)} Submit
               </Button>
             )}

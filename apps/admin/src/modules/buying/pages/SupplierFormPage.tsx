@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
+import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Plus, Save, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -71,9 +71,19 @@ const opts: MasterOptions = {
 };
 
 export default function SupplierFormPage() {
-  const { id } = useParams();
+  const params = useParams<{ id?: string; "*"?: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
-  const isNew = !id || id === "new";
+
+  const routeId =
+    params.id ||
+    params["*"]?.split("/").filter(Boolean)[0] ||
+    location.pathname.split("/").filter(Boolean).pop();
+  const id =
+    routeId && routeId !== "new" && routeId !== "supplier"
+      ? routeId
+      : undefined;
+  const isNew = !id;
   const [tab, setTab] = useState<Tab>("details");
   const [row, setRow] = useState<Supplier>(empty);
   const [options, setOptions] = useState(opts);

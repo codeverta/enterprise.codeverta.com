@@ -17,6 +17,8 @@ import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
 import { customerApi, type Customer } from "../customerApi";
 import { salesInvoiceApi, type SalesInvoiceItemOption } from "../salesInvoiceApi";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
+import { DocumentActionBar } from "@/components/doctype/document-action-bar";
+import { docStatusFromLegacy } from "@/lib/doctype";
 
 type Item = { item_code: string; item_name?: string; delivery_date?: string; quantity: number; rate: number; amount: number };
 type Tax = { charge_type: string; account_head: string; rate: number; net_amount: number; amount: number };
@@ -393,6 +395,9 @@ export default function SalesOrderFormPage() { const params = useParams(); const
      setSaving(false);
    }
  };
+ const submit = async () => { if (!id) return; try { const response = await api.patch<Order>(`/crm/sales-orders/${id}`, { status: "confirmed" }); const next = mergeServerOrder({ ...order, ...response.data, status: "confirmed" }); setOrder(next); saveCache(id, next); toast.success("Sales Order berhasil disubmit"); } catch (e: any) { toast.error(e?.response?.data?.error || "Gagal submit Sales Order"); } };
+ const cancel = async () => { if (!id || !window.confirm("Cancel Sales Order ini?")) return; try { const response = await api.patch<Order>(`/crm/sales-orders/${id}`, { status: "cancelled" }); const next = mergeServerOrder({ ...order, ...response.data, status: "cancelled" }); setOrder(next); saveCache(id, next); toast.success("Sales Order berhasil dibatalkan"); } catch (e: any) { toast.error(e?.response?.data?.error || "Gagal cancel Sales Order"); } };
+ const amend = async () => { if (!id) return; setSaving(true); try { const currentNumber = order.order_number || "SAL-ORD"; const revisionMatch = currentNumber.match(/-(\d+)$/); const base = currentNumber.replace(/-\d+$/, ""); const nextRevision = revisionMatch ? Number(revisionMatch[1]) + 1 : 1; const request = { order_number: `${base}-${nextRevision}`, company: order.company, customer: order.customer, customer_email: order.customer_email, shipping_address: order.shipping_address, transaction_date: order.transaction_date, currency: order.currency, subtotal: order.total, shipping_amount: order.shipping_amount || 0, total_amount: order.grand_total, payment_status: order.payment_status, status: "processing", items: order.items.map((item) => ({ item_code: item.item_code, item_name: item.item_name || item.item_code, quantity: item.quantity, rate: item.rate, amount: item.amount })) }; const response = await api.post<Order>("/crm/sales-orders", request); const next = mergeServerOrder({ ...order, ...response.data, id: response.data.id, status: "processing" }); if (next.id) saveCache(next.id, next); toast.success("Amendment Sales Order dibuat sebagai Draft"); nav(`/desk/sales-order/${next.id}`, { replace: true }); setOrder(next); } catch (e: any) { toast.error(e?.response?.data?.error || "Gagal membuat amendment"); } finally { setSaving(false); } };
  const remove = async () => { if (!id || !window.confirm("Hapus Sales Order ini?")) return; try { await api.delete(`/crm/sales-orders/${id}`); } catch {} removeCache(id); toast.success("Sales Order dihapus"); nav("/desk/sales-order"); }; const options = ["", "Standard Selling", "Main Warehouse", "Jakarta Warehouse", "Customer A", "Customer B"]; const editable = isNew || order.status === "draft" || order.status === "processing"; if (loading) return <div className="p-12 text-center text-slate-500">Memuat detail Sales Order...</div>; if (loadError) return <div className="mx-auto max-w-xl p-12 text-center"><p className="font-semibold text-red-600">{loadError}</p><div className="mt-4 flex justify-center gap-2"><Button variant="outline" onClick={() => nav("/desk/sales-order")}>Kembali ke daftar</Button><Button onClick={() => window.location.reload()}>Coba Lagi</Button></div></div>;
  return <div className="mx-auto max-w-screen-2xl p-4 lg:p-7">
 <header className="mb-5 flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
@@ -431,9 +436,10 @@ export default function SalesOrderFormPage() { const params = useParams(); const
     </>
   )}
   {!isNew && <Button variant="outline" onClick={remove}><Trash2 className="size-4" /> Delete</Button>}
-  {editable && <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700"><Save className="size-4" /> {saving ? "Saving..." : "Save"}</Button>}
+  {false && editable && <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700"><Save className="size-4" /> {saving ? "Saving..." : "Save"}</Button>}
 </div>
 </header>
+<DocumentActionBar document={{ id: id || "", document_no: order.order_number || "", doc_status: docStatusFromLegacy(order.status), version: 1 }} action={saving ? "save" : null} onSave={save} onSubmit={submit} onCancel={cancel} onAmend={amend} />
 <div className="rounded-2xl border bg-white shadow-sm">
 <Tabs value={tab} onValueChange={v => setTab(v as Tab)}>
 <TabsList className="h-auto w-full justify-start rounded-none border-b bg-transparent p-0">

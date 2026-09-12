@@ -19,6 +19,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 	stockLedgerHandler := controller.NewStockLedgerController()
 	stockEntryTypeHandler := controller.NewStockEntryTypeController()
 	pickListHandler := controller.NewPickListController()
+	brandHandler := controller.NewBrandController()
 
 	group := parent.Group("/stock")
 	group.Use(middleware.AdminAuth())
@@ -47,6 +48,11 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.PUT("/uoms/:id", uomHandler.Update)
 		group.DELETE("/uoms/:id", uomHandler.Delete)
 		group.POST("/uoms/seed", uomHandler.Seed)
+
+		group.GET("/brands", brandHandler.List)
+		group.GET("/brands/:id", brandHandler.Get)
+		group.POST("/brands", brandHandler.Create)
+		group.DELETE("/brands/:id", brandHandler.Delete)
 
 		group.GET("/warehouses", warehouseHandler.List)
 		group.GET("/warehouses/tree", warehouseHandler.Tree)

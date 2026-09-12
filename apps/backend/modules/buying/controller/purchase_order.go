@@ -148,6 +148,30 @@ func (h *PurchaseOrderController) Submit(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": buyingmodel.PurchaseOrderSubmitted, "submitted_at": now})
 }
 
+func (h *PurchaseOrderController) Cancel(c *gin.Context) {
+	id, ok := purchaseOrderID(c)
+	if !ok {
+		return
+	}
+	now := time.Now()
+	db := coremodel.GetDB(c).WithContext(c.Request.Context())
+	result := db.Model(&buyingmodel.PurchaseOrder{}).Where("id = ? AND status = ?", id, buyingmodel.PurchaseOrderSubmitted).Updates(map[string]interface{}{"status": buyingmodel.PurchaseOrderCancelled, "cancelled_at": &now})
+	if result.Error != nil {
+		writeError(c, result.Error)
+		return
+	}
+	if result.RowsAffected == 0 {
+		c.JSON(http.StatusConflict, gin.H{"error": "only submitted purchase orders can be cancelled"})
+		return
+	}
+	var order buyingmodel.PurchaseOrder
+	if err := db.Preload("Items").Preload("Taxes").First(&order, "id = ?", id).Error; err != nil {
+		writeLookupError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, order)
+}
+
 func (h *PurchaseOrderController) Delete(c *gin.Context) {
 	id, ok := purchaseOrderID(c)
 	if !ok {
@@ -250,6 +274,8 @@ func resetOrderIDs(order *buyingmodel.PurchaseOrder) {
 	order.Number = ""
 	order.CreatedAt = time.Time{}
 	order.UpdatedAt = time.Time{}
+	order.SubmittedAt = nil
+	order.CancelledAt = nil
 	for index := range order.Items {
 		order.Items[index].ID = uuid.Nil
 		order.Items[index].TenantID = uuid.Nil

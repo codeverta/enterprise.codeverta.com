@@ -86,3 +86,10 @@ export function createDocTypeClient<T extends BaseDocument>(doctype: string) {
 export function docStatusLabel(status: DocStatus) {
   return status === 1 ? 'Submitted' : status === 2 ? 'Cancelled' : 'Draft'
 }
+
+export function docStatusFromLegacy(status?: string): DocStatus {
+  const normalized = String(status || '').toLowerCase()
+  if (normalized === 'cancelled' || normalized === 'canceled') return 2
+  if (['submitted', 'confirmed', 'completed'].includes(normalized)) return 1
+  return 0
+}

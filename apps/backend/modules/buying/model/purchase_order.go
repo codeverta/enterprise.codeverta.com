@@ -55,6 +55,9 @@ type PurchaseOrder struct {
 	LetterHead                   string              `json:"letter_head" gorm:"type:varchar(180)" binding:"max=180"`
 	Remarks                      string              `json:"remarks" gorm:"type:text"`
 	SubmittedAt                  *time.Time          `json:"submitted_at"`
+	CancelledAt                  *time.Time          `json:"cancelled_at"`
+	AmendedFrom                  *uuid.UUID          `json:"amended_from" gorm:"type:char(36);index"`
+	AmendmentNo                  int                 `json:"amendment_no" gorm:"not null;default:0"`
 	Items                        []PurchaseOrderItem `json:"items" gorm:"foreignKey:PurchaseOrderID" binding:"required,min=1,dive"`
 	Taxes                        []PurchaseOrderTax  `json:"taxes" gorm:"foreignKey:PurchaseOrderID" binding:"dive"`
 }

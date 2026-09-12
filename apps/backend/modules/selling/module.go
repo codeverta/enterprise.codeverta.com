@@ -93,6 +93,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.GET("/sales-invoices/:id", salesInvoiceHandler.Get)
 		group.PUT("/sales-invoices/:id", salesInvoiceHandler.Update)
 		group.POST("/sales-invoices/:id/submit", salesInvoiceHandler.Submit)
+		group.POST("/sales-invoices/:id/cancel", salesInvoiceHandler.Cancel)
 		group.POST("/sales-invoices/:id/return", salesInvoiceHandler.CreateReturn)
 		group.POST("/sales-invoices/:id/mark-paid", salesInvoiceHandler.MarkPaid)
 		group.POST("/sales-invoices/:id/refund", salesInvoiceHandler.Refund)

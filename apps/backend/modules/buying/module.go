@@ -21,6 +21,7 @@ func RegisterRoutes(parent *gin.RouterGroup) {
 		group.GET("/purchase-orders/:id", handler.Get)
 		group.PUT("/purchase-orders/:id", handler.Update)
 		group.POST("/purchase-orders/:id/submit", handler.Submit)
+		group.POST("/purchase-orders/:id/cancel", handler.Cancel)
 		group.DELETE("/purchase-orders/:id", handler.Delete)
 		group.GET("/purchase-invoices/options", invoiceHandler.Options)
 		group.GET("/purchase-invoices", invoiceHandler.List)

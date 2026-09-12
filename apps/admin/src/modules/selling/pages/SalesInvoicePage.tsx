@@ -30,6 +30,8 @@ import { Badge } from "@/components/ui/badge";
 import { CompanySelect } from "@/components/CompanySelect";
 import { Button } from "@/components/ui/button";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
+import { DocumentActionBar } from "@/components/doctype/document-action-bar";
+import { docStatusFromLegacy } from "@/lib/doctype";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -772,6 +774,24 @@ export default function SalesInvoiceFormPage() {
     }
   };
 
+  const cancel = async () => {
+    if (!id || !window.confirm("Cancel Sales Invoice ini?")) return;
+    try { setRow(calculateTotals(await salesInvoiceApi.cancel(id))); toast.success("Sales Invoice Cancelled"); }
+    catch (error: any) { toast.error(error?.response?.data?.error || "Gagal cancel dokumen"); }
+  };
+
+  const amend = async () => {
+    if (!id) return;
+    setSaving(true);
+    try {
+      const amended = await salesInvoiceApi.create({ ...row, id: undefined, number: undefined, status: "Draft", amended_from: id, amendment_no: (row.amendment_no || 0) + 1 });
+      toast.success("Amendment Sales Invoice dibuat sebagai Draft");
+      navigate(`/desk/sales-invoice/${amended.id}`, { replace: true });
+      setRow(calculateTotals(amended));
+    } catch (error: any) { toast.error(error?.response?.data?.error || "Gagal membuat amendment"); }
+    finally { setSaving(false); }
+  };
+
   const markPaid = async () => {
     if (!id) return;
     try {
@@ -874,7 +894,7 @@ export default function SalesInvoiceFormPage() {
             </Button>
           )}
 
-          {!isNew && row.status === "Draft" && (
+          {false && !isNew && row.status === "Draft" && (
             <>
               <Button variant="outline" onClick={submit}>
                 <CheckCircle2 className="mr-2 size-4" /> Submit
@@ -885,13 +905,15 @@ export default function SalesInvoiceFormPage() {
             </>
           )}
 
-          {(isNew || (row.status === "Draft" && !row.is_return)) && (
+          {false && (isNew || (row.status === "Draft" && !row.is_return)) && (
             <Button onClick={save} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
               <Save className="mr-2 size-4" /> {saving ? "Saving..." : "Save"}
             </Button>
           )}
         </div>
       </header>
+
+      <DocumentActionBar document={{ id: id || "", document_no: row.number || "", doc_status: docStatusFromLegacy(row.status), version: (row.amendment_no || 0) + 1 }} action={saving ? "save" : null} onSave={save} onSubmit={submit} onCancel={cancel} onAmend={amend} />
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab} className="space-y-6">

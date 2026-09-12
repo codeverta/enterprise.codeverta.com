@@ -95,6 +95,9 @@ export type SalesInvoice = {
   items: SalesInvoiceItem[];
   created_at?: string;
   updated_at?: string;
+  cancelled_at?: string;
+  amended_from?: string;
+  amendment_no?: number;
 };
 
 export type SalesInvoiceItemOption = {
@@ -142,6 +145,9 @@ export const salesInvoiceApi = {
   async submit(id: string): Promise<SalesInvoice> {
     const response = await api.post<SalesInvoice>(`/selling/sales-invoices/${id}/submit`);
     return response.data;
+  },
+  async cancel(id: string): Promise<SalesInvoice> {
+    return (await api.post<SalesInvoice>(`/selling/sales-invoices/${id}/cancel`)).data;
   },
   async createReturn(id: string, payload: { reason: string; items: Array<{ against_item_id: string; quantity: number }> }): Promise<SalesInvoice> {
     const response = await api.post<SalesInvoice>(`/selling/sales-invoices/${id}/return`, payload);
