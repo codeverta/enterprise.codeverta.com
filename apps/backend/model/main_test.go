@@ -95,3 +95,39 @@ func TestEnsureSystemSettingColumnsAddsAndBackfillsCounters(t *testing.T) {
 		t.Fatalf("expected counters backfilled to zero, got %#v", row)
 	}
 }
+
+func TestSQLiteSystemSettingMigrationIsAdditiveAndKeepsTenantIsolation(t *testing.T) {
+	db, err := gorm.Open(sqlite.Open("file:system-setting-additive?mode=memory&cache=shared"), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(`CREATE TABLE system_settings (
+		id char(36) PRIMARY KEY,
+		tenant_id char(36),
+		app_name text
+	)`).Error; err != nil {
+		t.Fatal(err)
+	}
+	if err := db.Exec(`INSERT INTO system_settings(id, tenant_id, app_name) VALUES('setting-1', 'tenant-1', 'Legacy ERP')`).Error; err != nil {
+		t.Fatal(err)
+	}
+
+	for attempt := 0; attempt < 2; attempt++ {
+		if err := migrateSQLiteSystemSettingAdditively(db); err != nil {
+			t.Fatalf("additive migration attempt %d: %v", attempt+1, err)
+		}
+	}
+	var row struct {
+		TenantID string
+		AppName  string
+	}
+	if err := db.Table("system_settings").Where("id = ?", "setting-1").Scan(&row).Error; err != nil {
+		t.Fatal(err)
+	}
+	if row.TenantID != "tenant-1" || row.AppName != "Legacy ERP" {
+		t.Fatalf("tenant-scoped settings changed during migration: %#v", row)
+	}
+	if !db.Migrator().HasIndex(&SystemSetting{}, "idx_tenant_settings") {
+		t.Fatal("tenant isolation index was not created")
+	}
+}

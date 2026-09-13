@@ -21,6 +21,22 @@ export type DesktopSetupInput = {
   adminPassword?: string | null;
 };
 
+export type DesktopRecoveryBackup = {
+  name: string;
+  size: number;
+  createdAt: number;
+};
+
+export type DesktopRecoveryStatus = {
+  backups: DesktopRecoveryBackup[];
+  migrationInterrupted: boolean;
+  lastRecovery?: {
+    reason?: string;
+    backupPath?: string;
+    recoveredAt?: string | number;
+  } | null;
+};
+
 export const DESKTOP_CONFIG_KEY = "codeverta.desktop.runtime";
 
 export function readCachedDesktopConfig(): DesktopRuntimeConfig | null {
@@ -50,6 +66,14 @@ export async function getDesktopConfig() {
 
 export async function configureDesktop(input: DesktopSetupInput) {
   return invoke<DesktopRuntimeConfig>("desktop_configure", { input });
+}
+
+export async function getDesktopRecoveryStatus() {
+  return invoke<DesktopRecoveryStatus>("desktop_recovery_status");
+}
+
+export async function restoreDesktopRecoveryBackup(name: string) {
+  return invoke<void>("desktop_restore_recovery_backup", { name });
 }
 
 export async function waitForApi(apiUrl: string, attempts = 60) {

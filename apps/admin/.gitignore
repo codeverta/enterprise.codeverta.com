@@ -14,6 +14,7 @@ src-tauri/target
 src-tauri/binaries/
 *.local
 dist/index.html
+.tauri
 
 # Editor directories and files
 .vscode/*

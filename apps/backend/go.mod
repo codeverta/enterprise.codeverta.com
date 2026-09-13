@@ -32,6 +32,7 @@ require (
 	golang.org/x/crypto v0.43.0
 	golang.org/x/image v0.25.0
 	golang.org/x/sync v0.21.0
+	golang.org/x/term v0.36.0
 	golang.org/x/time v0.14.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gorm.io/datatypes v1.2.7

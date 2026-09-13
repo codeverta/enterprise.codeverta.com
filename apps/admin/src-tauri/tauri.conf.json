@@ -1,12 +1,12 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Codeverta Enterprise System",
-  "version": "2.1.0",
+  "version": "0.0.1",
   "identifier": "com.codeverta.erp",
   "build": {
     "beforeDevCommand": "pnpm build:desktop-sidecar && pnpm dev",
     "devUrl": "http://127.0.0.1:5174",
-    "beforeBuildCommand": "pnpm build:desktop-sidecar && pnpm build",
+    "beforeBuildCommand": "pnpm build:desktop-sidecar && pnpm build && node scripts/ensure-public-assets.mjs",
     "frontendDist": "../dist"
   },
   "app": {
@@ -32,6 +32,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "externalBin": ["binaries/codeverta-backend"],
     "targets": "all",
     "category": "Business",
@@ -46,6 +47,17 @@
     ],
     "macOS": {
       "minimumSystemVersion": "10.13"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY5MkRDMTg1Q0Y2Rjg3MzMKUldRemgyL1BoY0V0YWVKRXlxNXA2dUQzRXlwUjIwa2YyQ2RGRXdBdE1KSFArNDMrNHZpdGVqN3AK",
+      "endpoints": [
+        "https://github.com/codeverta/enterprise.codeverta.com/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

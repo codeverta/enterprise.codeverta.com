@@ -10,6 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/codeverta/enterprise.codeverta.com/actions/workflows/ci.yml"><img alt="ERP Core CI" src="https://github.com/codeverta/enterprise.codeverta.com/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://github.com/codeverta/enterprise.codeverta.com/actions/workflows/desktop-build.yml"><img alt="Desktop Builds" src="https://github.com/codeverta/enterprise.codeverta.com/actions/workflows/desktop-build.yml/badge.svg" /></a>
   <a href="https://github.com/codeverta/enterprise.codeverta.com/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/codeverta/enterprise.codeverta.com?style=flat&logo=github" /></a>
   <a href="https://github.com/codeverta/enterprise.codeverta.com/forks"><img alt="GitHub forks" src="https://img.shields.io/github/forks/codeverta/enterprise.codeverta.com?style=flat&logo=github" /></a>
   <a href="https://github.com/codeverta/enterprise.codeverta.com/issues"><img alt="GitHub issues" src="https://img.shields.io/github/issues/codeverta/enterprise.codeverta.com?style=flat&logo=github" /></a>
@@ -263,7 +264,11 @@ Panduan environment, `platform_db`, CLI/API, custom domain, migration, pool, kea
 | `pnpm --filter admin-page test` | Menjalankan test frontend |
 | `pnpm --filter admin-page lint` | Menjalankan lint frontend |
 | `pnpm dev:desktop` | Menjalankan aplikasi desktop development |
+| `pnpm desktop:data` | Debug user, reset password, backup, dan restore database offline |
 | `pnpm build:desktop` | Build binary desktop pada OS aktif |
+| `pnpm run tauri:build:macos` | Build `.app` dan `.dmg` macOS |
+| `pnpm run tauri:build:windows` | Build installer Windows pada runner Windows |
+| `pnpm run tauri:build:linux` | Build `.deb` dan `.AppImage` pada runner Linux |
 
 ### Test frontend terarah
 
@@ -298,7 +303,9 @@ pnpm build:desktop:windows
 pnpm build:desktop:linux
 ```
 
-Baca [Desktop/Tauri Guide](docs/TAURI_DESKTOP.md) untuk konfigurasi API, signing, dan packaging.
+Baca [Desktop/Tauri Guide](docs/TAURI_DESKTOP.md) untuk konfigurasi API, mode offline, backup/restore, signed auto-update, release notes, dan packaging lintas OS.
+
+Build native untuk tiga platform tersedia melalui workflow [Desktop Builds](https://github.com/codeverta/enterprise.codeverta.com/actions/workflows/desktop-build.yml). Jalankan workflow secara manual dari tab **Actions**, atau buat tag versi seperti `v0.0.1`. Hasil `.dmg`/`.app` macOS, `.exe`/`.msi` Windows, dan `.deb`/`.AppImage` Linux tersedia sebagai artifact workflow.
 
 ## Dokumentasi
 

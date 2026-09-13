@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gin-template/common"
+	"gin-template/internal/desktoprecovery"
 	"gin-template/internal/platform/adminauth"
 	"gin-template/internal/platform/entitlement"
 	"gin-template/internal/tenancy"
@@ -30,13 +31,30 @@ import (
 	"gorm.io/gorm"
 )
 
-func InitDB() error {
+func InitDB() (returnErr error) {
 	var (
-		db         *gorm.DB
-		err        error
-		dsn        = os.Getenv("SQL_DSN")
-		sqlitePath = strings.TrimSpace(os.Getenv("SQLITE_PATH"))
+		db              *gorm.DB
+		err             error
+		dsn             = os.Getenv("SQL_DSN")
+		sqlitePath      = strings.TrimSpace(os.Getenv("SQLITE_PATH"))
+		recoveryManager *desktoprecovery.Manager
+		recoverySession *desktoprecovery.Session
 	)
+	defer func() {
+		if returnErr == nil || recoveryManager == nil || recoverySession == nil {
+			return
+		}
+		if db != nil {
+			if sqlDB, sqlErr := db.DB(); sqlErr == nil {
+				_ = sqlDB.Close()
+			}
+		}
+		if rollbackErr := recoveryManager.Rollback(recoverySession, returnErr); rollbackErr != nil {
+			returnErr = fmt.Errorf("%w; automatic desktop recovery failed: %v", returnErr, rollbackErr)
+		} else {
+			returnErr = fmt.Errorf("%w; the pre-migration desktop snapshot was restored", returnErr)
+		}
+	}()
 
 	config := &gorm.Config{
 		PrepareStmt:                              true,
@@ -51,6 +69,15 @@ func InitDB() error {
 			if err := os.MkdirAll(dir, 0o700); err != nil {
 				return fmt.Errorf("failed to create SQLite directory: %w", err)
 			}
+		}
+		appVersion := strings.TrimSpace(os.Getenv("DESKTOP_APP_VERSION"))
+		if appVersion == "" {
+			appVersion = strings.TrimPrefix(common.Version, "v")
+		}
+		recoveryManager = desktoprecovery.New(sqlitePath, appVersion)
+		recoverySession, err = recoveryManager.Prepare()
+		if err != nil {
+			return fmt.Errorf("failed to prepare offline database recovery: %w", err)
 		}
 		db, err = gorm.Open(sqlite.Open(sqlitePath+"?_busy_timeout=5000&_journal_mode=WAL&_foreign_keys=on"), config)
 	} else if dsn != "" {
@@ -80,8 +107,10 @@ func InitDB() error {
 		}
 		return entitlement.New(db, 5*time.Minute).Migrate()
 	}
-	if err := MigrateTenantSchema(db); err != nil {
-		return err
+	if recoverySession == nil || recoverySession.NeedsMigration() {
+		if err := MigrateTenantSchema(db); err != nil {
+			return err
+		}
 	}
 	if err := EnsureDefaultTenant(db); err != nil {
 		return fmt.Errorf("default tenant initialization failed: %w", err)
@@ -96,6 +125,12 @@ func InitDB() error {
 	if err := SeedInstallationData(db); err != nil {
 		return err
 	}
+	if recoveryManager != nil {
+		if err := recoveryManager.Commit(recoverySession); err != nil {
+			return fmt.Errorf("failed to finalize offline schema migration: %w", err)
+		}
+		recoverySession = nil
+	}
 
 	return nil
 }
@@ -109,7 +144,7 @@ func MigrateTenantSchema(db *gorm.DB) error {
 	// migrations and can be added without changing this list.
 	models := []interface{}{
 		&Tenant{}, &File{}, &User{}, &Profile{}, &EmailTemplate{},
-		&SystemSetting{}, &AuditLog{}, &ImpersonationSession{}, &LoginAttempt{}, &SESCallbackLog{}, &PromoCode{}, &Event{},
+		&AuditLog{}, &ImpersonationSession{}, &LoginAttempt{}, &SESCallbackLog{}, &PromoCode{}, &Event{},
 		&BalanceLog{}, &WebAuthnCredential{}, &PaymentMethod{},
 		&UserActivation{}, &AuthHandoff{}, &OAuthIdentity{}, &PasswordResetToken{},
 		&SubscriptionPlan{}, &SubscriptionPlanBundle{}, &SubscriptionFeature{}, &Subscription{}, &LMSPayment{},
@@ -127,9 +162,17 @@ func MigrateTenantSchema(db *gorm.DB) error {
 		&GlobalDefaults{},
 	}
 	models = append(models, ChatModels()...)
+	if db.Dialector.Name() != "sqlite" {
+		models = append(models, &SystemSetting{})
+	}
 
 	if err := db.AutoMigrate(models...); err != nil {
 		return fmt.Errorf("auto migration failed: %w", err)
+	}
+	if db.Dialector.Name() == "sqlite" {
+		if err := migrateSQLiteSystemSettingAdditively(db); err != nil {
+			return fmt.Errorf("safe SQLite system setting migration failed: %w", err)
+		}
 	}
 	if err := crmmodel.Migrate(db); err != nil {
 		return err

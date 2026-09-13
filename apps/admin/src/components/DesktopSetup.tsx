@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  ArchiveRestore,
   Check,
   Cloud,
   Database,
@@ -13,12 +14,16 @@ import {
   ShieldCheck,
   WifiOff,
 } from "lucide-react";
+import { toast } from "sonner";
 import { DEFAULT_APP_LOGO } from "@/lib/utils";
 import {
   cacheDesktopConfig,
   configureDesktop,
+  getDesktopRecoveryStatus,
   getDesktopConfig,
+  restoreDesktopRecoveryBackup,
   waitForApi,
+  type DesktopRecoveryStatus,
   type DesktopMode,
   type DesktopSetupInput,
 } from "@/lib/desktop-runtime";
@@ -31,6 +36,9 @@ export function DesktopBootstrap({ children }: { children: ReactNode }) {
   const [state, setState] = useState<BootstrapState>("loading");
   const [error, setError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [recovery, setRecovery] = useState<DesktopRecoveryStatus | null>(null);
+  const [selectedBackup, setSelectedBackup] = useState("");
+  const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +58,15 @@ export function DesktopBootstrap({ children }: { children: ReactNode }) {
           window.location.reload();
           return;
         }
-        if (config.mode === "offline") await waitForApi(config.apiUrl);
+        if (config.mode === "offline") {
+          await waitForApi(config.apiUrl);
+          const recoveryStatus = await getDesktopRecoveryStatus().catch(() => null);
+          const recoveryID = recoveryStatus?.lastRecovery?.recoveredAt;
+          if (recoveryID && sessionStorage.getItem("codeverta.desktop.recoveryNotice") !== String(recoveryID)) {
+            sessionStorage.setItem("codeverta.desktop.recoveryNotice", String(recoveryID));
+            toast.warning("Database lokal dipulihkan dari snapshot yang aman setelah migrasi terputus.");
+          }
+        }
         if (!cancelled) setState("ready");
       } catch (reason) {
         if (cancelled) return;
@@ -63,6 +79,38 @@ export function DesktopBootstrap({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [reloadKey]);
+
+  useEffect(() => {
+    if (state !== "error") return;
+    let cancelled = false;
+    void getDesktopRecoveryStatus()
+      .then((status) => {
+        if (cancelled) return;
+        setRecovery(status);
+        setSelectedBackup(status.backups[0]?.name || "");
+      })
+      .catch(() => {
+        if (!cancelled) setRecovery(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [state]);
+
+  const restoreBackup = async () => {
+    if (!selectedBackup) return;
+    setRestoring(true);
+    setError("");
+    try {
+      await restoreDesktopRecoveryBackup(selectedBackup);
+      toast.success("Snapshot dipulihkan. Memeriksa database lokal…");
+      setReloadKey((value) => value + 1);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   if (state === "ready") return children;
   if (state === "setup") return <DesktopOnboarding />;
@@ -88,6 +136,41 @@ export function DesktopBootstrap({ children }: { children: ReactNode }) {
             <button onClick={() => setReloadKey((value) => value + 1)} className="mt-6 h-10 rounded-xl bg-slate-950 px-5 text-sm font-semibold text-white hover:bg-violet-700">
               Coba lagi
             </button>
+            {recovery && recovery.backups.length > 0 && (
+              <div className="mt-6 border-t border-slate-200 pt-5 text-left">
+                <div className="flex items-start gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                    <ArchiveRestore className="size-4" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900">Recovery database</p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      Pilih snapshot otomatis sebelum update atau migrasi. Database saat ini tetap dibuatkan safety copy.
+                    </p>
+                  </div>
+                </div>
+                <select
+                  aria-label="Snapshot recovery"
+                  value={selectedBackup}
+                  onChange={(event) => setSelectedBackup(event.target.value)}
+                  className="mt-4 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none focus:border-violet-400"
+                >
+                  {recovery.backups.map((backup) => (
+                    <option key={backup.name} value={backup.name}>
+                      {new Date(backup.createdAt * 1000).toLocaleString("id-ID")} · {(backup.size / 1024 / 1024).toFixed(1)} MB
+                    </option>
+                  ))}
+                </select>
+                <button
+                  disabled={!selectedBackup || restoring}
+                  onClick={() => void restoreBackup()}
+                  className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 text-sm font-semibold text-violet-700 hover:bg-violet-100 disabled:opacity-50"
+                >
+                  {restoring ? <Loader2 className="size-4 animate-spin" /> : <ArchiveRestore className="size-4" />}
+                  Pulihkan snapshot
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

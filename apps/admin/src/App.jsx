@@ -30,6 +30,7 @@ import { isAdminRole } from "./lib/erp-desk";
 import { isTauri } from "@tauri-apps/api/core";
 import DesktopTitleBar from "./components/DesktopTitleBar";
 import { DesktopBootstrap } from "./components/DesktopSetup";
+import DesktopUpdater from "./components/DesktopUpdater";
 
 import DeskCommandPalette from "./components/DeskCommandPalette";
 
@@ -215,6 +216,7 @@ export default function App() {
           <RouterProvider router={router} />
         </DesktopBootstrap>
       </main>
+      <DesktopUpdater />
     </div>
   );
 }

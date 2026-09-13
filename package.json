@@ -8,12 +8,18 @@
     "dev:admin": "pnpm --filter admin-page dev",
     "dev:landing": "pnpm --filter tanstack_start_ts dev",
     "dev:desktop": "pnpm --filter admin-page tauri:dev",
+    "desktop:data": "go -C apps/backend run ./cmd/desktop-data",
+    "desktop:version": "node apps/admin/scripts/set-desktop-version.mjs",
     "dev:backend": "pnpm --filter backend dev",
     "build": "pnpm --filter admin-page build",
     "build:desktop": "pnpm --filter admin-page tauri:build",
     "build:desktop:macos": "pnpm --filter admin-page tauri:build:macos",
     "build:desktop:windows": "pnpm --filter admin-page tauri:build:windows",
     "build:desktop:linux": "pnpm --filter admin-page tauri:build:linux",
+    "tauri:build": "pnpm --filter admin-page tauri:build",
+    "tauri:build:macos": "pnpm --filter admin-page tauri:build:macos",
+    "tauri:build:windows": "pnpm --filter admin-page tauri:build:windows",
+    "tauri:build:linux": "pnpm --filter admin-page tauri:build:linux",
     "test": "pnpm -r test"
   }
 }

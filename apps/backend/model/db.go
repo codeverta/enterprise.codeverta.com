@@ -33,6 +33,36 @@ func ensureSystemSettingColumns(db *gorm.DB) error {
 	}).Error
 }
 
+// migrateSQLiteSystemSettingAdditively avoids GORM's SQLite table-rebuild path.
+// That path can drop trailing columns when it normalizes complex defaults, which
+// previously made a second startup lose tenant_id before recreating its index.
+// Desktop migrations are additive; destructive transformations must be written
+// as an explicit versioned migration protected by desktoprecovery snapshots.
+func migrateSQLiteSystemSettingAdditively(db *gorm.DB) error {
+	migrator := db.Migrator()
+	if !migrator.HasTable(&SystemSetting{}) {
+		return db.AutoMigrate(&SystemSetting{})
+	}
+	statement := &gorm.Statement{DB: db}
+	if err := statement.Parse(&SystemSetting{}); err != nil {
+		return err
+	}
+	for _, field := range statement.Schema.Fields {
+		if field.DBName == "" || migrator.HasColumn(&SystemSetting{}, field.DBName) {
+			continue
+		}
+		if err := migrator.AddColumn(&SystemSetting{}, field.Name); err != nil {
+			return fmt.Errorf("add system_settings.%s: %w", field.DBName, err)
+		}
+	}
+	if migrator.HasColumn(&SystemSetting{}, "tenant_id") && !migrator.HasIndex(&SystemSetting{}, "idx_tenant_settings") {
+		if err := migrator.CreateIndex(&SystemSetting{}, "idx_tenant_settings"); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func CloseDB() error {
 	sqlDB, err := DB.DB()
 	if err != nil {
