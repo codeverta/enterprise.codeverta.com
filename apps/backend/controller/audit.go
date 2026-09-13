@@ -94,7 +94,7 @@ func (ac *AuditController) getLogs(c *gin.Context, systemWide bool) {
 	}
 	actors := make(map[uuid.UUID]auditActorResponse)
 	if len(ids) > 0 {
-		cleanDB := ac.DB.WithContext(c).Session(&gorm.Session{NewDB: true})
+		cleanDB := db.Session(&gorm.Session{NewDB: true})
 		if systemWide {
 			cleanDB = cleanDB.Set("skip_tenant_scope", true)
 		} else {

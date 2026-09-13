@@ -649,7 +649,7 @@ function ParentStudentDetailPage() {
           <div className="hidden print:block print-container bg-white p-8 max-w-4xl mx-auto text-black">
             <div className="border-b-2 border-zinc-800 pb-5 mb-6 text-center">
               <h1 className="text-2xl font-bold uppercase tracking-wide">Laporan Hasil Belajar & Akademik Partner</h1>
-              <p className="text-sm text-zinc-500 mt-1 font-medium">LMS Learning Management System</p>
+              <p className="text-sm text-zinc-500 mt-1 font-medium">LMS Enterprise System</p>
               <p className="text-xs text-zinc-400 mt-0.5">Tanggal Cetak: {dayjs().format("DD MMMM YYYY")}</p>
             </div>
 

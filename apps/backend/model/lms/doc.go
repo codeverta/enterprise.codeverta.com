@@ -1,4 +1,4 @@
-// Package lms is the organized import surface for Learning Management System
+// Package lms is the organized import surface for Enterprise Resource
 // models. The aliases intentionally keep the existing model package API
 // compatible while allowing new code to import gin-template/model/lms.
 package lms

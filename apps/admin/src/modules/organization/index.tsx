@@ -6,9 +6,15 @@ import TenantPage from "./pages/tenants";
 import PermissionManagementPage from "./pages/permissions";
 import OrganizationDeskPage from "./pages/organization-desk";
 import RolePage from "./pages/RolePage";
+import ERPUserPage from "./pages/ERPUserPage";
+import CompanyDetailPage from "./pages/CompanyDetailPage";
 
 export default function OrganizationModule() {
   const { pathname } = useLocation();
+
+  if (pathname.startsWith("/desk/user")) {
+    return <WorkspaceModuleLayout slug="organization"><ERPUserPage /></WorkspaceModuleLayout>;
+  }
 
   if (pathname.includes("/role")) {
     return (
@@ -16,6 +22,21 @@ export default function OrganizationModule() {
         <RolePage />
       </WorkspaceModuleLayout>
     );
+  }
+
+  if (pathname.startsWith("/desk/company")) {
+    const segments = pathname.split("/").filter(Boolean);
+    const isCompanyList =
+      segments.length <= 2 ||
+      (segments.length === 4 && segments[2] === "view" && segments[3] === "List");
+
+    if (!isCompanyList) {
+      return (
+        <WorkspaceModuleLayout slug="organization">
+          <CompanyDetailPage />
+        </WorkspaceModuleLayout>
+      );
+    }
   }
 
   if (
@@ -43,4 +64,3 @@ export default function OrganizationModule() {
     </WorkspaceModuleLayout>
   );
 }
-

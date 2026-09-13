@@ -41,7 +41,17 @@ func registerAdminRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
 		adminUserRoute.POST("/:id/subscription", ctrls.user.AssignUserSubscription)
 		adminUserRoute.DELETE("/:id/subscription", ctrls.user.RemoveUserSubscription)
 		adminUserRoute.POST("/:id/impersonate", middleware.CriticalRateLimit(), ctrls.user.StartImpersonation)
+		adminUserRoute.GET("/:id/erp-settings", ctrls.user.GetERPUserSetting)
+		adminUserRoute.PUT("/:id/erp-settings", ctrls.user.SaveERPUserSetting)
 		adminUserRoute.DELETE("/:id", ctrls.user.DeleteUser)
+	}
+	moduleProfiles := rg.Group("/module-profiles")
+	moduleProfiles.Use(middleware.AdminAuth())
+	{
+		moduleProfiles.GET("", ctrls.user.ListModuleProfiles)
+		moduleProfiles.POST("", ctrls.user.CreateModuleProfile)
+		moduleProfiles.PUT("/:id", ctrls.user.UpdateModuleProfile)
+		moduleProfiles.DELETE("/:id", ctrls.user.DeleteModuleProfile)
 	}
 
 	// Files Management

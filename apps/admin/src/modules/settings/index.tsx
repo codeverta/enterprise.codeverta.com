@@ -1,7 +1,23 @@
 import React from "react";
+import { useLocation } from "react-router";
 import WorkspaceModuleLayout from "@/modules/core/WorkspaceModuleLayout";
-import SettingsPage from "./pages/system-settings";
+import SystemSettingsPage from "./pages/SystemSettingsPage";
+import GlobalDefaultsPage from "./pages/GlobalDefaultsPage";
 
 export default function SettingsModule() {
-  return <WorkspaceModuleLayout slug="erpnext-settings"><SettingsPage /></WorkspaceModuleLayout>;
+  const { pathname } = useLocation();
+
+  if (pathname.includes("/global-defaults")) {
+    return (
+      <WorkspaceModuleLayout slug="erpnext-settings">
+        <GlobalDefaultsPage />
+      </WorkspaceModuleLayout>
+    );
+  }
+
+  return (
+    <WorkspaceModuleLayout slug="erpnext-settings">
+      <SystemSettingsPage />
+    </WorkspaceModuleLayout>
+  );
 }

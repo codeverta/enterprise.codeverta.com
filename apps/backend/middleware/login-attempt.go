@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"gin-template/internal/tenancy"
 	"gin-template/model"
 	"io"
 	"net/http"
@@ -22,8 +23,17 @@ func RecordLoginAttempt(db *gorm.DB, authMethod string) gin.HandlerFunc {
 		c.Next()
 
 		status := c.Writer.Status()
+		tenantID := parseTenantHeader(c)
+		attemptDB := db
+		if scopedDB, err := tenancy.DBFromContext(c.Request.Context()); err == nil {
+			attemptDB = scopedDB
+		}
+		if tenant, ok := tenancy.FromContext(c.Request.Context()); ok {
+			id := tenant.ID
+			tenantID = &id
+		}
 		attempt := model.LoginAttempt{
-			UserID: parseContextUserID(c), TenantID: parseTenantHeader(c),
+			UserID: parseContextUserID(c), TenantID: tenantID,
 			AttemptedIdentifier: identifier, AuthMethod: authMethod,
 			Success:    status >= http.StatusOK && status < http.StatusMultipleChoices,
 			HTTPStatus: status, IPAddress: c.ClientIP(), UserAgent: c.Request.UserAgent(),
@@ -31,7 +41,7 @@ func RecordLoginAttempt(db *gorm.DB, authMethod string) gin.HandlerFunc {
 		if !attempt.Success {
 			attempt.FailureReason = fmt.Sprintf("authentication request returned HTTP %d", status)
 		}
-		_ = db.Session(&gorm.Session{NewDB: true}).
+		_ = attemptDB.Session(&gorm.Session{NewDB: true}).
 			Set("skip_tenant_scope", true).Set("skip_audit", true).
 			Create(&attempt).Error
 	}

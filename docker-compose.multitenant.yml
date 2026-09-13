@@ -1,0 +1,19 @@
+services:
+  backend-go:
+    environment:
+      TENANCY_MODE: "database-per-tenant"
+      SQL_DSN: "platform:${PLATFORM_DB_PASSWORD:?set PLATFORM_DB_PASSWORD}@tcp(mysql:3306)/platform_db?charset=utf8mb4&parseTime=True&loc=Local"
+      TENANT_DB_ADMIN_DSN: "root:${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}@tcp(mysql:3306)/?charset=utf8mb4&parseTime=True&loc=Local"
+      TENANT_CREDENTIAL_KEY: "${TENANT_CREDENTIAL_KEY:?set a base64 encoded 32-byte key}"
+      TENANT_PLATFORM_DOMAIN_SUFFIX: "${TENANT_PLATFORM_DOMAIN_SUFFIX:-erp.example.com}"
+      PLATFORM_ADMIN_HOST: "${PLATFORM_ADMIN_HOST:-admin.example.com}"
+      PLATFORM_JWT_SECRET: "${PLATFORM_JWT_SECRET:?set a separate 64+ character platform JWT secret}"
+      TENANT_DB_HOST: "mysql"
+      TENANT_DB_PORT: "3306"
+
+  mysql:
+    environment:
+      MYSQL_DATABASE: "platform_db"
+      MYSQL_USER: "platform"
+      MYSQL_PASSWORD: "${PLATFORM_DB_PASSWORD:?set PLATFORM_DB_PASSWORD}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD}"

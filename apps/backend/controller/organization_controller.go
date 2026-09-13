@@ -231,14 +231,34 @@ func (oc *OrganizationController) CreateCompany(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"data": req})
 }
 
+func (oc *OrganizationController) findCompany(db *gorm.DB, identifier string, comp *model.Company) error {
+	identifier = strings.TrimSpace(identifier)
+	if _, err := uuid.Parse(identifier); err == nil {
+		return db.Where("id = ?", identifier).First(comp).Error
+	}
+	return db.Where("name = ?", identifier).First(comp).Error
+}
+
 func (oc *OrganizationController) GetCompany(c *gin.Context) {
 	db := oc.getDB(c)
 	id := c.Param("id")
 	var comp model.Company
-	if err := db.First(&comp, "id = ?", id).Error; err != nil {
+	if err := oc.findCompany(db, id, &comp); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Company not found"})
 		return
 	}
+
+	// Populate sensible defaults if not yet defined
+	if comp.ChartOfAccounts == "" {
+		comp.ChartOfAccounts = "Indonesia - Chart of Accounts"
+	}
+	if comp.CreateChartOfAccountsBasedOn == "" {
+		comp.CreateChartOfAccountsBasedOn = "Standard Template"
+	}
+	if comp.ValuationMethod == "" {
+		comp.ValuationMethod = "FIFO"
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": comp})
 }
 
@@ -246,7 +266,7 @@ func (oc *OrganizationController) UpdateCompany(c *gin.Context) {
 	db := oc.getDB(c)
 	id := c.Param("id")
 	var comp model.Company
-	if err := db.First(&comp, "id = ?", id).Error; err != nil {
+	if err := oc.findCompany(db, id, &comp); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Company not found"})
 		return
 	}
@@ -264,7 +284,12 @@ func (oc *OrganizationController) UpdateCompany(c *gin.Context) {
 func (oc *OrganizationController) DeleteCompany(c *gin.Context) {
 	db := oc.getDB(c)
 	id := c.Param("id")
-	if err := db.Delete(&model.Company{}, "id = ?", id).Error; err != nil {
+	var comp model.Company
+	if err := oc.findCompany(db, id, &comp); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Company not found"})
+		return
+	}
+	if err := db.Delete(&comp).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -275,7 +300,7 @@ func (oc *OrganizationController) ListCompanyAddresses(c *gin.Context) {
 	db := oc.getDB(c)
 	id := c.Param("id")
 	var comp model.Company
-	if err := db.Where("id = ? OR name = ?", id, id).First(&comp).Error; err != nil {
+	if err := oc.findCompany(db, id, &comp); err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Company tidak ditemukan"})
 		return
 	}

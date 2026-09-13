@@ -5,9 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"gin-template/common"
+	"gin-template/internal/tenancy"
 	"gin-template/middleware"
 	"gin-template/model"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,7 +26,20 @@ import (
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Allow all origins for dynamic tenant subdomains
+		if !strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant") {
+			return true
+		}
+		origin := strings.TrimSpace(r.Header.Get("Origin"))
+		if origin == "" {
+			return true
+		}
+		parsed, err := url.Parse(origin)
+		if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") {
+			return false
+		}
+		originHost, originErr := tenancy.NormalizeHost(parsed.Host)
+		requestHost, requestErr := tenancy.NormalizeHost(r.Host)
+		return originErr == nil && requestErr == nil && originHost == requestHost
 	},
 }
 
@@ -40,6 +57,7 @@ type OnlineTracker struct {
 	localUsers   map[string]int64                        // userID -> last active Unix timestamp (fallback when Redis disabled)
 	persistedAt  map[string]int64                        // userID -> last DB heartbeat write timestamp
 	db           *gorm.DB
+	tenantDBs    map[string]*gorm.DB
 	pubsubCtx    context.Context
 	pubsubCancel context.CancelFunc
 }
@@ -56,6 +74,7 @@ func GetOnlineTracker(db *gorm.DB) *OnlineTracker {
 			localUsers:   make(map[string]int64),
 			persistedAt:  make(map[string]int64),
 			db:           db,
+			tenantDBs:    make(map[string]*gorm.DB),
 			pubsubCtx:    ctx,
 			pubsubCancel: cancel,
 		}
@@ -70,6 +89,30 @@ func GetOnlineTracker(db *gorm.DB) *OnlineTracker {
 		tracker.db = db
 	}
 	return tracker
+}
+
+func onlineConnectionKey(tenantID, userID string) string { return tenantID + ":" + userID }
+
+func (t *OnlineTracker) SetTenantDB(tenantID string, db *gorm.DB) {
+	if tenantID == "" || db == nil {
+		return
+	}
+	t.mu.Lock()
+	t.tenantDBs[tenantID] = db
+	t.mu.Unlock()
+}
+
+func (t *OnlineTracker) dbForTenant(tenantID string) *gorm.DB {
+	t.mu.RLock()
+	db := t.tenantDBs[tenantID]
+	t.mu.RUnlock()
+	if db != nil {
+		return db
+	}
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant") {
+		return nil
+	}
+	return t.db
 }
 
 type WebSocketController struct {
@@ -97,9 +140,14 @@ func (ctrl *WebSocketController) HandleActivity(c *gin.Context) {
 	claims := &middleware.Claims{}
 	token, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(common.JWTSecret), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 	if err != nil || !token.Valid {
 		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Unauthorized: Invalid token"})
+		return
+	}
+	safeTenant, strictTenant := tenancy.FromContext(c.Request.Context())
+	if strictTenant && (claims.TenantID == "" || claims.TenantID != safeTenant.ID.String() || claims.Issuer != "gin-template") {
+		c.JSON(http.StatusForbidden, gin.H{"error": gin.H{"code": "FORBIDDEN", "message": "Token does not belong to this tenant", "request_id": c.GetString("request_id")}})
 		return
 	}
 
@@ -118,6 +166,12 @@ func (ctrl *WebSocketController) HandleActivity(c *gin.Context) {
 
 	tenantObj, _ := c.Get(common.CtxTenantKey)
 	tenant, _ := tenantObj.(model.Tenant)
+	if strictTenant {
+		tenant = model.Tenant{ID: safeTenant.ID, Name: safeTenant.Slug, Domain: safeTenant.Domain, IsActive: true}
+		if tenantDB, dbErr := tenancy.DBFromContext(c.Request.Context()); dbErr == nil {
+			ctrl.Tracker.SetTenantDB(tenant.ID.String(), tenantDB)
+		}
+	}
 
 	ctrl.Tracker.RegisterConnection(userID.String(), claims.Role, conn, tenant)
 
@@ -160,11 +214,12 @@ func (ctrl *WebSocketController) HandleActivity(c *gin.Context) {
 
 // RegisterConnection adds a connection to the tracker
 func (t *OnlineTracker) RegisterConnection(userID string, role int, conn *websocket.Conn, tenant model.Tenant) {
+	key := onlineConnectionKey(tenant.ID.String(), userID)
 	t.mu.Lock()
-	if t.conns[userID] == nil {
-		t.conns[userID] = make(map[*websocket.Conn]bool)
+	if t.conns[key] == nil {
+		t.conns[key] = make(map[*websocket.Conn]bool)
 	}
-	t.conns[userID][conn] = true
+	t.conns[key][conn] = true
 
 	// If admin role, track as active admin connection to send pushes to
 	if role >= 99 {
@@ -181,11 +236,12 @@ func (t *OnlineTracker) RegisterConnection(userID string, role int, conn *websoc
 
 // UnregisterConnection removes a connection from the tracker
 func (t *OnlineTracker) UnregisterConnection(userID string, role int, conn *websocket.Conn, tenant model.Tenant) {
+	key := onlineConnectionKey(tenant.ID.String(), userID)
 	t.mu.Lock()
-	if t.conns[userID] != nil {
-		delete(t.conns[userID], conn)
-		if len(t.conns[userID]) == 0 {
-			delete(t.conns, userID)
+	if t.conns[key] != nil {
+		delete(t.conns[key], conn)
+		if len(t.conns[key]) == 0 {
+			delete(t.conns, key)
 		}
 	}
 	if role >= 99 {
@@ -195,7 +251,7 @@ func (t *OnlineTracker) UnregisterConnection(userID string, role int, conn *webs
 
 	// If no connections left for this user, remove them from active online status
 	t.mu.RLock()
-	connsLeft := len(t.conns[userID])
+	connsLeft := len(t.conns[key])
 	t.mu.RUnlock()
 
 	zap.L().Debug("Unregistering connection", zap.String("userID", userID), zap.Int("role", role), zap.Int("connsLeft", connsLeft))
@@ -207,7 +263,7 @@ func (t *OnlineTracker) UnregisterConnection(userID string, role int, conn *webs
 			_ = common.RDB.ZRem(ctx, rKey, userID).Err()
 		} else {
 			t.mu.Lock()
-			delete(t.localUsers, userID)
+			delete(t.localUsers, key)
 			t.mu.Unlock()
 		}
 		t.triggerUpdateBroadcast(tenant)
@@ -216,6 +272,7 @@ func (t *OnlineTracker) UnregisterConnection(userID string, role int, conn *webs
 
 // UpdateHeartbeat marks/renews user activity timestamp
 func (t *OnlineTracker) UpdateHeartbeat(userID string, tenant model.Tenant) {
+	key := onlineConnectionKey(tenant.ID.String(), userID)
 	now := time.Now().Unix()
 	if common.RedisEnabled && common.RDB != nil {
 		ctx := context.Background()
@@ -229,22 +286,24 @@ func (t *OnlineTracker) UpdateHeartbeat(userID string, tenant model.Tenant) {
 		}
 	} else {
 		t.mu.Lock()
-		t.localUsers[userID] = now
+		t.localUsers[key] = now
 		t.mu.Unlock()
 	}
 	t.persistLastActive(userID, tenant, now)
 }
 
 func (t *OnlineTracker) persistLastActive(userID string, tenant model.Tenant, unixSeconds int64) {
-	if t.db == nil || userID == "" {
+	db := t.dbForTenant(tenant.ID.String())
+	if db == nil || userID == "" {
 		return
 	}
+	key := onlineConnectionKey(tenant.ID.String(), userID)
 	t.mu.Lock()
-	if unixSeconds-t.persistedAt[userID] < 60 {
+	if unixSeconds-t.persistedAt[key] < 60 {
 		t.mu.Unlock()
 		return
 	}
-	t.persistedAt[userID] = unixSeconds
+	t.persistedAt[key] = unixSeconds
 	t.mu.Unlock()
 
 	parsedUserID, err := uuid.Parse(userID)
@@ -252,7 +311,7 @@ func (t *OnlineTracker) persistLastActive(userID string, tenant model.Tenant, un
 		return
 	}
 	lastActiveAt := time.Unix(unixSeconds, 0)
-	query := t.db.Session(&gorm.Session{}).Set("skip_tenant_scope", true).Model(&model.User{}).Where("id = ?", parsedUserID)
+	query := db.Session(&gorm.Session{}).Set("skip_tenant_scope", true).Model(&model.User{}).Where("id = ?", parsedUserID)
 	if tenant.ID != uuid.Nil {
 		query = query.Where("tenant_id = ?", tenant.ID)
 	}
@@ -347,34 +406,35 @@ func (t *OnlineTracker) broadcastOnlineUsersLocal() {
 		return
 	}
 
-	// Fetch all local active users
-	t.mu.RLock()
-	var userIDs []string
-	now := time.Now().Unix()
-	userScores := make(map[string]int64)
-	for userID, lastActive := range t.localUsers {
-		if now-lastActive <= 45 || len(t.conns[userID]) > 0 {
-			userIDs = append(userIDs, userID)
-			userScores[userID] = lastActive
-		}
-	}
-	t.mu.RUnlock()
-
-	if len(userIDs) == 0 {
-		for _, conns := range adminsByTenant {
-			t.broadcastToConns(conns, []OnlineUserOut{})
-		}
-		return
-	}
-
 	for tenantID, conns := range adminsByTenant {
 		if len(conns) == 0 {
 			continue
 		}
+		prefix := tenantID + ":"
+		var userIDs []string
+		userScores := make(map[string]int64)
+		now := time.Now().Unix()
+		t.mu.RLock()
+		for key, lastActive := range t.localUsers {
+			if !strings.HasPrefix(key, prefix) || (now-lastActive > 45 && len(t.conns[key]) == 0) {
+				continue
+			}
+			userID := strings.TrimPrefix(key, prefix)
+			userIDs = append(userIDs, userID)
+			userScores[userID] = lastActive
+		}
+		t.mu.RUnlock()
+		if len(userIDs) == 0 {
+			t.broadcastToConns(conns, []OnlineUserOut{})
+			continue
+		}
 
 		var users []model.User
-		// Query users, GORM scopes by tenant ID automatically if it's set in Session
-		if err := t.db.Session(&gorm.Session{}).Set("tenant_id", tenantID).Preload("Profile").Where("id IN ?", userIDs).Find(&users).Error; err != nil {
+		db := t.dbForTenant(tenantID)
+		if db == nil {
+			continue
+		}
+		if err := db.Session(&gorm.Session{}).Set("tenant_id", tenantID).Preload("Profile").Where("id IN ?", userIDs).Find(&users).Error; err != nil {
 			continue
 		}
 
@@ -446,7 +506,11 @@ func (t *OnlineTracker) broadcastOnlineUsersForTenant(tenantID string) {
 
 	// Fetch user details from DB
 	var users []model.User
-	if err := t.db.Session(&gorm.Session{}).Set("tenant_id", tenantID).Preload("Profile").Where("id IN ?", userIDs).Find(&users).Error; err != nil {
+	db := t.dbForTenant(tenantID)
+	if db == nil {
+		return
+	}
+	if err := db.Session(&gorm.Session{}).Set("tenant_id", tenantID).Preload("Profile").Where("id IN ?", userIDs).Find(&users).Error; err != nil {
 		zap.L().Error("GORM Fetch users error", zap.Error(err))
 		return
 	}
@@ -507,9 +571,10 @@ func (t *OnlineTracker) GetOnlineUserIDs(tenantID string) []string {
 	defer t.mu.RUnlock()
 	var userIDs []string
 	now := time.Now().Unix()
-	for userID, lastActive := range t.localUsers {
-		if now-lastActive <= 45 || len(t.conns[userID]) > 0 {
-			userIDs = append(userIDs, userID)
+	prefix := tenantID + ":"
+	for key, lastActive := range t.localUsers {
+		if strings.HasPrefix(key, prefix) && (now-lastActive <= 45 || len(t.conns[key]) > 0) {
+			userIDs = append(userIDs, strings.TrimPrefix(key, prefix))
 		}
 	}
 	return userIDs
@@ -519,7 +584,11 @@ func (t *OnlineTracker) SendNotification(notif *model.Notification) {
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 
-	userConns := t.conns[notif.UserID.String()]
+	tenantID := ""
+	if notif.TenantID != nil {
+		tenantID = notif.TenantID.String()
+	}
+	userConns := t.conns[onlineConnectionKey(tenantID, notif.UserID.String())]
 	if len(userConns) == 0 {
 		return
 	}

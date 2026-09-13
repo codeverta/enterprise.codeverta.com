@@ -31,7 +31,7 @@ func init() {
 
 var StartTime = time.Now().Unix() // unit: second
 var Version = "v1.0.53"
-var SystemName = "Codeverta Learning Management System App"
+var SystemName = "Codeverta Enterprise Resource System App"
 var ServerAddress = "http://localhost:3000"
 var Footer = ""
 var HomePageLink = ""

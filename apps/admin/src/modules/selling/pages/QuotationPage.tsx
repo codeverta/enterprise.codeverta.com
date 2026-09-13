@@ -17,6 +17,7 @@ import { posApi, type POSItem } from "../posApi";
 import { taxCategoryApi, type TaxCategory } from "../taxCategoryApi";
 import { quotationApi, type Quotation, type QuotationItem } from "../quotationApi";
 import { warehouseApi, type CompanyOption } from "@/modules/stock/warehouseApi";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 
 type Tax = { charge_type: string; account_head: string; rate: number; net_amount: number; amount: number };
 type QuotationItemRow = QuotationItem & { sourceIndex: number };
@@ -167,31 +168,7 @@ export function QuotationListPage() {
     }
   };
 
-  return (
-    <div className="mx-auto max-w-screen-2xl p-4 lg:p-7 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <Link to="/desk/selling" className="hover:underline">Selling</Link>
-            <span>/</span>
-            <span>Quotation</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white mt-1">
-            Quotation
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => navigate("/desk/quotation/new")}>
-            <Plus className="mr-1 size-4" /> Add Quotation
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-xl border bg-white p-4 shadow-xs dark:bg-slate-900">
-        <DataTable columns={quotationColumns} data={rows} getRowId={(row) => row.id || row.quotation_number || "quotation"} onRowClick={(row) => navigate(`/desk/quotation/${row.id}`)} searchPlaceholder="Cari quotation, nomor, customer..." emptyMessage={loading ? "Memuat quotation..." : "Belum ada quotation yang tersimpan."} />
-      </div>
-    </div>
-  );
+  return <ERPPage><ERPPageHeader title="Quotation" description="Kelola penawaran harga dan detail item pelanggan." breadcrumbs={[{ label: "Selling", href: "/desk/selling" }, { label: "Quotation" }]} actions={<Button onClick={() => navigate("/desk/quotation/new")}><Plus className="mr-1 size-4" />Add Quotation</Button>} /><DataTable columns={quotationColumns} data={rows} getRowId={(row) => row.id || row.quotation_number || "quotation"} onRowClick={(row) => navigate(`/desk/quotation/${row.id}`)} searchPlaceholder="Cari quotation, nomor, customer..." emptyMessage={loading ? "Memuat quotation..." : "Belum ada quotation yang tersimpan."} /></ERPPage>;
 }
 
 export function QuotationFormPage() {

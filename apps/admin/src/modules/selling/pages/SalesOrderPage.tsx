@@ -38,6 +38,7 @@ import {
 } from "../salesInvoiceApi";
 import { DataTable, type ColumnDef } from "@/components/ui/data-table";
 import { DocumentActionBar } from "@/components/doctype/document-action-bar";
+import { ERPPage, ERPPageHeader } from "@/components/erp-page-layout";
 import { docStatusFromLegacy } from "@/lib/doctype";
 
 type Item = {
@@ -453,35 +454,7 @@ export function SalesOrderListPage() {
       ),
     },
   ];
-  return (
-    <div className="mx-auto max-w-screen-2xl space-y-5 p-4 lg:p-7">
-      <header className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
-            Selling
-          </p>
-          <h1 className="text-2xl font-bold">Sales Order</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Kelola pesanan penjualan dan detail item.
-          </p>
-        </div>
-        <Button
-          onClick={() => nav("/desk/sales-order/new")}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="size-4" /> New Sales Order
-        </Button>
-      </header>
-      <DataTable
-        columns={columns}
-        data={rows}
-        getRowId={(row) => row.id || row.order_number || "sales-order"}
-        onRowClick={(row) => nav(`/desk/sales-order/${row.id}`)}
-        searchPlaceholder="Cari nomor order atau customer..."
-        emptyMessage="Belum ada Sales Order."
-      />
-    </div>
-  );
+  return <ERPPage><ERPPageHeader title="Sales Order" description="Kelola pesanan penjualan dan detail item." breadcrumbs={[{ label: "Selling", href: "/desk/selling" }, { label: "Sales Order" }]} actions={<Button onClick={() => nav("/desk/sales-order/new")}><Plus className="size-4" />New Sales Order</Button>} /><DataTable columns={columns} data={rows} getRowId={(row) => row.id || row.order_number || "sales-order"} onRowClick={(row) => nav(`/desk/sales-order/${row.id}`)} searchPlaceholder="Cari nomor order atau customer..." emptyMessage="Belum ada Sales Order." /></ERPPage>;
 }
 
 export default function SalesOrderFormPage() {

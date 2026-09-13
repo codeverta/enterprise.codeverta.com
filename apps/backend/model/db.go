@@ -2,6 +2,10 @@ package model
 
 import (
 	"fmt"
+	"os"
+	"strings"
+
+	"gin-template/internal/tenancy"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -38,8 +42,14 @@ func CloseDB() error {
 }
 
 func GetDB(c *gin.Context) *gorm.DB {
+	if tenantDB, err := tenancy.DBFromContext(c.Request.Context()); err == nil {
+		return tenantDB.Session(&gorm.Session{})
+	}
 	val, exists := c.Get("db")
 	if !exists {
+		if strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant") {
+			panic("tenant database missing from request context")
+		}
 		fmt.Println("DB not found in context, using global DB")
 		// Fallback ke DB global jika tidak ada di context (untuk tabel global)
 		return DB

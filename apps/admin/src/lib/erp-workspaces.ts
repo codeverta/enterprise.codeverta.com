@@ -839,9 +839,9 @@ const organization = workspace("Organization", "organization", [
 
 const settingsHome = "/desk/erpnext-settings";
 const erpnextSettings = workspace("Settings", "erpnext-settings", [["System Configuration", "/desk/erpnext-settings/system-settings"]], [
-  group("Defaults", settingsHome, documentLinks(["Global Defaults", "System Settings", "Domain Settings", "Session Default Settings"]), Globe),
-  group("Modules", settingsHome, documentLinks(["Selling Settings", "Buying Settings", "Stock Settings", "Accounts Settings", "Manufacturing Settings"]), Grid),
-  group("Data", settingsHome, documentLinks(["Data Import", "Data Export", "Customize Form", "Role Permission Manager"]), Database),
+  group("Defaults", settingsHome, documentLinks(["Global Defaults", "System Settings"]), Globe),
+  // group("Modules", settingsHome, documentLinks(["Selling Settings", "Buying Settings", "Stock Settings", "Accounts Settings", "Manufacturing Settings"]), Grid),
+  // group("Data", settingsHome, documentLinks(["Data Import", "Data Export", "Customize Form", "Role Permission Manager"]), Database),
 ]);
 
 const frameworkHome = "/desk/framework";

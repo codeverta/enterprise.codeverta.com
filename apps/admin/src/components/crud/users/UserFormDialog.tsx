@@ -275,7 +275,7 @@ function UserFormDialog({ isOpen, setIsOpen, editingUser, onSave }) {
                   id="email"
                   value={watch("email")}
                   onChange={handleEmailChange}
-                  placeholder="contoh@domain.com"
+                  placeholder="samantha@codeverta.com"
                   maxLength={MAX_CHARS.email}
                 />
                 {emailStatus === "checking" && (

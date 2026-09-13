@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gin-template/common"
+	"gin-template/internal/tenancy"
 	"gin-template/model"
 	"net/http"
 	"os"
@@ -66,6 +67,7 @@ var (
 // Struct untuk JWT Claims
 type Claims struct {
 	UserId                 string `json:"id"`
+	TenantID               string `json:"tenant_id"`
 	Username               string `json:"username"`
 	Role                   int    `json:"role"`
 	TokenVersion           string `json:"token_version"`
@@ -132,6 +134,10 @@ func generateImpersonationTokens(user *model.User, session *model.ImpersonationS
 func generateTokenPair(user *model.User, session *model.ImpersonationSession) (string, string, error) {
 	// KONVERSI UUID ke STRING
 	userIdStr := user.ID.String()
+	tenantID := ""
+	if user.TenantID != nil {
+		tenantID = user.TenantID.String()
+	}
 	impersonatorID := ""
 	impersonatorRole := 0
 	impersonationSessionID := ""
@@ -149,6 +155,7 @@ func generateTokenPair(user *model.User, session *model.ImpersonationSession) (s
 	// 1. Create Access Token
 	accessClaims := &Claims{
 		UserId:                 userIdStr,
+		TenantID:               tenantID,
 		Username:               user.Username,
 		Role:                   user.Role,
 		TokenVersion:           user.Token,
@@ -169,6 +176,7 @@ func generateTokenPair(user *model.User, session *model.ImpersonationSession) (s
 	// 2. Create Refresh Token
 	refreshClaims := &Claims{
 		UserId:                 userIdStr,
+		TenantID:               tenantID,
 		TokenVersion:           user.Token,
 		ImpersonatorID:         impersonatorID,
 		ImpersonatorRole:       impersonatorRole,
@@ -190,13 +198,16 @@ func generateTokenPair(user *model.User, session *model.ImpersonationSession) (s
 func validateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		return JWTSecretKey, nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	if err != nil {
 		return nil, err
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
+		if strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant") && claims.Issuer != "gin-template" {
+			return nil, errors.New(ErrInvalidToken)
+		}
 		return claims, nil
 	}
 
@@ -312,6 +323,12 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		sendBadRequest(c, ErrInvalidToken, nil)
 		return
 	}
+	if tenant, scoped := tenancy.FromContext(c.Request.Context()); scoped && claims.TenantID != tenant.ID.String() {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{
+			"code": "FORBIDDEN", "message": "Token does not belong to this tenant", "request_id": c.GetString("request_id"),
+		}})
+		return
+	}
 
 	// Perbaikan: Konversi claims.UserId (string) ke uuid.UUID
 	userID, err := uuid.Parse(claims.UserId)
@@ -320,12 +337,17 @@ func (ac *AuthController) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// Refresh is intentionally tenant-independent: it is registered before the
-	// tenant resolver because the access token may already be expired. The signed
-	// refresh token identifies the user globally by UUID, so use the controller DB
-	// with tenant scoping explicitly disabled for this authentication lookup.
-	// All tokens generated below still carry that user's identity and permissions.
+	// In database-per-tenant mode the hostname resolver has already selected the
+	// database. Legacy mode retains the former controller DB path for compatibility.
 	authDB := ac.DB.Session(&gorm.Session{}).Set("skip_tenant_scope", true).WithContext(c.Request.Context())
+	if scopedDB, scopedErr := tenancy.DBFromContext(c.Request.Context()); scopedErr == nil {
+		authDB = scopedDB.Session(&gorm.Session{}).WithContext(c.Request.Context())
+	} else if strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant") {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": gin.H{
+			"code": "UNAUTHORIZED", "message": "Tenant context is missing", "request_id": c.GetString("request_id"),
+		}})
+		return
+	}
 
 	var user model.User
 	if err := authDB.

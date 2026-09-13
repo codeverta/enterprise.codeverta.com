@@ -7,6 +7,11 @@ import (
 )
 
 func registerAuthRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
+	registerPlatformLegacyRoutes(rg, ctrls)
+	registerTenantAuthRoutes(rg, ctrls)
+}
+
+func registerPlatformLegacyRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
 	// Cross-tenant security observability is reserved for superadmins.
 	systemRoute := rg.Group("/system")
 	systemRoute.Use(middleware.RootAuth(), middleware.CriticalRateLimit())
@@ -34,6 +39,9 @@ func registerAuthRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
 		regionRouter.GET("/districts/:regencyID", ctrls.region.GetDistrictsByRegencyID)
 	}
 
+}
+
+func registerTenantAuthRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
 	// ========== AUTH ROUTES ==========
 	authRoute := rg.Group("/auth")
 	{

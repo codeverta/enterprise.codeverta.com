@@ -487,7 +487,7 @@ export default function OrganizationDeskPage() {
         </label>
         <Button onClick={() => {
           if (activeTab === "department") openDepartmentForm();
-          if (activeTab === "company") openCompanyForm();
+          if (activeTab === "company") navigate("/desk/company/new");
           if (activeTab === "branch") openBranchForm();
           if (activeTab === "letter-head") openLetterHeadForm();
         }}>
@@ -512,14 +512,14 @@ export default function OrganizationDeskPage() {
             <TableBody>
               {filteredDepartments.map((row) => (
                 <TableRow key={row.id}>
-                  <TableCell>
-                    <div className="flex items-center gap-2 font-semibold text-slate-900">
-                      {row.is_group ? <FolderTree className="size-4 text-blue-600" /> : <ChevronRight className="size-3.5 text-slate-400" />}
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <FolderTree className="size-4 text-slate-400" />
                       <span>{row.name}</span>
+                      {row.is_group && <Badge variant="outline">Group</Badge>}
                     </div>
-                    {row.department_code && <span className="text-xs text-slate-500">{row.department_code}</span>}
                   </TableCell>
-                  <TableCell>{row.company?.name || "All Companies"}</TableCell>
+                  <TableCell>{row.company?.name || "-"}</TableCell>
                   <TableCell>{row.branch?.name || "-"}</TableCell>
                   <TableCell>{row.parent_department?.name || "-"}</TableCell>
                   <TableCell><Status active={row.is_active} /></TableCell>
@@ -536,23 +536,44 @@ export default function OrganizationDeskPage() {
       {activeTab === "company" && (
         <CardGrid loading={loading} empty={filteredCompanies.length === 0} emptyText="Belum ada company. Tambahkan company untuk mengaktifkan master cabang dan kop surat.">
           {filteredCompanies.map((row) => (
-            <Card key={row.id}>
+            <Card key={row.id} className="transition-shadow hover:shadow-md">
               <CardHeader className="flex-row items-start justify-between space-y-0">
-                <div className="flex size-12 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+                <div
+                  className="flex size-12 cursor-pointer items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-colors hover:bg-blue-100"
+                  onClick={() => navigate(`/desk/company/${encodeURIComponent(row.name)}`)}
+                >
                   <Building2 className="size-6" />
                 </div>
-                <RowActions onEdit={() => openCompanyForm(row)} onDelete={() => setDeleteTarget({ entity: "company", id: row.id, label: row.name })} />
+                <RowActions
+                  onEdit={() => navigate(`/desk/company/${encodeURIComponent(row.name)}`)}
+                  onDelete={() => setDeleteTarget({ entity: "company", id: row.id, label: row.name })}
+                />
               </CardHeader>
               <CardContent>
                 <Badge className="mb-3">{row.abbreviation}</Badge>
-                <CardTitle className="text-lg">{row.name}</CardTitle>
+                <CardTitle
+                  className="cursor-pointer text-lg hover:text-blue-600 hover:underline"
+                  onClick={() => navigate(`/desk/company/${encodeURIComponent(row.name)}`)}
+                >
+                  {row.name}
+                </CardTitle>
                 <div className="mt-4 space-y-1.5 border-t pt-4 text-xs text-slate-600">
                   <p>Tax ID: {row.tax_id || "-"}</p>
                   <p>Email: {row.email || "-"}</p>
                   <p>Telepon: {row.phone || "-"}</p>
                   <p>Mata Uang: {row.currency}</p>
                 </div>
-                <div className="mt-4"><Status active={row.is_active} /></div>
+                <div className="mt-4 flex items-center justify-between">
+                  <Status active={row.is_active} />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                    onClick={() => navigate(`/desk/company/${encodeURIComponent(row.name)}`)}
+                  >
+                    Detail & Edit →
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

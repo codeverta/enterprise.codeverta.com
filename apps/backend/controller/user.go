@@ -386,13 +386,13 @@ func (ctrl *UserController) GetUserDetail(c *gin.Context) {
 
 	children, err := loadUserChildren(db, user.ID)
 	if err != nil {
-		sendInternalError(c, err)
-		return
+		// Memberships are an optional LMS relation; a missing legacy table
+		// must not prevent the core user detail document from loading.
+		children = []gin.H{}
 	}
 	parents, err := loadUserParents(db, user.ID)
 	if err != nil {
-		sendInternalError(c, err)
-		return
+		parents = []gin.H{}
 	}
 
 	sendSuccess(c, gin.H{
@@ -1015,6 +1015,9 @@ func loadUserDetailPayments(db *gorm.DB, user model.User, plansByID map[string]m
 func loadUserChildren(db *gorm.DB, parentID uuid.UUID) ([]gin.H, error) {
 	var memberships []model.Membership
 	if err := db.Where("parent_id = ? AND status = ?", parentID, "active").Find(&memberships).Error; err != nil {
+		if isOptionalMembershipTableError(err) {
+			return []gin.H{}, nil
+		}
 		return nil, err
 	}
 	if len(memberships) == 0 {
@@ -1064,6 +1067,9 @@ func loadUserChildren(db *gorm.DB, parentID uuid.UUID) ([]gin.H, error) {
 func loadUserParents(db *gorm.DB, studentID uuid.UUID) ([]gin.H, error) {
 	var memberships []model.Membership
 	if err := db.Where("student_id = ? AND status = ?", studentID, "active").Find(&memberships).Error; err != nil {
+		if isOptionalMembershipTableError(err) {
+			return []gin.H{}, nil
+		}
 		return nil, err
 	}
 	if len(memberships) == 0 {
@@ -1088,6 +1094,11 @@ func loadUserParents(db *gorm.DB, studentID uuid.UUID) ([]gin.H, error) {
 		})
 	}
 	return out, nil
+}
+
+func isOptionalMembershipTableError(err error) bool {
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "memberships") && (strings.Contains(message, "doesn't exist") || strings.Contains(message, "does not exist") || strings.Contains(message, "no such table"))
 }
 
 func loadUserNames(db *gorm.DB, ids []uuid.UUID) map[uuid.UUID]string {

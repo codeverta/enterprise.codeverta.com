@@ -44,7 +44,7 @@ func (ctrl *SettingController) GetSettings(c *gin.Context) {
 
 	// 3. Cek Redis (Hanya Cache Hit kalau Tenant & Key cocok)
 	var cached bool = false
-	if common.RedisEnabled && !isAuthenticated {
+	if common.RedisEnabled && common.RDB != nil && !isAuthenticated {
 		if common.GetCache(ctx, cacheKey, &setting) {
 			c.JSON(http.StatusOK, setting.ToResponse(false))
 			return
@@ -53,7 +53,7 @@ func (ctrl *SettingController) GetSettings(c *gin.Context) {
 
 	// 4. Ambil dari Scoped Database
 	// model.GetDB(c) mengembalikan DB yang sudah di-filter: WHERE tenant_id = '...'
-	scopedDB := model.GetDB(c)
+	scopedDB := requestDatabase(c, ctrl.DB)
 
 	if err := scopedDB.First(&setting).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -76,9 +76,7 @@ func (ctrl *SettingController) GetSettings(c *gin.Context) {
 				ParticipantQuota:   500,
 			}
 
-			// Create menggunakan Scoped DB atau Global DB tidak masalah
-			// asal TenantID terisi
-			if createErr := ctrl.DB.WithContext(c).Create(&setting).Error; createErr != nil {
+			if createErr := scopedDB.Session(&gorm.Session{NewDB: true}).Create(&setting).Error; createErr != nil {
 				ctrl.Logger.Error("Failed to init settings", zap.Error(createErr))
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to init settings"})
 				return
@@ -99,7 +97,7 @@ func (ctrl *SettingController) GetSettings(c *gin.Context) {
 	}
 
 	// 6. Simpan ke Redis (Cache Per Tenant)
-	if common.RedisEnabled && !cached {
+	if common.RedisEnabled && common.RDB != nil && !cached {
 		data, err := json.Marshal(setting)
 		if err == nil {
 			// Simpan dengan key spesifik tenant
@@ -144,34 +142,22 @@ func (ctrl *SettingController) UpdateSettings(c *gin.Context) {
 		return
 	}
 
-	updateData := map[string]interface{}{
-		"app_name":                 input.AppName,
-		"app_tagline":              input.AppTagline,
-		"app_logo":                 input.AppLogo,
-		"discord_payment_webhook":   input.DiscordPaymentWebhook,
-		"discord_email_webhook":     input.DiscordEmailWebhook,
-		"discord_register_webhook":  input.DiscordRegisterWebhook,
-		"discord_withdrawal_webhook": input.DiscordWithdrawalWebhook,
-		"is_dev_mode":               input.IsDevMode,
-		"is_registration_open":      input.IsRegistrationOpen,
-		"banner_text":               input.BannerText,
-		"is_maintenance_mode":      input.IsMaintenanceMode,
-		"event_start_time":         input.EventStartTime,
-		"email_quota":              input.EmailQuota,
-		"participant_quota":        input.ParticipantQuota,
-	}
+	// Preserve identifiers
+	input.ID = setting.ID
+	input.TenantID = setting.TenantID
+	input.CreatedAt = setting.CreatedAt
 
-	if err := scopedDB.WithContext(c).Model(&setting).Updates(updateData).Error; err != nil {
+	if err := scopedDB.WithContext(c).Save(&input).Error; err != nil {
 		ctrl.Logger.Error("Update failed", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update settings"})
 		return
 	}
 
 	// 3. INVALIDASI CACHE (Gunakan Key Spesifik Tenant)
-	if common.RedisEnabled {
+	if common.RedisEnabled && common.RDB != nil {
 		cacheKey := model.GetSettingCacheKey(tenantIDStr)
 		common.DeleteCache(ctx, cacheKey)
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Settings updated", "data": input})
+	c.JSON(http.StatusOK, gin.H{"message": "Settings updated", "data": input.ToResponse(true)})
 }

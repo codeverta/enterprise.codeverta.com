@@ -542,10 +542,12 @@ export default function SalesInvoiceFormPage() {
     const init = async () => {
       setLoading(true);
       try {
+        // Master-data failures must not prevent a document source (Sales Order
+        // or Delivery Note) from being loaded into a new invoice.
         const [opts, compList, whList, custList] = await Promise.all([
-          salesInvoiceApi.options(),
-          warehouseApi.listCompanies(),
-          warehouseApi.list(),
+          salesInvoiceApi.options().catch(() => null),
+          warehouseApi.listCompanies().catch(() => [] as CompanyOption[]),
+          warehouseApi.list().catch(() => []),
           customerApi.list().catch(() => [] as Customer[]),
         ]);
         if (opts) setOptions(opts);

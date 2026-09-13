@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"gin-template/common"
+	"gin-template/internal/tenancy"
 	"gin-template/model"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +17,7 @@ import (
 // Claims mirrors controller/auth.go Claims — both MUST stay in sync.
 type Claims struct {
 	UserId                 string `json:"id"`
+	TenantID               string `json:"tenant_id"`
 	Username               string `json:"username"`
 	Role                   int    `json:"role"`
 	TokenVersion           string `json:"token_version"`
@@ -22,6 +25,27 @@ type Claims struct {
 	ImpersonatorRole       int    `json:"impersonator_role,omitempty"`
 	ImpersonationSessionID string `json:"impersonation_session_id,omitempty"`
 	jwt.RegisteredClaims
+}
+
+func validateTenantClaim(c *gin.Context, claims *Claims) bool {
+	tenant, scoped := tenancy.FromContext(c.Request.Context())
+	if !scoped {
+		return true
+	}
+	if claims.TenantID == "" || claims.TenantID != tenant.ID.String() {
+		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": gin.H{
+			"code":       "FORBIDDEN",
+			"message":    "Token does not belong to this tenant",
+			"request_id": c.GetString("request_id"),
+		}})
+		return false
+	}
+	c.Set("jwt_tenant_id", claims.TenantID)
+	return true
+}
+
+func validTokenIssuer(claims *Claims) bool {
+	return !strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant") || claims.Issuer == "gin-template"
 }
 
 func validateImpersonationClaims(c *gin.Context, db *gorm.DB, claims *Claims, user *model.User) bool {
@@ -79,15 +103,18 @@ func authHelper(c *gin.Context, minRole int) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(common.JWTSecret), nil
-	})
+	}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 	// Cek error parsing atau token tidak valid
-	if err != nil || !token.Valid {
+	if err != nil || !token.Valid || !validTokenIssuer(claims) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
 			"message": "Unauthorized: Invalid or expired token",
 		})
 		c.Abort()
+		return
+	}
+	if !validateTenantClaim(c, claims) {
 		return
 	}
 
@@ -166,10 +193,13 @@ func MentorAuth() func(c *gin.Context) {
 		claims := &Claims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(common.JWTSecret), nil
-		})
-		if err != nil || !token.Valid {
+		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
+		if err != nil || !token.Valid || !validTokenIssuer(claims) {
 			c.JSON(http.StatusUnauthorized, gin.H{"success": false, "message": "Unauthorized: Invalid or expired token"})
 			c.Abort()
+			return
+		}
+		if !validateTenantClaim(c, claims) {
 			return
 		}
 
@@ -356,10 +386,10 @@ func PassiveAuth() gin.HandlerFunc {
 		// Parse token
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(common.JWTSecret), nil
-		})
+		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 
 		// Jika token valid, set context
-		if err == nil && token.Valid {
+		if err == nil && token.Valid && validTokenIssuer(claims) && validateTenantClaim(c, claims) {
 			if claims.ImpersonationSessionID != "" {
 				userID, userErr := uuid.Parse(claims.UserId)
 				sessionID, sessionErr := uuid.Parse(claims.ImpersonationSessionID)

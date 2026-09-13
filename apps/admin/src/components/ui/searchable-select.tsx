@@ -103,7 +103,7 @@ export function SearchableSelect({
     }
   };
 
-  const normalizedOptions: SearchableSelectOption[] = asyncOptions.map((opt) => {
+  const normalizedOptions: SearchableSelectOption[] = asyncOptions.filter(Boolean).map((opt) => {
     if (typeof opt === "string") {
       return { value: opt, label: opt };
     }

@@ -1,9 +1,16 @@
 package router
 
 import (
+	"context"
+	"database/sql"
 	"gin-template/common"
 	"gin-template/controller"
+	"gin-template/internal/platform/adminauth"
+	platformhttp "gin-template/internal/platform/httpapi"
+	"gin-template/internal/platform/provisioning"
+	"gin-template/internal/tenancy"
 	"gin-template/middleware"
+	"gin-template/model"
 	accountingmodule "gin-template/modules/accounting"
 	buyingmodule "gin-template/modules/buying"
 	frameworkmodule "gin-template/modules/framework"
@@ -17,7 +24,9 @@ import (
 	"gin-template/services"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -26,9 +35,12 @@ import (
 
 func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 	logger, _ := zap.NewProduction()
-	middleware.RegisterTenantPlugin(db)
-	middleware.RegisterAuditPlugin(db)
-	tenantMid := &middleware.TenantMiddleware{DB: db, Redis: common.RDB}
+	databasePerTenant := strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant")
+	if !databasePerTenant {
+		middleware.RegisterTenantPlugin(db)
+		middleware.RegisterAuditPlugin(db)
+	}
+	legacyTenantMid := &middleware.TenantMiddleware{DB: db, Redis: common.RDB}
 	secretID := os.Getenv("TENCENTCLOUD_SECRET_ID")
 	secretKey := os.Getenv("TENCENTCLOUD_SECRET_KEY")
 	region := "ap-singapore"
@@ -79,8 +91,9 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		balance:     controller.NewBalanceWithdrawalController(db),
 		walletAdmin: controller.NewWalletAdminController(db),
 		ws:          controller.NewWebSocketController(db),
-		country:     controller.NewCountryController(),
-		currency:    controller.NewCurrencyController(db),
+		country:        controller.NewCountryController(),
+		currency:       controller.NewCurrencyController(db),
+		globalDefaults: controller.NewGlobalDefaultsController(db),
 	}
 
 	// Base API Group and Global Middlewares
@@ -96,15 +109,88 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 		"/api/buying/items/upload-image",
 	))
 
-	// Register Sub-Modules Router
-	registerAuthRoutes(apiRouter, ctrls)
+	var resolveTenant gin.HandlerFunc
+	var platformAPI *platformhttp.Controller
+	var platformAuth *adminauth.Service
+	if databasePerTenant {
+		cipher, err := tenancy.NewCredentialCipher(os.Getenv("TENANT_CREDENTIAL_KEY"))
+		if err != nil {
+			panic("TENANT_CREDENTIAL_KEY must be a base64 encoded 32-byte key in database-per-tenant mode")
+		}
+		registry := tenancy.NewRegistry(db, durationEnv("TENANT_REGISTRY_CACHE_TTL", 5*time.Minute))
+		if err := registry.Migrate(); err != nil {
+			panic("failed to migrate platform tenant registry: " + err.Error())
+		}
+		databaseManager := tenancy.NewDatabaseManager(cipher, tenancy.PoolConfig{
+			MaxOpenConns:    intEnv("TENANT_DB_MAX_OPEN_CONNS", 20),
+			MaxIdleConns:    intEnv("TENANT_DB_MAX_IDLE_CONNS", 5),
+			ConnMaxLifetime: durationEnv("TENANT_DB_CONN_MAX_LIFETIME", 30*time.Minute),
+			ConnMaxIdleTime: durationEnv("TENANT_DB_CONN_MAX_IDLE_TIME", 5*time.Minute),
+			IdlePoolTTL:     durationEnv("TENANT_DB_IDLE_POOL_TTL", 15*time.Minute),
+		})
+		databaseManager.SetOnOpen(middleware.RegisterAuditPlugin)
+		resolveTenant = tenancy.NewMiddleware(registry, databaseManager).Resolve()
+		platformAuth, err = adminauth.New(db, os.Getenv("PLATFORM_JWT_SECRET"))
+		if err != nil {
+			panic(err)
+		}
+		adminDSN := strings.TrimSpace(os.Getenv("TENANT_DB_ADMIN_DSN"))
+		if adminDSN == "" {
+			panic("TENANT_DB_ADMIN_DSN is required in database-per-tenant mode")
+		}
+		provisioningDB, err := sql.Open("mysql", adminDSN)
+		if err != nil {
+			panic("failed to initialize tenant database provisioner: " + err.Error())
+		}
+		provisionService := provisioning.NewService(registry, databaseManager, cipher, provisioning.MySQLProvisioner{Admin: provisioningDB},
+			func(_ context.Context, tenantDB *gorm.DB) error { return model.MigrateTenantSchema(tenantDB) },
+			func(ctx context.Context, tenantDB *gorm.DB, tenant tenancy.Record, request provisioning.Request) error {
+				return model.BootstrapTenantAdmin(ctx, tenantDB, tenant, request.AdminEmail, request.AdminPassword)
+			}, envString("TENANT_DB_HOST", "mysql"), uint16(intEnv("TENANT_DB_PORT", 3306)), envString("TENANT_PLATFORM_DOMAIN_SUFFIX", "erp.example.com"))
+		platformAPI = &platformhttp.Controller{Auth: platformAuth, Registry: registry, Databases: databaseManager, Provision: provisionService, Migrate: func(_ context.Context, tenantDB *gorm.DB) error {
+			return model.MigrateTenantSchema(tenantDB)
+		}}
+	} else {
+		resolveTenant = legacyTenantMid.TenantResolver()
+	}
 
-	// Public Tenant Independent routes
-	apiRouter.POST("/xendit/webhook", ctrls.payment.XenditWebhook)
-	apiRouter.POST("/webhooks/dispatcher", gin.WrapF(controller.HandleWebhook(db, os.Getenv("DISPATCHER_WEBHOOK_SECRET"))))
+	// Legacy mode preserves the old platform endpoints. In database-per-tenant
+	// mode tenant authentication is hostname-scoped like all ERP endpoints.
+	if databasePerTenant {
+		platformHost := strings.TrimSpace(os.Getenv("PLATFORM_ADMIN_HOST"))
+		if platformHost == "" {
+			panic("PLATFORM_ADMIN_HOST is required in database-per-tenant mode")
+		}
+		platform := apiRouter.Group("/platform")
+		platform.Use(adminauth.RequireHost(platformHost))
+		platform.POST("/auth/login", middleware.CriticalRateLimit(), platformAPI.Login)
+		platformProtected := platform.Group("")
+		platformProtected.Use(platformAuth.Authenticate(), middleware.CriticalRateLimit())
+		platformProtected.GET("/tenants", platformAPI.ListTenants)
+		platformProtected.POST("/tenants", platformAPI.CreateTenant)
+		platformProtected.PATCH("/tenants/:slug/status", platformAPI.SetTenantState)
+		platformProtected.GET("/tenants/:slug/health", platformAPI.Health)
+		platformProtected.POST("/tenants/:slug/migrate", platformAPI.MigrateTenant)
+		platformProtected.POST("/tenants/:slug/domains", platformAPI.BeginDomainVerification)
+		platformProtected.POST("/tenants/:slug/domains/:domain/verify", platformAPI.VerifyDomain)
+
+		tenantAuth := apiRouter.Group("")
+		tenantAuth.Use(resolveTenant, tenantModelContextBridge())
+		registerTenantAuthRoutes(tenantAuth, ctrls)
+	} else {
+		registerAuthRoutes(apiRouter, ctrls)
+	}
+
+	// Legacy webhooks use the former shared business database. They are not
+	// mounted in strict mode until provider-account -> tenant mapping is stored
+	// in platform_db; silently running them against platform_db would be unsafe.
+	if !databasePerTenant {
+		apiRouter.POST("/xendit/webhook", ctrls.payment.XenditWebhook)
+		apiRouter.POST("/webhooks/dispatcher", gin.WrapF(controller.HandleWebhook(db, os.Getenv("DISPATCHER_WEBHOOK_SECRET"))))
+	}
 
 	tenantGroup := apiRouter.Group("")
-	tenantGroup.Use(tenantMid.TenantResolver())
+	tenantGroup.Use(resolveTenant, tenantModelContextBridge())
 	{
 		registerPublicAndTenantRoutes(tenantGroup, ctrls)
 		registerAdminRoutes(tenantGroup, ctrls)
@@ -138,6 +224,26 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 			currencyRoute.DELETE("/:id", middleware.AdminAuth(), ctrls.currency.Delete)
 		}
 
+		// Global Defaults
+		globalDefaultsRoute := tenantGroup.Group("/global-defaults")
+		{
+			globalDefaultsRoute.GET("", ctrls.globalDefaults.Get)
+			globalDefaultsRoute.GET("/:id", ctrls.globalDefaults.Get)
+			globalDefaultsRoute.PUT("", middleware.AdminAuth(), ctrls.globalDefaults.Update)
+			globalDefaultsRoute.PUT("/:id", middleware.AdminAuth(), ctrls.globalDefaults.Update)
+			globalDefaultsRoute.POST("", middleware.AdminAuth(), ctrls.globalDefaults.Update)
+		}
+
+		// System Settings
+		systemSettingsRoute := tenantGroup.Group("/system-settings")
+		{
+			systemSettingsRoute.GET("", ctrls.setting.GetSettings)
+			systemSettingsRoute.GET("/:id", ctrls.setting.GetSettings)
+			systemSettingsRoute.PUT("", middleware.AdminAuth(), ctrls.setting.UpdateSettings)
+			systemSettingsRoute.PUT("/:id", middleware.AdminAuth(), ctrls.setting.UpdateSettings)
+			systemSettingsRoute.POST("", middleware.AdminAuth(), ctrls.setting.UpdateSettings)
+		}
+
 		// Finance & Payout Settings
 		financeRoute := tenantGroup.Group("/finance")
 		financeRoute.Use(middleware.FinanceAuth())
@@ -154,6 +260,49 @@ func SetApiRouter(router *gin.Engine, db *gorm.DB) {
 			payoutRoute.GET("/payout", ctrls.balance.GetPayoutSetting)
 			payoutRoute.POST("/payout", ctrls.balance.UpdatePayoutSetting)
 		}
+	}
+}
+
+func intEnv(name string, fallback int) int {
+	value, err := strconv.Atoi(strings.TrimSpace(os.Getenv(name)))
+	if err != nil || value <= 0 {
+		return fallback
+	}
+	return value
+}
+
+func durationEnv(name string, fallback time.Duration) time.Duration {
+	value, err := time.ParseDuration(strings.TrimSpace(os.Getenv(name)))
+	if err != nil || value <= 0 {
+		return fallback
+	}
+	return value
+}
+
+func envString(name, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		return value
+	}
+	return fallback
+}
+
+// tenantModelContextBridge keeps existing model hooks working while the codebase
+// is incrementally moved from tenant_id scoping to physical database isolation.
+func tenantModelContextBridge() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		safe, scoped := tenancy.FromContext(c.Request.Context())
+		db, dbErr := tenancy.DBFromContext(c.Request.Context())
+		if !scoped || dbErr != nil {
+			c.Next()
+			return
+		}
+		legacy := model.Tenant{ID: safe.ID, Name: safe.Slug, Domain: safe.Domain, IsActive: safe.Status == tenancy.StatusActive || safe.Status == tenancy.StatusTrial}
+		ctx := context.WithValue(c.Request.Context(), common.CtxTenantKey, legacy)
+		ctx = tenancy.WithScope(ctx, safe, db.WithContext(ctx))
+		c.Request = c.Request.WithContext(ctx)
+		c.Set("db", db.WithContext(ctx))
+		c.Set(common.CtxTenantKey, legacy)
+		c.Next()
 	}
 }
 
@@ -177,8 +326,9 @@ type controllerList struct {
 	balance     *controller.BalanceWithdrawalController
 	walletAdmin *controller.WalletAdminController
 	ws          *controller.WebSocketController
-	country     *controller.CountryController
-	currency    *controller.CurrencyController
+	country        *controller.CountryController
+	currency       *controller.CurrencyController
+	globalDefaults *controller.GlobalDefaultsController
 }
 
 func registerOrganizationRoutes(rg *gin.RouterGroup, db *gorm.DB) {

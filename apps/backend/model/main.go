@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"gin-template/common"
+	"gin-template/internal/platform/adminauth"
+	"gin-template/internal/platform/entitlement"
+	"gin-template/internal/tenancy"
 	crmmodel "gin-template/model/crm"
 	accountingmodel "gin-template/modules/accounting/model"
 	buyingmodel "gin-template/modules/buying/model"
@@ -66,6 +69,40 @@ func InitDB() error {
 		return err
 	}
 	DB = db
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("TENANCY_MODE")), "database-per-tenant") {
+		// This connection is platform_db. ERP tables are migrated lazily in each
+		// tenant database by provisioning or the tenant migration runner.
+		if err := tenancy.NewRegistry(db, 5*time.Minute).Migrate(); err != nil {
+			return err
+		}
+		if err := adminauth.Migrate(db); err != nil {
+			return err
+		}
+		return entitlement.New(db, 5*time.Minute).Migrate()
+	}
+	if err := MigrateTenantSchema(db); err != nil {
+		return err
+	}
+	if err := EnsureDefaultTenant(db); err != nil {
+		return fmt.Errorf("default tenant initialization failed: %w", err)
+	}
+
+	// The onboarding administrator must exist before dependent module defaults
+	// are installed. The remaining seeders are coordinated by one resumable,
+	// versioned first-run pipeline.
+	if err := SeedUsers(db); err != nil {
+		return fmt.Errorf("administrator initialization failed: %w", err)
+	}
+	if err := SeedInstallationData(db); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// MigrateTenantSchema applies only ERP schema migrations to one tenant database.
+// It deliberately does not touch platform_db and is shared by provisioning and CLI migration.
+func MigrateTenantSchema(db *gorm.DB) error {
 
 	// Core models are deliberately independent from any product module (LMS,
 	// inventory, HR, accounting, and so on). Product modules own their own
@@ -85,11 +122,13 @@ func InitDB() error {
 		&Currency{},
 		&UserAppPreference{},
 		&UserCompanyUsage{},
+		&ModuleProfile{},
+		&UserERPSetting{},
+		&GlobalDefaults{},
 	}
 	models = append(models, ChatModels()...)
 
-	err = db.AutoMigrate(models...)
-	if err != nil {
+	if err := db.AutoMigrate(models...); err != nil {
 		return fmt.Errorf("auto migration failed: %w", err)
 	}
 	if err := crmmodel.Migrate(db); err != nil {
@@ -129,20 +168,6 @@ func InitDB() error {
 	if err := syncSubscriptionPlanReferences(db); err != nil {
 		return fmt.Errorf("subscription plan reference migration failed: %w", err)
 	}
-	if err := EnsureDefaultTenant(db); err != nil {
-		return fmt.Errorf("default tenant initialization failed: %w", err)
-	}
-
-	// The onboarding administrator must exist before dependent module defaults
-	// are installed. The remaining seeders are coordinated by one resumable,
-	// versioned first-run pipeline.
-	if err := SeedUsers(db); err != nil {
-		return fmt.Errorf("administrator initialization failed: %w", err)
-	}
-	if err := SeedInstallationData(db); err != nil {
-		return err
-	}
-
 	return nil
 }
 
