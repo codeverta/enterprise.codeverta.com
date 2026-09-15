@@ -62,22 +62,36 @@ func (r *RoleDefinition) BeforeSave(_ *gorm.DB) error {
 }
 
 type RolePermission struct {
-	ID         uuid.UUID `json:"id" gorm:"type:char(36);primaryKey"`
-	TenantID   uuid.UUID `json:"tenant_id" gorm:"type:char(36);not null;index"`
-	RoleID     uuid.UUID `json:"role_id" gorm:"type:char(36);not null;index"`
-	Resource   string    `json:"resource" gorm:"type:varchar(255);not null;index" binding:"required"`
-	CanRead    bool      `json:"can_read"`
-	CanCreate  bool      `json:"can_create"`
-	CanUpdate  bool      `json:"can_update"`
-	CanDelete  bool      `json:"can_delete"`
-	AllowMenu  bool      `json:"allow_menu"`
-	AllowPage  bool      `json:"allow_page"`
-	AllowAPI   bool      `json:"allow_api"`
-	FieldName  string    `json:"field_name" gorm:"type:varchar(120);index"`
-	FieldRead  bool      `json:"field_read"`
-	FieldWrite bool      `json:"field_write"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID            uuid.UUID      `json:"id" gorm:"type:char(36);primaryKey"`
+	TenantID      uuid.UUID      `json:"tenant_id" gorm:"type:char(36);not null;index"`
+	RoleID        uuid.UUID      `json:"role_id" gorm:"type:char(36);not null;index"`
+	Resource      string         `json:"resource" gorm:"type:varchar(255);not null;index" binding:"required"`
+	CanSelect     bool           `json:"can_select"`
+	CanRead       bool           `json:"can_read"`
+	CanCreate     bool           `json:"can_create"`
+	CanUpdate     bool           `json:"can_update"`
+	CanDelete     bool           `json:"can_delete"`
+	CanSubmit     bool           `json:"can_submit"`
+	CanCancel     bool           `json:"can_cancel"`
+	CanAmend      bool           `json:"can_amend"`
+	CanPrint      bool           `json:"can_print"`
+	CanEmail      bool           `json:"can_email"`
+	CanReport     bool           `json:"can_report"`
+	CanImport     bool           `json:"can_import"`
+	CanExport     bool           `json:"can_export"`
+	CanShare      bool           `json:"can_share"`
+	CanMask       bool           `json:"can_mask"`
+	OnlyIfCreator bool           `json:"only_if_creator"`
+	Level         int            `json:"level" gorm:"default:0;index"`
+	AllowMenu     bool           `json:"allow_menu"`
+	AllowPage     bool           `json:"allow_page"`
+	AllowAPI      bool           `json:"allow_api"`
+	FieldName     string         `json:"field_name" gorm:"type:varchar(120);index"`
+	FieldRead     bool           `json:"field_read"`
+	FieldWrite    bool           `json:"field_write"`
+	Role          RoleDefinition `json:"role,omitempty" gorm:"foreignKey:RoleID"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
 }
 
 func (p *RolePermission) BeforeCreate(_ *gorm.DB) error {
@@ -138,14 +152,36 @@ func (a *UserRoleProfileAssignment) BeforeCreate(_ *gorm.DB) error {
 
 func permissionActionAllowed(permission RolePermission, action string) bool {
 	switch strings.ToLower(action) {
+	case "select":
+		return permission.CanSelect || permission.CanRead
 	case "read":
 		return permission.CanRead
 	case "create":
 		return permission.CanCreate
-	case "update":
+	case "update", "write":
 		return permission.CanUpdate
 	case "delete":
 		return permission.CanDelete
+	case "submit":
+		return permission.CanSubmit
+	case "cancel":
+		return permission.CanCancel
+	case "amend":
+		return permission.CanAmend
+	case "print":
+		return permission.CanPrint
+	case "email":
+		return permission.CanEmail
+	case "report":
+		return permission.CanReport
+	case "import":
+		return permission.CanImport
+	case "export":
+		return permission.CanExport
+	case "share":
+		return permission.CanShare
+	case "mask":
+		return permission.CanMask
 	case "menu":
 		return permission.AllowMenu
 	case "page":

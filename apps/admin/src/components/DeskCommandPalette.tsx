@@ -28,6 +28,7 @@ import { erpWorkspaces, type WorkspaceNavigationItem } from "@/lib/erp-workspace
 import { useLanguage } from "@/context/LanguageContext";
 import { getNavigationLabel } from "@/lib/navigation-i18n";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
+import { canAccessModule, canSeeDeskMenu, useMyPermissions } from "@/lib/dynamic-permissions";
 
 const normalize = (value: string) => value.trim().toLocaleLowerCase("id-ID");
 
@@ -122,7 +123,14 @@ export function DeskCommandPalette({
   const onOpenChange = controlledOnOpenChange || store.setOpen;
 
   const [query, setQuery] = useState("");
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch { user = null; }
+  const legacyAdmin = Number(user?.role || 0) >= 99;
+  const { data: permissions } = useMyPermissions(!legacyAdmin);
   const searchResults = useMemo(() => buildSearchResults(), []);
+  const allowedSearchResults = searchResults.filter((item) => legacyAdmin || (item.type === "module"
+    ? canAccessModule(permissions, item.moduleSlug, erpWorkspaces[item.moduleSlug])
+    : canSeeDeskMenu(permissions, item.href)));
   const term = normalize(query);
 
   const matches = (item: SearchResult) =>
@@ -139,10 +147,10 @@ export function DeskCommandPalette({
       .map(normalize)
       .some((value) => value.includes(term));
 
-  const visibleModules = searchResults.filter(
+  const visibleModules = allowedSearchResults.filter(
     (item) => item.type === "module" && (!term || matches(item)),
   );
-  const visibleFeatures = searchResults
+  const visibleFeatures = allowedSearchResults
     .filter((item) => item.type === "feature" && (term ? matches(item) : false))
     .slice(0, 36);
 

@@ -80,6 +80,13 @@ jobs:
         with:
           targets: ${{ matrix.rustTarget }}
 
+      - name: Cache Rust dependencies and build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/admin/src-tauri -> target
+          shared-key: desktop-${{ matrix.rustTarget || runner.os }}
+          cache-all-crates: true
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -97,7 +104,7 @@ jobs:
             patchelf
 
       - name: Install JavaScript dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Generate release notes
         id: release_notes

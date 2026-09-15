@@ -5,8 +5,11 @@ import DashboardLayout from "@/layout/DashboardLayout";
 import { isAdminRole } from "@/lib/erp-desk";
 import { getWorkspaceFromPath } from "@/lib/erp-workspaces";
 import {
+  canAccessModule,
   canAccessDeskPage,
+  filterWorkspaceNavigation,
   loadMyPermissions,
+  type MyPermissions,
 } from "@/lib/dynamic-permissions";
 
 const buyingWorkspace = getWorkspaceFromPath("/desk/buying", "buying")!;
@@ -14,7 +17,7 @@ const buyingWorkspace = getWorkspaceFromPath("/desk/buying", "buying")!;
 const BuyingDashboard = DashboardLayout(
   ({ children }: { children: React.ReactNode }) => <>{children}</>,
   {
-    navigation: () => buyingWorkspace.navigation,
+    navigation: ({ navigation }: { navigation: typeof buyingWorkspace.navigation }) => navigation,
     basePath: "",
     homePath: "/desk",
     navigationState: () => ({ workspace: "buying" }),
@@ -38,6 +41,7 @@ export default function BuyingLayout({
   }
   const legacyAdmin = isAdminRole(user?.role);
   const [allowed, setAllowed] = useState(legacyAdmin);
+  const [permissions, setPermissions] = useState<MyPermissions | null>(legacyAdmin ? { legacy_admin: true } : null);
   const [checking, setChecking] = useState(!legacyAdmin);
   useEffect(() => {
     if (legacyAdmin) {
@@ -46,9 +50,10 @@ export default function BuyingLayout({
       return;
     }
     loadMyPermissions()
-      .then((permissions) =>
-        setAllowed(canAccessDeskPage(permissions, pathname)),
-      )
+      .then((nextPermissions) => {
+        setPermissions(nextPermissions);
+        setAllowed(pathname === "/desk/buying" ? canAccessModule(nextPermissions, "buying", buyingWorkspace) : canAccessDeskPage(nextPermissions, pathname));
+      })
       .catch(() => setAllowed(false))
       .finally(() => setChecking(false));
   }, [legacyAdmin, pathname]);
@@ -59,5 +64,6 @@ export default function BuyingLayout({
       </div>
     );
   if (!allowed) return <Navigate to="/dashboard" replace />;
-  return <BuyingDashboard>{children}</BuyingDashboard>;
+  const navigation = legacyAdmin ? buyingWorkspace.navigation : filterWorkspaceNavigation(permissions, buyingWorkspace.navigation);
+  return <BuyingDashboard navigation={navigation}>{children}</BuyingDashboard>;
 }

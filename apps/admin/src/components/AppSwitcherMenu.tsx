@@ -22,6 +22,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { deskModules } from "@/lib/erp-desk";
+import { erpWorkspaces } from "@/lib/erp-workspaces";
+import { canAccessModule, useMyPermissions } from "@/lib/dynamic-permissions";
 import { useLanguage } from "@/context/LanguageContext";
 import { getNavigationLabel } from "@/lib/navigation-i18n";
 
@@ -51,6 +53,13 @@ export default function AppSwitcherMenu({
 }: AppSwitcherMenuProps) {
   const navigate = useNavigate();
   const { t } = useLanguage();
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem("user") || "null"); } catch { user = null; }
+  const legacyAdmin = Number(user?.role || 0) >= 99;
+  const { data: permissions } = useMyPermissions(!legacyAdmin);
+  const visibleModules = deskModules.filter((module) =>
+    !module.muted && (legacyAdmin || canAccessModule(permissions, module.slug, erpWorkspaces[module.slug])),
+  );
 
   const toggleFullWidth = () => {
     const enabled = document.documentElement.classList.toggle("erp-full-width");
@@ -92,8 +101,7 @@ export default function AppSwitcherMenu({
             sideOffset={10}
             className="z-[90] max-h-[70vh] w-64 overflow-y-auto rounded-2xl p-2 shadow-xl"
           >
-            {deskModules
-              .filter((module) => !module.muted)
+            {visibleModules
               .map(({ name, slug, icon: Icon }, index) => (
                 <DropdownMenuItem
                   key={slug}

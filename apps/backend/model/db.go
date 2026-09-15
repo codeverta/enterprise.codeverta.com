@@ -15,7 +15,7 @@ var DB *gorm.DB
 
 func ensureSystemSettingColumns(db *gorm.DB) error {
 	migrator := db.Migrator()
-	columns := []string{"email_quota", "email_used", "participant_quota", "participant_used", "discord_withdrawal_webhook"}
+	columns := []string{"email_quota", "email_used", "participant_quota", "participant_used", "discord_withdrawal_webhook", "rounding_method"}
 
 	for _, column := range columns {
 		if !migrator.HasColumn(&SystemSetting{}, column) {
@@ -30,6 +30,7 @@ func ensureSystemSettingColumns(db *gorm.DB) error {
 		"email_used":        gorm.Expr("COALESCE(email_used, 0)"),
 		"participant_quota": gorm.Expr("COALESCE(participant_quota, 0)"),
 		"participant_used":  gorm.Expr("COALESCE(participant_used, 0)"),
+		"rounding_method":   gorm.Expr("COALESCE(NULLIF(rounding_method, ''), ?)", DefaultRoundingMethod),
 	}).Error
 }
 

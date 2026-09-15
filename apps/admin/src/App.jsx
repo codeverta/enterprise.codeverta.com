@@ -109,6 +109,8 @@ const router = createBrowserRouter([
           { path: "desk/user/*", element: <OrganizationModule /> },
           { path: "desk/organization/tenants/*", element: <OrganizationModule /> },
           { path: "desk/organization/permissions/*", element: <OrganizationModule /> },
+          { path: "desk/permission-manager", element: <OrganizationModule /> },
+          { path: "desk/permission-manager/*", element: <OrganizationModule /> },
           { path: "desk/company/*", element: <OrganizationModule /> },
           { path: "desk/branch/*", element: <OrganizationModule /> },
           { path: "desk/department/*", element: <OrganizationModule /> },

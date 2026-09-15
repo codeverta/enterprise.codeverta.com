@@ -54,7 +54,7 @@ export default function OrganizationModule() {
 
   return (
     <WorkspaceModuleLayout slug="organization">
-      {pathname.includes("/permissions") ? (
+      {pathname.includes("/permissions") || pathname.includes("/permission-manager") ? (
         <PermissionManagementPage />
       ) : pathname.includes("/tenants") ? (
         <TenantPage />

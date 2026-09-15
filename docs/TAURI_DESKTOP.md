@@ -350,12 +350,37 @@ Versi harus lebih tinggi daripada aplikasi yang sudah terpasang dan harus sama d
 
 ```bash
 pnpm desktop:version 0.0.2
-git add apps/admin/package.json apps/admin/src-tauri/tauri.conf.json \
-  apps/admin/src-tauri/Cargo.toml apps/admin/src-tauri/Cargo.lock
+
+# Periksa perubahan, lalu commit semua perubahan yang memang akan dirilis.
+git status
+git add apps/admin package.json pnpm-lock.yaml .github docs
 git commit -m "release: desktop v0.0.2"
-git tag v0.0.2
-git push origin main v0.0.2
+
+# Tag harus sama persis dengan versi aplikasi.
+git tag -a v0.0.2 -m "Release v0.0.2"
+git push origin HEAD
+git push origin v0.0.2
 ```
+
+Jika branch utama memiliki nama tertentu, `git push origin HEAD` akan mendorong
+commit pada branch yang sedang aktif tanpa perlu menebak nama branch.
+
+Untuk rilis berikutnya, ganti nomor versi pada seluruh command. Contoh rilis
+dari `0.0.2` ke `0.0.3`:
+
+```bash
+pnpm desktop:version 0.0.3
+git status
+git add apps/admin package.json pnpm-lock.yaml .github docs
+git commit -m "release: desktop v0.0.3"
+git tag -a v0.0.3 -m "Release v0.0.3"
+git push origin HEAD
+git push origin v0.0.3
+```
+
+Setiap versi hanya boleh memiliki satu tag. Jika tag belum pernah dipakai,
+command di atas cukup dijalankan sekali. Jangan menggunakan kembali tag yang
+sudah berhasil dipublikasikan; gunakan nomor versi baru.
 
 Push tag `v*` memulai `.github/workflows/desktop-build.yml`. Workflow menolak rilis bila tag dan versi file tidak sama atau signing secret belum tersedia. Target yang dibangun:
 
@@ -374,7 +399,24 @@ https://github.com/codeverta/enterprise.codeverta.com/releases/latest/download/l
 
 Workflow juga dapat dijalankan manual dari tab **Actions** dengan memasukkan tag yang sudah sesuai dengan versi source.
 
-### 4. Uji updater sebelum rilis umum
+### 4. Cara pengguna menerima update
+
+Pengguna tidak perlu mengunduh installer secara manual. Setelah GitHub Actions
+selesai dan GitHub Release berstatus published:
+
+1. pengguna membuka aplikasi desktop dengan koneksi internet;
+2. aplikasi memeriksa `latest.json` beberapa detik setelah startup;
+3. jika versi baru tersedia, dialog **Update Codeverta tersedia** muncul;
+4. pengguna memilih **Update sekarang**;
+5. paket diunduh dan signature diverifikasi;
+6. aplikasi memasang update, restart, lalu berjalan dengan versi baru.
+
+Jika pengguna memilih **Nanti**, update akan ditawarkan kembali saat aplikasi
+dibuka pada sesi berikutnya. Update otomatis hanya berlaku untuk aplikasi
+desktop Tauri yang memakai public key updater yang sama. Browser web biasa tidak
+mengikuti mekanisme ini.
+
+### 5. Uji updater sebelum rilis umum
 
 Update hanya dapat diuji dari binary dengan versi lebih rendah. Contoh yang benar:
 

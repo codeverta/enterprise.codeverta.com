@@ -23,6 +23,12 @@ func registerAdminRoutes(rg *gin.RouterGroup, ctrls *controllerList) {
 		permissionAdmin.DELETE("/profiles/:id", authorization.DeleteProfile)
 		permissionAdmin.GET("/users/:id/assignments", authorization.GetAssignments)
 		permissionAdmin.PUT("/users/:id/assignments", authorization.SetAssignments)
+		permissionAdmin.GET("/permissions", authorization.ListPermissions)
+		permissionAdmin.POST("/permissions", authorization.CreatePermission)
+		permissionAdmin.PUT("/permissions/:id", authorization.UpdatePermission)
+		permissionAdmin.DELETE("/permissions/:id", authorization.DeletePermission)
+		permissionAdmin.POST("/permissions/restore", authorization.RestorePermissions)
+		permissionAdmin.GET("/doctypes", authorization.ListDocTypes)
 	}
 	permissionSelf := rg.Group("/authorization")
 	permissionSelf.Use(middleware.UserAuth())

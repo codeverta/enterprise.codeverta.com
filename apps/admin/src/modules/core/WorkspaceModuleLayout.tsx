@@ -4,8 +4,11 @@ import { useLocation } from "react-router";
 import DashboardLayout from "@/layout/DashboardLayout";
 import { isAdminRole } from "@/lib/erp-desk";
 import {
+  canAccessModule,
   canAccessDeskPage,
+  filterWorkspaceNavigation,
   loadMyPermissions,
+  type MyPermissions,
 } from "@/lib/dynamic-permissions";
 import { getWorkspaceFromPath, type ErpWorkspace } from "@/lib/erp-workspaces";
 
@@ -43,6 +46,7 @@ export default function WorkspaceModuleLayout({
   }
   const legacyAdmin = isAdminRole(user?.role);
   const [allowed, setAllowed] = useState(legacyAdmin);
+  const [permissions, setPermissions] = useState<MyPermissions | null>(legacyAdmin ? { legacy_admin: true } : null);
   const [checking, setChecking] = useState(!legacyAdmin);
   useEffect(() => {
     if (legacyAdmin) {
@@ -51,9 +55,11 @@ export default function WorkspaceModuleLayout({
       return;
     }
     loadMyPermissions()
-      .then((permissions) =>
-        setAllowed(canAccessDeskPage(permissions, pathname)),
-      )
+      .then((nextPermissions) => {
+        setPermissions(nextPermissions);
+        const isWorkspaceHome = pathname === `/desk/${slug}` || pathname === `/desk/${slug}/`;
+        setAllowed(isWorkspaceHome ? canAccessModule(nextPermissions, slug, getWorkspaceFromPath(pathname, slug)) : canAccessDeskPage(nextPermissions, pathname));
+      })
       .catch(() => setAllowed(false))
       .finally(() => setChecking(false));
   }, [legacyAdmin, pathname]);
@@ -66,5 +72,6 @@ export default function WorkspaceModuleLayout({
   if (!allowed) return <Navigate to="/dashboard" replace />;
   const workspace = getWorkspaceFromPath(`/desk/${slug}`, slug);
   if (!workspace) return <Navigate to="/desk" replace />;
-  return <WorkspaceShell workspace={workspace}>{children}</WorkspaceShell>;
+  const visibleWorkspace = legacyAdmin ? workspace : { ...workspace, navigation: filterWorkspaceNavigation(permissions, workspace.navigation) };
+  return <WorkspaceShell workspace={visibleWorkspace}>{children}</WorkspaceShell>;
 }

@@ -3,11 +3,14 @@ package model
 import (
 	"fmt"
 	"gin-template/common"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+const DefaultRoundingMethod = "Banker's Rounding"
 
 func GetSettingCacheKey(id string) string {
 	if common.RDB == nil {
@@ -36,20 +39,23 @@ type SystemSetting struct {
 	ParticipantUsed          int       `json:"participant_used"`
 
 	// 1. Details
-	Country                        string `json:"country" gorm:"type:varchar(100);default:'Indonesia'"`
-	Language                       string `json:"language" gorm:"type:varchar(50);default:'English'"`
-	TimeZone                       string `json:"time_zone" gorm:"type:varchar(100);default:'Asia/Jakarta'"`
-	Currency                       string `json:"currency" gorm:"type:varchar(10);default:'IDR'"`
-	EnableOnboarding               bool   `json:"enable_onboarding" gorm:"default:true"`
-	DisableDocumentSharing         bool   `json:"disable_document_sharing" gorm:"default:false"`
-	DateFormat                     string `json:"date_format" gorm:"type:varchar(30);default:'yyyy-mm-dd'"`
-	TimeFormat                     string `json:"time_format" gorm:"type:varchar(30);default:'HH:mm:ss'"`
-	NumberFormat                   string `json:"number_format" gorm:"type:varchar(50);default:'#,###.##'"`
-	UseNumberFormatFromCurrency    bool   `json:"use_number_format_from_currency" gorm:"default:false"`
-	FirstDayOfTheWeek              string `json:"first_day_of_the_week" gorm:"type:varchar(20);default:'Sunday'"`
-	FloatPrecision                 int    `json:"float_precision" gorm:"default:2"`
-	CurrencyPrecision              int    `json:"currency_precision" gorm:"default:2"`
-	RoundingMethod                 string `json:"rounding_method" gorm:"type:varchar(50);default:'Banker\\'s Rounding'"`
+	Country                     string `json:"country" gorm:"type:varchar(100);default:'Indonesia'"`
+	Language                    string `json:"language" gorm:"type:varchar(50);default:'English'"`
+	TimeZone                    string `json:"time_zone" gorm:"type:varchar(100);default:'Asia/Jakarta'"`
+	Currency                    string `json:"currency" gorm:"type:varchar(10);default:'IDR'"`
+	EnableOnboarding            bool   `json:"enable_onboarding" gorm:"default:true"`
+	DisableDocumentSharing      bool   `json:"disable_document_sharing" gorm:"default:false"`
+	DateFormat                  string `json:"date_format" gorm:"type:varchar(30);default:'yyyy-mm-dd'"`
+	TimeFormat                  string `json:"time_format" gorm:"type:varchar(30);default:'HH:mm:ss'"`
+	NumberFormat                string `json:"number_format" gorm:"type:varchar(50);default:'#,###.##'"`
+	UseNumberFormatFromCurrency bool   `json:"use_number_format_from_currency" gorm:"default:false"`
+	FirstDayOfTheWeek           string `json:"first_day_of_the_week" gorm:"type:varchar(20);default:'Sunday'"`
+	FloatPrecision              int    `json:"float_precision" gorm:"default:2"`
+	CurrencyPrecision           int    `json:"currency_precision" gorm:"default:2"`
+	// The default is applied in BeforeCreate and the additive migration below.
+	// Keeping the apostrophe out of the GORM DDL tag avoids invalid MariaDB
+	// ALTER TABLE statements when this column is added to an existing database.
+	RoundingMethod                 string `json:"rounding_method" gorm:"type:varchar(50)"`
 	ShowAbsoluteDatetimeInTimeline bool   `json:"show_absolute_datetime_in_timeline" gorm:"default:false"`
 	ApplyStrictUserPermissions     bool   `json:"apply_strict_user_permissions" gorm:"default:false"`
 	ShowExternalLinkWarning        string `json:"show_external_link_warning" gorm:"type:varchar(20);default:'Ask'"`
@@ -118,14 +124,17 @@ type SystemSetting struct {
 	LinkFieldResultsLimit     int  `json:"link_field_results_limit" gorm:"default:10"`
 	LogAPIRequests            bool `json:"log_api_requests" gorm:"default:false"`
 
-	TenantID  *uuid.UUID `json:"tenant_id" gorm:"type:char(36);uniqueIndex:idx_tenant_settings"`
-	Tenant    Tenant     `gorm:"foreignKey:TenantID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	TenantID  *uuid.UUID     `json:"tenant_id" gorm:"type:char(36);uniqueIndex:idx_tenant_settings"`
+	Tenant    Tenant         `gorm:"foreignKey:TenantID;constraint:OnUpdate:CASCADE,OnDelete:SET NULL;"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `json:"deleted_at" gorm:"index"`
 }
 
 func (p *SystemSetting) BeforeCreate(tx *gorm.DB) (err error) {
+	if strings.TrimSpace(p.RoundingMethod) == "" {
+		p.RoundingMethod = DefaultRoundingMethod
+	}
 	// Pastikan p.ID adalah uuid.Nil (nol/kosong)
 	if p.ID == uuid.Nil {
 		// Generate UUID baru
@@ -195,23 +204,23 @@ func (r *SystemSetting) ToResponse(isUser bool) map[string]interface{} {
 		"minimum_password_score":              r.MinimumPasswordScore,
 
 		// 4. Email
-		"email_footer_address":             r.EmailFooterAddress,
-		"email_retry_limit":                r.EmailRetryLimit,
-		"disable_standard_email_footer":    r.DisableStandardEmailFooter,
+		"email_footer_address":              r.EmailFooterAddress,
+		"email_retry_limit":                 r.EmailRetryLimit,
+		"disable_standard_email_footer":     r.DisableStandardEmailFooter,
 		"hide_footer_in_auto_email_reports": r.HideFooterInAutoEmailReports,
-		"attach_view_link":                 r.AttachViewLink,
-		"store_attached_pdf_document":      r.StoreAttachedPdfDocument,
-		"welcome_email_template":           r.WelcomeEmailTemplate,
-		"reset_password_template":          r.ResetPasswordTemplate,
+		"attach_view_link":                  r.AttachViewLink,
+		"store_attached_pdf_document":       r.StoreAttachedPdfDocument,
+		"welcome_email_template":            r.WelcomeEmailTemplate,
+		"reset_password_template":           r.ResetPasswordTemplate,
 
 		// 5. Files
-		"max_file_size":                                 r.MaxFileSize,
-		"allow_guests_to_upload_files":                  r.AllowGuestsToUploadFiles,
-		"force_web_capture_mode_for_uploads":            r.ForceWebCaptureModeForUploads,
-		"strip_exif_metadata_from_uploaded_images":       r.StripExifMetadataFromUploadedImages,
+		"max_file_size":                                     r.MaxFileSize,
+		"allow_guests_to_upload_files":                      r.AllowGuestsToUploadFiles,
+		"force_web_capture_mode_for_uploads":                r.ForceWebCaptureModeForUploads,
+		"strip_exif_metadata_from_uploaded_images":          r.StripExifMetadataFromUploadedImages,
 		"only_allow_system_managers_to_upload_public_files": r.OnlyAllowSystemManagersToUploadPublicFiles,
-		"delete_background_exported_reports_after":      r.DeleteBackgroundExportedReportsAfter,
-		"allowed_file_extensions":                       r.AllowedFileExtensions,
+		"delete_background_exported_reports_after":          r.DeleteBackgroundExportedReportsAfter,
+		"allowed_file_extensions":                           r.AllowedFileExtensions,
 
 		// 6. App
 		"default_app": r.DefaultApp,
@@ -219,7 +228,7 @@ func (r *SystemSetting) ToResponse(isUser bool) map[string]interface{} {
 		// 7. Display
 		"disable_system_update_notification": r.DisableSystemUpdateNotification,
 		"disable_change_log_notification":    r.DisableChangeLogNotification,
-		"hide_empty_read_only_fields":         r.HideEmptyReadOnlyFields,
+		"hide_empty_read_only_fields":        r.HideEmptyReadOnlyFields,
 		"disable_product_suggestion":         r.DisableProductSuggestion,
 
 		// 8. Backups

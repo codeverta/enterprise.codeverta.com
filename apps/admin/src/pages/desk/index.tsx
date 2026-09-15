@@ -26,6 +26,8 @@ import {
 import { useLanguage } from "@/context/LanguageContext";
 import { getNavigationLabel } from "@/lib/navigation-i18n";
 import { useCommandPaletteStore } from "@/store/useCommandPaletteStore";
+import { canAccessModule, useMyPermissions, type MyPermissions } from "@/lib/dynamic-permissions";
+import { erpWorkspaces } from "@/lib/erp-workspaces";
 
 type DeskUser = {
   display_name?: string;
@@ -188,12 +190,13 @@ const accountingDescriptions: Record<string, string> = {
   subscription: "Paket langganan, recurring billing, dan pengaturan.",
 };
 
-export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; onSearchOpen: () => void }) {
+export function ModuleLauncher({ user, onSearchOpen, permissions }: { user: DeskUser | null; onSearchOpen: () => void; permissions: MyPermissions | null }) {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const navigationLabel = (item: { name: string } | string) => getNavigationLabel(t, item);
   const [selectedModuleDialog, setSelectedModuleDialog] = useState<string | null>(null);
   const displayName = user?.display_name || user?.username || "Admin";
+  const visibleDeskModules = deskModules.filter((module) => isAdminRole(user?.role) || canAccessModule(permissions, module.slug, erpWorkspaces[module.slug]));
 
   return (
     <>
@@ -232,7 +235,7 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
                 </button>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-3">
-                    <p className="text-xl font-bold">{deskModules.length}</p><p className="text-xs text-slate-400">Modul aktif</p>
+                    <p className="text-xl font-bold">{visibleDeskModules.length}</p><p className="text-xs text-slate-400">Modul aktif</p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.05] px-3.5 py-3">
                     <p className="text-xl font-bold">⌘ K</p><p className="text-xs text-slate-400">Pencarian cepat</p>
@@ -249,11 +252,11 @@ export function ModuleLauncher({ user, onSearchOpen }: { user: DeskUser | null; 
                 <h2 className="text-2xl font-bold tracking-tight text-slate-950">Daftar Modul Sistem</h2>
                 <p className="mt-1 text-sm text-slate-500">Buka area kerja sesuai kebutuhan operasional Anda.</p>
               </div>
-              <span className="hidden text-sm text-slate-400 sm:block">{deskModules.length} modul tersedia</span>
+              <span className="hidden text-sm text-slate-400 sm:block">{visibleDeskModules.length} modul tersedia</span>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {deskModules.map(({ name, slug, icon: Icon }, index) => (
+              {visibleDeskModules.map(({ name, slug, icon: Icon }, index) => (
                 <button
                   key={slug}
                   type="button"
@@ -568,8 +571,8 @@ export default function DeskPage() {
   } catch {
     user = null;
   }
-
-  if (!isAdminRole(user?.role)) return <Navigate to="/dashboard" replace />;
+  const legacyAdmin = isAdminRole(user?.role);
+  const { data: permissions, loading: loadingPermissions } = useMyPermissions(!legacyAdmin);
 
   const logout = () => {
     clearImpersonationStorage();
@@ -584,11 +587,15 @@ export default function DeskPage() {
   const isAccounting = activeSlug === "accounting";
   const isRoot = location.pathname === "/desk" || location.pathname === "/desk/";
 
+  if (!legacyAdmin && loadingPermissions) return <div className="p-12 text-center text-sm text-slate-500">Memuat akses Apps...</div>;
+  const accessibleModules = deskModules.filter((module) => legacyAdmin || canAccessModule(permissions, module.slug, erpWorkspaces[module.slug]));
+  if (!legacyAdmin && (accessibleModules.length === 0 || (!isRoot && !accessibleModules.some((module) => module.slug === activeSlug)))) return <Navigate to="/dashboard" replace />;
+
   return (
     <div className="min-h-screen bg-[#f7f8fc]">
       <DeskHeader user={user} onSearchOpen={openSearch} onLogout={logout} />
       {isRoot ? (
-        <ModuleLauncher user={user} onSearchOpen={openSearch} />
+        <ModuleLauncher user={user} onSearchOpen={openSearch} permissions={permissions} />
       ) : isHR ? (
         <HRLauncher />
       ) : isAccounting ? (
