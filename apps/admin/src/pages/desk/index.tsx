@@ -57,7 +57,7 @@ function BrandMark() {
       <img
         src={logo}
         alt={name}
-        className="size-9 shrink-0 rounded-[10px] object-contain shadow-sm"
+        className={settings?.app_logo ? "size-9 shrink-0 rounded-[10px] object-cover shadow-sm" : "size-9 shrink-0 object-contain"}
       />
       <span className="hidden max-w-52 truncate text-sm font-semibold text-slate-800 sm:block">
         {name}

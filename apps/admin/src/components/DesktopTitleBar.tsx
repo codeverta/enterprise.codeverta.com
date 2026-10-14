@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Copy, Minus, Square, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { DEFAULT_APP_LOGO } from "../lib/utils";
 
 const runWindowAction = (action: () => Promise<unknown>) => {
   void action().catch(() => undefined);
@@ -114,7 +115,7 @@ export default function DesktopTitleBar() {
         data-tauri-drag-region
         className="pointer-events-none absolute inset-x-1/4 flex min-w-0 items-center justify-center gap-2"
       >
-        <img src="/favicon-32x32.png" alt="" draggable={false} className="h-5 w-5 rounded-md shadow-sm" />
+        <img src={DEFAULT_APP_LOGO} alt="" draggable={false} className="h-5 w-5 rounded-md" />
         <span data-tauri-drag-region className="truncate text-xs font-semibold tracking-[0.01em]">
           {appName}
         </span>

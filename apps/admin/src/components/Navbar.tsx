@@ -125,7 +125,7 @@ const Navbar = ({
             <img
               src={settings?.app_logo ? getStorageUrl(settings.app_logo) : DEFAULT_APP_LOGO}
               alt={settings?.app_name || "Codeverta ERP"}
-              className="size-9 shrink-0 rounded-[10px] object-contain shadow-sm"
+              className={settings?.app_logo ? "size-9 shrink-0 rounded-[10px] object-cover shadow-sm" : "size-9 shrink-0 object-contain"}
             />
             <span className="hidden max-w-56 truncate text-sm font-semibold text-slate-800 sm:block">
               {settings?.app_name || "Codeverta Enterprise System"}

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 256" fill="none">
+  <title>Codeverta ERP</title>
+  <g>
+    <path d="M176 111c-15-11-32-17-53-17-39 0-66 28-66 68s27 68 66 68h43" stroke="#26343B" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M55 127c5-51 43-82 97-82h35" stroke="#24B669" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="m179 8 65 37-65 37z" fill="#24B669"/>
+  </g>
+  <text x="292" y="128" fill="#26343B" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="700">CODEVERTA</text>
+  <text x="296" y="180" fill="#89949B" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="600">ERP</text>
+</svg>

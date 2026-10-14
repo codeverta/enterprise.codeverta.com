@@ -313,7 +313,7 @@ const Sidebar = ({
                   <img
                     src={DEFAULT_APP_LOGO}
                     alt="Codeverta ERP"
-                    className="w-7.5 h-7.5 rounded-[8px] object-contain shadow-sm flex-shrink-0"
+                    className="size-9 shrink-0 object-contain"
                   />
                 )}
 

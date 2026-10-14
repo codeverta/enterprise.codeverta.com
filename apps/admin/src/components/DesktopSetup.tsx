@@ -15,7 +15,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { toast } from "sonner";
-import { DEFAULT_APP_LOGO } from "@/lib/utils";
+import { DEFAULT_APP_WORDMARK_LOGO } from "@/lib/utils";
 import {
   cacheDesktopConfig,
   configureDesktop,
@@ -274,8 +274,10 @@ function DesktopOnboarding() {
       <div className="relative mx-auto w-full max-w-5xl">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src={DEFAULT_APP_LOGO} alt="Codeverta" className="size-10 rounded-xl object-contain shadow-sm" />
-            <div><p className="text-sm font-bold text-slate-950">Codeverta Enterprise</p><p className="text-[11px] text-slate-500">Desktop Edition</p></div>
+            <div>
+              <img src={DEFAULT_APP_WORDMARK_LOGO} alt="Codeverta ERP" className="h-12 w-44 object-contain object-left" />
+              <p className="text-[11px] text-slate-500">Desktop Edition</p>
+            </div>
           </div>
           <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
             {(["id", "en"] as const).map((item) => (
