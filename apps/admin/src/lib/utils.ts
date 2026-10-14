@@ -6,8 +6,8 @@ export const BASE_API_URL = runtimeApiUrl(import.meta.env.VITE_BASE_API_URL || "
 
 export const BASE_STORAGE_URL = runtimeApiUrl(import.meta.env.VITE_COS_CDN_BASE_URL || "https://cdn.codeverta.com");
 
-export const DEFAULT_APP_LOGO = "/brand/codeverta-erp-icon.svg";
-export const DEFAULT_APP_WORDMARK_LOGO = "/brand/codeverta-erp-logo.svg";
+export const DEFAULT_APP_LOGO = "/brand/codeverta-erp-mark.png";
+export const DEFAULT_APP_WORDMARK_LOGO = "/brand/codeverta-erp-wordmark.png";
 
 export function getStorageUrl(path?: string | null): string {
   if (!path) return "";
